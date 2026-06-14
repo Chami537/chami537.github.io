@@ -238,10 +238,43 @@
 
   @media (max-width: 768px) {
     .container { padding: 0 24px; }
-    nav { padding: 0 24px; }
-    .hero { margin: 0 -24px; padding: 0 24px; grid-template-columns: 1fr; }
-    .hero h1 { font-size: 44px; }
-    .portrait { width: 160px; height: 160px; font-size: 48px; margin-top: 24px; }
+
+    /* 1. 导航栏自适应：改为上下堆叠，Logo 在上，链接在下并自然换行居中 */
+    nav { padding: 0 16px; }
+    nav .inner {
+      flex-direction: column;
+      height: auto;
+      padding: 16px 0;
+      gap: 16px;
+    }
+    nav .links {
+      width: 100%;
+      justify-content: center;
+      flex-wrap: wrap; /* 允许装不下的链接自动换行 */
+      gap: 12px 20px;
+    }
+
+    /* 2. 首屏自适应：改用 Flex 垂直排版，靠内容自身撑开高度，彻底消除巨大空隙 */
+    .hero {
+      margin: 0 -24px;
+      padding: 160px 24px 80px; /* 顶部加深 padding，防止被变高的导航栏遮挡 */
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      height: auto;
+      min-height: 100dvh;
+      gap: 48px;
+    }
+    .hero h1 { font-size: 48px; line-height: 1.05; }
+
+    /* 3. 标签自适应：允许标签组整体换行，但严禁单个标签内部断字 */
+    .hero .meta { flex-wrap: wrap; gap: 16px 24px; margin-top: 20px; }
+    .hero .meta span { white-space: nowrap; }
+
+    /* 头像自适应居中 */
+    .portrait { width: 180px; height: 180px; margin: 0 auto; }
+
+    /* 其他模块保持不变 */
     .work-grid { grid-template-columns: 1fr; }
     .work-card { border-right: none; }
     .photo-grid { grid-template-columns: repeat(2, 1fr); }
