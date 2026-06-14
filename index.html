@@ -174,25 +174,26 @@
   .music-row {
     display: grid; grid-template-columns: 50px 1fr auto; gap: 20px; align-items: center;
     padding: 20px 0; border-bottom: 1px solid var(--line); cursor: pointer;
-    position: relative; transition: padding-left .3s, background .3s;
+    position: relative; transition: padding-left .3s;
+    --progress: 0%;
   }
-  .music-row::before {
-    content: ''; position: absolute; left: 0; top: 50%; width: 0; height: 2px;
-    transition: width .3s ease;
-  }
-  .music-row:nth-child(1)::before { background: var(--c1); }
-  .music-row:nth-child(2)::before { background: var(--c2); }
-  .music-row:nth-child(3)::before { background: var(--c3); }
-  .music-row:nth-child(4)::before { background: var(--c4); }
-  .music-row:nth-child(5)::before { background: var(--c5); }
+  .music-row:nth-child(1) { --theme: rgba(255,77,77,0.10); }
+  .music-row:nth-child(2) { --theme: rgba(0,102,255,0.10); }
+  .music-row:nth-child(3) { --theme: rgba(255,184,0,0.10); }
+  .music-row:nth-child(4) { --theme: rgba(0,200,83,0.10); }
+  .music-row:nth-child(5) { --theme: rgba(156,39,176,0.10); }
   .music-row:hover { padding-left: 24px; background: rgba(255,255,255,0.5); }
-  .music-row:hover::before { width: 8px; }
-  .music-row .idx { font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s; }
-  .music-row.playing .idx { color: var(--fg); }
-  .music-row.playing::before { width: var(--prog, 0%); transition: none; }
+  .music-row.playing { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
+  .music-row.playing:hover { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
+  .music-row .idx { font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s, transform .3s; display: inline-block; }
+  .music-row:nth-child(1).playing .idx { color: var(--c1); animation: pulse 0.8s ease-in-out infinite; }
+  .music-row:nth-child(2).playing .idx { color: var(--c2); animation: pulse 0.8s ease-in-out infinite; }
+  .music-row:nth-child(3).playing .idx { color: var(--c3); animation: pulse 0.8s ease-in-out infinite; }
+  .music-row:nth-child(4).playing .idx { color: var(--c4); animation: pulse 0.8s ease-in-out infinite; }
+  .music-row:nth-child(5).playing .idx { color: var(--c5); animation: pulse 0.8s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
   .music-row .title { font-size: 17px; font-weight: 600; }
   .music-row .artist { font-size: 14px; color: var(--muted); }
-  .music-row .dur { font-size: 12px; color: #ccc; font-weight: 500; }
 
   /* Contact */
   .contact-block { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 2px solid var(--fg); }
@@ -362,7 +363,7 @@ rows.forEach(row => {
       return;
     }
 
-    if (curRow) { curRow.classList.remove('playing'); curRow.style.removeProperty('--prog'); }
+    if (curRow) { curRow.classList.remove('playing'); curRow.style.removeProperty('--progress'); }
     curRow = row;
     row.classList.add('playing');
     player.src = encodeURI(src);
@@ -372,20 +373,16 @@ rows.forEach(row => {
 
 player.addEventListener('timeupdate', () => {
   if (curRow && player.duration) {
-    curRow.style.setProperty('--prog', (player.currentTime / player.duration * 100).toFixed(2) + '%');
+    curRow.style.setProperty('--progress', (player.currentTime / player.duration * 100).toFixed(2) + '%');
   }
 });
 
 player.addEventListener('ended', () => {
   if (curRow) {
-    curRow.style.setProperty('--prog', '100%');
     curRow.classList.remove('playing');
+    curRow.style.removeProperty('--progress');
   }
   curRow = null;
-});
-
-player.addEventListener('pause', () => {
-  if (curRow && player.ended) return;
 });
 </script>
 
