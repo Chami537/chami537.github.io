@@ -189,7 +189,7 @@
   .music-row:hover::before { width: 8px; }
   .music-row .idx { font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s; }
   .music-row.playing .idx { color: var(--fg); }
-  .music-row.playing::before { width: 8px; }
+  .music-row.playing::before { width: var(--prog, 0%); transition: none; }
   .music-row .title { font-size: 17px; font-weight: 600; }
   .music-row .artist { font-size: 14px; color: var(--muted); }
   .music-row .dur { font-size: 12px; color: #ccc; font-weight: 500; }
@@ -362,7 +362,7 @@ rows.forEach(row => {
       return;
     }
 
-    if (curRow) curRow.classList.remove('playing');
+    if (curRow) { curRow.classList.remove('playing'); curRow.style.removeProperty('--prog'); }
     curRow = row;
     row.classList.add('playing');
     player.src = encodeURI(src);
@@ -370,8 +370,17 @@ rows.forEach(row => {
   });
 });
 
+player.addEventListener('timeupdate', () => {
+  if (curRow && player.duration) {
+    curRow.style.setProperty('--prog', (player.currentTime / player.duration * 100).toFixed(2) + '%');
+  }
+});
+
 player.addEventListener('ended', () => {
-  if (curRow) curRow.classList.remove('playing');
+  if (curRow) {
+    curRow.style.setProperty('--prog', '100%');
+    curRow.classList.remove('playing');
+  }
   curRow = null;
 });
 
