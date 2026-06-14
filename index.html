@@ -357,7 +357,8 @@ rows.forEach(row => {
     if (!src) return;
 
     if (curRow === row) {
-      player.paused ? player.play() : player.pause();
+      if (player.paused) { player.play(); row.classList.add('playing'); }
+      else { player.pause(); row.classList.remove('playing'); }
       return;
     }
 
