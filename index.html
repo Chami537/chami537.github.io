@@ -190,7 +190,7 @@
   .music-row:nth-child(4).playing .idx { color: var(--c4); animation: pulse 0.8s ease-in-out infinite; }
   .music-row:nth-child(5).playing .idx { color: var(--c5); animation: pulse 0.8s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
-  .music-row.paused .idx { animation-play-state: paused; }
+  .music-row.paused .idx { animation-play-state: paused !important; }
   .music-row .title { font-size: 17px; font-weight: 600; }
   .music-row .artist { font-size: 14px; color: var(--muted); }
 
