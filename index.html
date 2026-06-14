@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>许夏源 — CS Student & Photographer</title>
+<meta name="description" content="许夏源的个人主页 — CS 学生、摄影师，现居深圳。Building things that feel right.">
+<meta property="og:title" content="许夏源">
+<meta property="og:description" content="CS Student & Photographer · Building things that feel right.">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⻖</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #fafaf8;
+    --fg: #111;
+    --c1: #ff4d4d; /* red */
+    --c2: #0066ff; /* blue */
+    --c3: #ffb800; /* yellow */
+    --c4: #00c853; /* green */
+    --c5: #9c27b0; /* purple */
+    --line: #e0dcd5;
+    --muted: #999;
+  }
+
+  body {
+    font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .progress { position: fixed; top: 0; left: 0; height: 2px; z-index: 999; width: 0; will-change: width; }
+
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100; padding: 0 48px;
+    background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
+    border-bottom: 2px solid var(--fg);
+  }
+  nav .inner {
+    max-width: 1200px; margin: 0 auto; display: flex; align-items: center;
+    justify-content: space-between; height: 56px;
+  }
+  nav .logo { font-size: 15px; font-weight: 800; letter-spacing: -0.01em; }
+  nav .links { display: flex; gap: 32px; }
+  nav .links a {
+    font-size: 12px; color: var(--muted); text-decoration: none; letter-spacing: 0.04em;
+    font-weight: 600; transition: color .2s; position: relative;
+  }
+  nav .links a:hover, nav .links a.active { color: var(--fg); }
+  nav .links a::after {
+    content: ''; position: absolute; bottom: -6px; left: 0; width: 100%; height: 2px;
+    background: var(--fg); transform: scaleX(0); transition: transform .25s;
+  }
+  nav .links a.active::after { transform: scaleX(1); }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 0 48px; position: relative; z-index: 1; }
+
+  /* Hero */
+  .hero {
+    height: 100vh; height: 100dvh;
+    display: grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 48px;
+    border-left: 2px solid var(--c1); border-right: 2px solid var(--c2);
+    margin: 0 -48px; padding: 0 48px;
+  }
+  .hero h1 {
+    font-size: clamp(56px, 8vw, 112px); font-weight: 900; letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+  .hero h1 mark {
+    background: var(--c3); color: var(--fg); padding: 0 8px;
+  }
+  .hero .meta {
+    display: flex; gap: 40px; margin-top: 36px; padding-top: 36px;
+    border-top: 3px solid var(--fg);
+  }
+  .hero .meta span { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; }
+  .portrait {
+    width: 260px; height: 260px; border-radius: 50%; margin: 0 auto;
+    background: linear-gradient(135deg, var(--c1) 0%, var(--c2) 100%);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 72px; color: rgba(255,255,255,0.7);
+    user-select: none; position: relative;
+  }
+  .portrait::after {
+    content: ''; position: absolute; inset: -8px; border-radius: 50%;
+    border: 2px solid var(--line);
+  }
+
+  /* Sections */
+  section { padding: 120px 0; position: relative; }
+  section[id] { border-bottom: 1px solid var(--line); }
+  section[id]:last-of-type { border-bottom: none; }
+  #work  { padding: 140px 0 120px; }
+  #photos { padding: 100px 0; }
+  #music { padding: 160px 0 120px; }
+  #contact { padding: 100px 0; }
+  .section-tag {
+    display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: 0.1em;
+    padding: 6px 14px; border: 2px solid var(--fg); margin-bottom: 48px;
+  }
+  .section-tag.red { border-color: var(--c1); color: var(--c1); }
+  .section-tag.blue { border-color: var(--c2); color: var(--c2); }
+  .section-tag.green { border-color: var(--c4); color: var(--c4); }
+  .section-tag.purple { border-color: var(--c5); color: var(--c5); }
+
+  /* Work */
+  .work-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+  .work-card {
+    padding: 40px 32px; border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+    position: relative; cursor: pointer;
+    transition: background .3s;
+  }
+  .work-card:nth-child(3n) { border-right: none; }
+  .work-card::before {
+    content: ''; position: absolute; left: 0; top: 0; width: 3px; height: 40px;
+    transition: height .3s ease;
+  }
+  .work-card:nth-child(1)::before { background: var(--c1); }
+  .work-card:nth-child(2)::before { background: var(--c2); }
+  .work-card:nth-child(3)::before { background: var(--c5); }
+  .work-card:hover::before { height: 100%; }
+  .work-card:hover { background: #fff; }
+  .work-card .num { font-size: 48px; font-weight: 900; color: #eee; position: absolute; top: 28px; right: 28px; }
+  .work-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
+  .work-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+  .work-card .line-tag {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 11px; font-weight: 600;
+  }
+  .work-card .line-tag::before { content: ''; width: 16px; height: 2px; }
+  .work-card:nth-child(1) .line-tag::before { background: var(--c1); }
+  .work-card:nth-child(2) .line-tag::before { background: var(--c2); }
+  .work-card:nth-child(3) .line-tag::before { background: var(--c5); }
+
+  /* Photos */
+  .photo-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
+  .photo-grid .lg {
+    grid-column: span 3; grid-row: span 2; aspect-ratio: 4/3;
+    background: linear-gradient(135deg, #ffe8e8, #ffcccc);
+    position: relative; cursor: pointer; overflow: hidden;
+  }
+  .photo-grid .md {
+    grid-column: span 3; aspect-ratio: 3/2;
+    background: linear-gradient(135deg, #e0ecff, #c8d8ff);
+    position: relative; cursor: pointer; overflow: hidden;
+  }
+  .photo-grid .sm {
+    grid-column: span 2; aspect-ratio: 1;
+    position: relative; cursor: pointer; overflow: hidden;
+  }
+  .photo-grid .sm:nth-child(4) { background: linear-gradient(135deg, #fff4d8, #ffe8b0); }
+  .photo-grid .sm:nth-child(5) { background: linear-gradient(135deg, #dcffe8, #c0ffd4); }
+  .photo-grid .sm:nth-child(6) { background: linear-gradient(135deg, #f4e0ff, #e8ccff); }
+  .photo-grid div::after {
+    content: ''; position: absolute; inset: 0; border: 0px solid var(--fg);
+    transition: border-width .2s ease, border-color .2s ease;
+  }
+  .photo-grid div:hover::after { border-width: 3px; }
+  .photo-grid .lg:hover::after { border-color: var(--c1); }
+  .photo-grid .md:hover::after { border-color: var(--c2); }
+  .photo-grid .sm:nth-child(4):hover::after { border-color: var(--c3); }
+  .photo-grid .sm:nth-child(5):hover::after { border-color: var(--c4); }
+  .photo-grid .sm:nth-child(6):hover::after { border-color: var(--c5); }
+
+  /* Music */
+  .music-list { display: flex; flex-direction: column; }
+  .music-row {
+    display: grid; grid-template-columns: 50px 1fr auto; gap: 20px; align-items: center;
+    padding: 20px 0; border-bottom: 1px solid var(--line); cursor: pointer;
+    position: relative; transition: padding-left .3s, background .3s;
+  }
+  .music-row::before {
+    content: ''; position: absolute; left: 0; top: 50%; width: 0; height: 2px;
+    transition: width .3s ease;
+  }
+  .music-row:nth-child(1)::before { background: var(--c1); }
+  .music-row:nth-child(2)::before { background: var(--c2); }
+  .music-row:nth-child(3)::before { background: var(--c3); }
+  .music-row:nth-child(4)::before { background: var(--c4); }
+  .music-row:nth-child(5)::before { background: var(--c5); }
+  .music-row:hover { padding-left: 24px; background: rgba(255,255,255,0.5); }
+  .music-row:hover::before { width: 8px; }
+  .music-row .idx { font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s; }
+  .music-row.playing .idx { color: var(--fg); }
+  .music-row.playing::before { width: 8px; }
+  .music-row .title { font-size: 17px; font-weight: 600; }
+  .music-row .artist { font-size: 14px; color: var(--muted); }
+  .music-row .dur { font-size: 12px; color: #ccc; font-weight: 500; }
+
+  /* Contact */
+  .contact-block { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 2px solid var(--fg); }
+  .contact-card {
+    padding: 36px; text-decoration: none; color: var(--fg);
+    transition: background .3s; position: relative;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .contact-card:first-child { border-right: 1px solid var(--fg); }
+  .contact-card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 3px;
+    transform: scaleX(0); transition: transform .3s ease;
+  }
+  .contact-card:first-child::after { background: var(--c1); }
+  .contact-card:last-child::after { background: var(--c2); }
+  .contact-card:hover::after { transform: scaleX(1); }
+  .contact-card .label { font-size: 12px; color: var(--muted); letter-spacing: 0.04em; }
+  .contact-card .value { font-size: 22px; font-weight: 700; margin-top: 4px; }
+  .contact-card .arr { font-size: 18px; transition: transform .3s; }
+  .contact-card:hover .arr { transform: translateX(6px); }
+
+  footer {
+    padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+    letter-spacing: 0.04em; border-top: 1px solid var(--line);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
+  }
+
+  @media (max-width: 768px) {
+    .container { padding: 0 24px; }
+    nav { padding: 0 24px; }
+    .hero { margin: 0 -24px; padding: 0 24px; border: none; grid-template-columns: 1fr; }
+    .hero h1 { font-size: 44px; }
+    .portrait { width: 160px; height: 160px; font-size: 48px; margin-top: 24px; }
+    .work-grid { grid-template-columns: 1fr; }
+    .work-card { border-right: none; }
+    .photo-grid { grid-template-columns: repeat(2, 1fr); }
+    .photo-grid .lg, .photo-grid .md, .photo-grid .sm { grid-column: span 2; }
+    .contact-block { grid-template-columns: 1fr; }
+    .contact-card:first-child { border-right: none; border-bottom: 1px solid var(--fg); }
+    .music-row { grid-template-columns: 30px 1fr auto; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress"></div>
+
+<nav>
+  <div class="inner">
+    <span class="logo">许夏源</span>
+    <div class="links">
+      <a href="#work">Work</a>
+      <a href="#photos">Photos</a>
+      <a href="#music">Music</a>
+      <a href="#contact">Contact</a>
+    </div>
+  </div>
+</nav>
+
+<main class="container">
+  <section class="hero">
+    <div>
+      <h1>Building<br>things that<br><mark>feel right</mark></h1>
+      <div class="meta">
+        <span>CS STUDENT</span>
+        <span>PHOTOGRAPHER</span>
+        <span>SHENZHEN</span>
+      </div>
+    </div>
+    <div class="portrait" aria-hidden="true">?</div>
+  </section>
+
+  <section id="work">
+    <div class="section-tag red">WORK</div>
+    <div class="work-grid">
+      <div class="work-card">
+        <div class="num">01</div>
+        <h3>QQ Bot</h3>
+        <p>群聊机器人 · NoneBot2 驱动 · 插件系统 + SQLite 数据面板 · Windows 本地常驻</p>
+        <div class="line-tag">Python · NoneBot2 · SQLite</div>
+      </div>
+      <div class="work-card">
+        <div class="num">02</div>
+        <h3>UNIFP</h3>
+        <p>统一指纹识别模型 · 基于深度学习 · 训练迭代中</p>
+        <div class="line-tag">PyTorch · Deep Learning</div>
+      </div>
+      <div class="work-card">
+        <div class="num">03</div>
+        <h3>本站</h3>
+        <p>手写 HTML/CSS/JS · 零框架零依赖 · 一个下午 vibecoding 产物</p>
+        <div class="line-tag">HTML · CSS · JavaScript</div>
+      </div>
+    </div>
+  </section>
+
+  <section id="photos">
+    <div class="section-tag blue">PHOTOGRAPHY</div>
+    <div class="photo-grid">
+      <div class="lg"><img src="0bafcdb21b37a78577502401bbf9be97.jpg" alt="Photo 1" style="width:100%;height:100%;object-fit:cover"></div>
+      <div class="md"><img src="15a70814318ed74d5ec2448532f7fab5.jpg" alt="Photo 2" style="width:100%;height:100%;object-fit:cover"></div>
+      <div class="sm"><img src="6400b35c75c004c99313eb4d07cb337f.jpg" alt="Photo 3" style="width:100%;height:100%;object-fit:cover"></div>
+      <div class="sm"><img src="68b93d07a342daef4f8483cdb249c4f7.jpg" alt="Photo 4" style="width:100%;height:100%;object-fit:cover"></div>
+      <div class="sm"><img src="d799f0dd4097ac45c2680798af20b457.jpg" alt="Photo 5" style="width:100%;height:100%;object-fit:cover"></div>
+    </div>
+  </section>
+
+  <section id="music">
+    <div class="section-tag green">LISTENING</div>
+    <div class="music-list">
+      <div class="music-row" data-src="AYANE - ごめんね.mp3"><span class="idx">01</span><span class="title">ごめんね</span><span class="artist">AYANE</span></div>
+      <div class="music-row" data-src="The Beatles - Let It Be (Remastered).mp3"><span class="idx">02</span><span class="title">Let It Be (Remastered)</span><span class="artist">The Beatles</span></div>
+      <div class="music-row" data-src="elijah woods - 24_7, 365.mp3"><span class="idx">03</span><span class="title">24/7, 365</span><span class="artist">elijah woods</span></div>
+      <div class="music-row" data-src="あたらよ - 夏霞.mp3"><span class="idx">04</span><span class="title">夏霞</span><span class="artist">あたらよ</span></div>
+      <div class="music-row" data-src="宇多田ヒカル - This One (Crying Like A Child).mp3"><span class="idx">05</span><span class="title">This One (Crying Like A Child)</span><span class="artist">宇多田ヒカル</span></div>
+    </div>
+    <audio id="player" preload="auto"></audio>
+  </section>
+
+  <section id="contact">
+    <div class="section-tag purple">CONTACT</div>
+    <div class="contact-block">
+      <a href="https://github.com/Chami537" target="_blank" class="contact-card">
+        <div><div class="label">代码仓库</div><div class="value">GitHub</div></div>
+        <span class="arr">→</span>
+      </a>
+      <a href="mailto:hi@xuxiayuan.com" class="contact-card">
+        <div><div class="label">电子邮箱</div><div class="value">Email</div></div>
+        <span class="arr">→</span>
+      </a>
+    </div>
+  </section>
+</main>
+
+<footer>© <script>document.write(new Date().getFullYear())</script> 许夏源</footer>
+
+<script>
+const bar = document.querySelector('.progress');
+addEventListener('scroll', () => {
+  const h = document.documentElement.scrollHeight - innerHeight;
+  bar.style.width = h > 0 ? (scrollY/h*100)+'%' : '0';
+  bar.style.background = `hsl(${scrollY/h*360},80%,50%)`;
+});
+
+const nlinks = document.querySelectorAll('nav .links a');
+const secs = document.querySelectorAll('section[id]');
+addEventListener('scroll', () => {
+  let cur = '';
+  secs.forEach(s => { if (scrollY >= s.offsetTop - 200) cur = s.id; });
+  nlinks.forEach(a => a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+});
+
+const player = document.getElementById('player');
+const rows = document.querySelectorAll('.music-row');
+let curRow = null;
+
+rows.forEach(row => {
+  row.addEventListener('click', () => {
+    const src = row.dataset.src;
+    if (!src) return;
+
+    if (curRow === row) {
+      player.paused ? player.play() : player.pause();
+      return;
+    }
+
+    if (curRow) curRow.classList.remove('playing');
+    curRow = row;
+    row.classList.add('playing');
+    player.src = encodeURI(src);
+    player.play();
+  });
+});
+
+player.addEventListener('ended', () => {
+  if (curRow) curRow.classList.remove('playing');
+  curRow = null;
+});
+
+player.addEventListener('pause', () => {
+  if (curRow && player.ended) return;
+});
+</script>
+
+</body>
+</html>
