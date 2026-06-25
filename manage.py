@@ -206,8 +206,9 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 
 .essay-meta {{
   font-family: 'Lora', 'Inter', serif;
-  display: flex; gap: 16px; align-items: center;
+  display: flex; gap: 16px; align-items: baseline;
   font-size: 12px; color: var(--muted); font-weight: 500;
+  line-height: 1;
   margin-bottom: 40px;
 }}
 .essay-meta .dot {{ color: var(--muted); }}
