@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>占位符 — Chami</title>
+<meta name="description" content="地方">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⻖</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #fafaf8;
+  --fg: #111;
+  --c3: #ffb800;
+  --line: #e0dcd5;
+  --muted: #999;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.progress {
+  position: fixed; top: 0; left: 0; height: 2px;
+  background: var(--c3); z-index: 999; width: 0; will-change: width;
+}
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 48px;
+  background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--fg);
+}
+nav .inner {
+  max-width: 1200px; margin: 0 auto; display: flex;
+  align-items: center; justify-content: space-between; height: 56px;
+}
+nav .logo {
+  font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
+  text-decoration: none; color: var(--fg);
+}
+nav .back {
+  font-size: 12px; font-weight: 600; letter-spacing: .08em;
+  color: var(--muted); text-decoration: none;
+  display: flex; align-items: center; gap: 6px; transition: color .2s;
+}
+nav .back:hover { color: var(--c3); }
+nav .back .arr { transition: transform .2s ease; display: inline-block; }
+nav .back:hover .arr { transform: translateX(-4px); }
+
+.reading {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 120px 48px 100px;
+}
+
+.section-tag {
+  display: inline-block; font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--c3); border-left: 2px solid var(--c3);
+  padding-left: 10px; margin-bottom: 24px;
+}
+
+.essay-title {
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 900;
+  line-height: 1.0;
+  letter-spacing: -0.025em;
+  margin-bottom: 16px;
+}
+
+.essay-epigraph {
+  font-size: 15px;
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 400;
+  margin-bottom: 28px;
+}
+
+.essay-meta {
+  display: flex; gap: 16px; align-items: center;
+  font-size: 12px; color: var(--muted); font-weight: 500;
+  margin-bottom: 40px;
+}
+.essay-meta .dot { color: #ddd; }
+
+.essay-divider {
+  border: none; border-top: 1px solid var(--line); margin-bottom: 40px;
+}
+
+.essay-lede {
+  font-size: 19px;
+  color: #555;
+  line-height: 1.75;
+  font-weight: 400;
+  margin-bottom: 0;
+}
+
+.essay-body p {
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--fg);
+  margin-top: 1.6em;
+}
+
+.essay-body h2 {
+  font-size: 21px; font-weight: 700;
+  margin-top: 2.5em; margin-bottom: .4em;
+  letter-spacing: -0.01em;
+}
+
+.essay-body blockquote {
+  border-left: 2px solid var(--c3);
+  padding-left: 20px;
+  margin: 2em 0;
+  color: #555;
+  font-size: 16px;
+  line-height: 1.85;
+  font-style: italic;
+}
+
+.essay-body img {
+  max-width: 100%; height: auto;
+  display: block; border-radius: 4px;
+  margin: 2em auto; cursor: zoom-in;
+}
+
+/* Lightbox */
+.lb-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.92); cursor: zoom-out;
+}
+.lb-overlay.show { display: flex; align-items: center; justify-content: center; }
+.lb-overlay img { max-width: 90vw; max-height: 85vh; object-fit: contain; cursor: default; }
+.lb-close {
+  position: fixed; top: 20px; right: 28px; z-index: 1001;
+  background: none; border: none; color: #fff; font-size: 36px;
+  cursor: pointer; opacity: 0.6; transition: opacity .2s;
+}
+.lb-close:hover { opacity: 1; }
+.lb-prev, .lb-next {
+  position: fixed; top: 50%; z-index: 1001;
+  background: none; border: none; color: #fff;
+  font-size: 48px; cursor: pointer; opacity: 0.4;
+  transition: opacity .2s; transform: translateY(-50%);
+}
+.lb-prev { left: 20px; } .lb-next { right: 20px; }
+.lb-prev:hover, .lb-next:hover { opacity: 1; }
+.lb-counter {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  color: rgba(255,255,255,0.5); font-size: 13px; z-index: 1001;
+}
+
+.essay-end {
+  margin-top: 64px; padding-top: 32px;
+  border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: flex-end;
+}
+
+.essay-end .back-link {
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  text-decoration: none; display: flex; align-items: center; gap: 6px;
+  transition: color .2s;
+}
+.essay-end .back-link:hover { color: var(--c3); }
+.essay-end .back-link .arr { transition: transform .2s; display: inline-block; }
+.essay-end .back-link:hover .arr { transform: translateX(-4px); }
+
+.essay-end .next-link {
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  text-decoration: none; display: flex; flex-direction: column;
+  align-items: flex-end; gap: 4px; transition: color .2s;
+}
+.essay-end .next-link:hover { color: var(--fg); }
+.essay-end .next-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: #ccc;
+}
+.essay-end .next-title {
+  display: flex; align-items: center; gap: 6px;
+}
+.essay-end .next-arr { transition: transform .2s; display: inline-block; }
+.essay-end .next-link:hover .next-arr { transform: translateX(4px); }
+
+footer {
+  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+  letter-spacing: .04em; border-top: 1px solid var(--line);
+}
+.friends { margin-bottom: 20px; }
+.friends-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: #ccc; margin-bottom: 8px;
+}
+.friends a {
+  font-size: 11px; color: #bbb; text-decoration: none;
+  letter-spacing: .04em; transition: color .2s;
+}
+.friends a:hover { color: var(--fg); }
+.friends .sep { color: #ddd; margin: 0 8px; }
+
+@media (max-width: 768px) {
+  nav { padding: 0 16px; }
+  .reading { padding: 100px 24px 80px; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="progress"></div>
+
+<nav>
+  <div class="inner">
+    <a href="/" class="logo">Chami</a>
+    <a href="/index.html#essays" class="back">
+      <span class="arr">←</span>
+      <span>Essays</span>
+    </a>
+  </div>
+</nav>
+
+<main class="reading">
+
+  <div class="section-tag">ESSAYS</div>
+
+  <h1 class="essay-title">占位符</h1>
+
+  <p class="essay-epigraph">1</p>
+
+  <div class="essay-meta">
+    <span>技术</span>
+    <span class="dot">·</span>
+    <span>2026年6月</span>
+    <span class="dot">·</span>
+    <span>4 min read</span>
+  </div>
+
+  <hr class="essay-divider">
+
+<!-- CONTENT_START -->
+<div class="essay-body">
+<p>发</p>
+<p>你好</p>
+<blockquote>
+<p>为什么看i挂号费地方上古时代和股市的狗屎东莞就开始的代表哈萨克汗国杀害</p>
+</blockquote>
+<p>发</p>
+</div>
+<!-- RAW_MD
+发
+
+你好
+
+>为什么看i挂号费地方上古时代和股市的狗屎东莞就开始的代表哈萨克汗国杀害
+
+发
+RAW_MD -->
+<!-- CONTENT_END -->
+
+  <div class="essay-end">
+    <a href="/index.html#essays" class="back-link">
+      <span class="arr">←</span>
+      <span>返回随笔</span>
+    </a>
+    
+  </div>
+
+</main>
+
+<footer>
+  <div class="friends" id="friends-container">
+    <div class="friends-label">FRIEND</div>
+  </div>
+  &copy; <script>document.write(new Date().getFullYear())</script> Chami
+</footer>
+
+<script>
+const bar = document.querySelector('.progress');
+addEventListener('scroll', () => {
+  const h = document.documentElement.scrollHeight - innerHeight;
+  if (h > 0) bar.style.width = (scrollY / h * 100) + '%';
+});
+
+// Render friends
+(async () => {
+  try {
+    const friends = await fetch('/data/friends.json?v=' + Date.now()).then(r => r.json());
+    const container = document.getElementById('friends-container');
+    let html = '<div class="friends-label">FRIEND</div>';
+    friends.forEach((f, i) => {
+      html += '<a href="' + f.url + '">' + f.name + '</a>';
+      if (i < friends.length - 1) html += '<span class="sep">·</span>';
+    });
+    container.innerHTML = html;
+  } catch(e) {}
+})();
+
+// Lightbox
+var lbImgs = [];
+var lbIdx = 0;
+document.querySelector('.essay-body').addEventListener('click', function(e) {
+  if (e.target.tagName !== 'IMG') return;
+  lbImgs = Array.from(document.querySelectorAll('.essay-body img'));
+  lbIdx = lbImgs.indexOf(e.target);
+  document.getElementById('lb').classList.add('show');
+  document.getElementById('lb-img').src = e.target.src;
+  document.getElementById('lb-counter').textContent = (lbIdx + 1) + ' / ' + lbImgs.length;
+  document.body.style.overflow = 'hidden';
+});
+function lbClose() {
+  document.getElementById('lb').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function lbNav(d) {
+  lbIdx = (lbIdx + d + lbImgs.length) % lbImgs.length;
+  document.getElementById('lb-img').src = lbImgs[lbIdx].src;
+  document.getElementById('lb-counter').textContent = (lbIdx + 1) + ' / ' + lbImgs.length;
+}
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('lb').classList.contains('show')) return;
+  if (e.key === 'Escape') lbClose();
+  if (e.key === 'ArrowLeft') lbNav(-1);
+  if (e.key === 'ArrowRight') lbNav(1);
+});
+</script>
+
+<div id="lb" class="lb-overlay" onclick="lbClose()">
+  <button class="lb-close" onclick="lbClose()">×</button>
+  <button class="lb-prev" onclick="lbNav(-1);event.stopPropagation()">‹</button>
+  <button class="lb-next" onclick="lbNav(1);event.stopPropagation()">›</button>
+  <img id="lb-img" src="" alt="">
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
+
+</body>
+</html>
