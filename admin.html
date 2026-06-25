@@ -978,7 +978,7 @@ function showEssayForm() {
   document.getElementById('essay-readtime').value = '4';
 
   var now = new Date();
-  document.getElementById('essay-date').value = now.getFullYear() + '-' + pad2(now.getMonth()+1) + '-' + pad2(now.getDate()) + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+  document.getElementById('essay-date').value = now.getFullYear() + '-' + pad2(now.getMonth()+1) + '-' + pad2(now.getDate());
   document.getElementById('essay-form-title').textContent = '新建文章';
 
   let defaultTag = currentEssayTag || '随笔';

@@ -437,12 +437,12 @@ footer {{
   <div class="essay-end">
     <div class="essay-end-row">
       {prev_nav}
+      <a href="/index.html#essays" class="back-link">
+        <span class="arr">←</span>
+        <span>返回随笔</span>
+      </a>
       {next_nav}
     </div>
-    <a href="/index.html#essays" class="back-link">
-      <span class="arr">←</span>
-      <span>返回随笔</span>
-    </a>
   </div>
 
 </main>
@@ -558,26 +558,20 @@ def _calc_read_time(text):
 
 
 def _parse_date(date_str):
-    """'2026-06' or '2026-06-25 14:30' → 'Jun 2026' or '14:30, Jun 25, 2026'"""
+    """'2026-06' or '2026-06-25 14:30' → 'Jun 2026' or 'Jun 25, 2026'"""
     if not isinstance(date_str, str) or not date_str.strip():
         return date_str if isinstance(date_str, str) else ''
     try:
         MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        parts = date_str.split(' ')
-        date_segments = parts[0].split('-')
+        date_segments = date_str.split(' ')[0].split('-')
 
         result = ''
-        if len(date_segments) >= 3 and date_segments[2] and len(date_segments) >= 2 and date_segments[1]:
+        if len(date_segments) >= 3 and date_segments[2] and date_segments[1]:
             m = MONTHS[int(date_segments[1]) - 1]
             result = f"{m} {int(date_segments[2])}, {date_segments[0]}"
         elif len(date_segments) >= 2 and date_segments[1]:
             m = MONTHS[int(date_segments[1]) - 1]
             result = f"{m} {date_segments[0]}"
-
-        if len(parts) >= 2 and parts[1]:
-            time_segments = parts[1].split(':')
-            if len(time_segments) >= 2:
-                result = f"{time_segments[0]}:{time_segments[1]}, {result}"
 
         return result or date_str
     except (ValueError, IndexError):
