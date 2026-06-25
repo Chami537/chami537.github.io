@@ -449,8 +449,9 @@ footer {{
 </main>
 
 <footer>
-  <div class="friends" id="friends-container">
+  <div class="friends">
     <div class="friends-label">FRIEND</div>
+    {friends_html}
   </div>
   &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
 </footer>
@@ -608,6 +609,19 @@ def _html_to_md(html):
     return md.strip()
 
 
+def _build_friends_html():
+    friends = load_json('friends.json')
+    if not friends:
+        return ''
+    html = ''
+    for i, f in enumerate(friends):
+        name = html_mod.escape(str(f.get('name', '')))
+        url = html_mod.escape(str(f.get('url', '')))
+        html += f'<a href="{url}">{name}</a>'
+        if i < len(friends) - 1:
+            html += '<span class="sep">·</span>'
+    return html
+
 def _build_nav(essays, current_slug):
     """Build prev/next essay navigation links."""
     idx = next((i for i, e in enumerate(essays) if e['slug'] == current_slug), -1)
@@ -671,6 +685,7 @@ def create_essay():
         body_html='',
         prev_nav=be(prev_nav),
         next_nav=be(next_nav),
+        friends_html=_build_friends_html(),
     )
     os.makedirs(ESSAYS_DIR, exist_ok=True)
     with open(os.path.join(ESSAYS_DIR, f"{slug}.html"), 'w', encoding='utf-8') as f:
@@ -746,6 +761,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
         body_html=be(body_html),
         prev_nav=be(prev_nav),
         next_nav=be(next_nav),
+        friends_html=_build_friends_html(),
     )
 
     # 5. 覆盖写入
