@@ -160,19 +160,11 @@
     grid-column: span 2; aspect-ratio: 1;
     position: relative; cursor: pointer; overflow: hidden;
   }
-  .photo-grid .sm:nth-child(3) { background: linear-gradient(135deg, #fff4d8, #ffe8b0); }
-  .photo-grid .sm:nth-child(4) { background: linear-gradient(135deg, #dcffe8, #c0ffd4); }
-  .photo-grid .sm:nth-child(5) { background: linear-gradient(135deg, #f4e0ff, #e8ccff); }
   .photo-grid div::after {
     content: ''; position: absolute; inset: 0; border: 0px solid var(--fg);
     transition: border-width .2s ease, border-color .2s ease;
   }
-  .photo-grid div:hover::after { border-width: 3px; }
-  .photo-grid .lg:hover::after { border-color: var(--c1); }
-  .photo-grid .md:hover::after { border-color: var(--c2); }
-  .photo-grid .sm:nth-child(3):hover::after { border-color: var(--c3); }
-  .photo-grid .sm:nth-child(4):hover::after { border-color: var(--c4); }
-  .photo-grid .sm:nth-child(5):hover::after { border-color: var(--c5); }
+  .photo-grid div:hover::after { border-width: 3px; border-color: var(--hover, var(--fg)); }
 
   /* Music */
   .music-list { display: flex; flex-direction: column; }
@@ -389,17 +381,27 @@
 
   <section id="work">
     <div class="section-tag red">WORK</div>
-    <div class="work-grid skeleton-loading" id="work-container"></div>
+    <div class="work-grid skeleton-loading" id="work-container">
+      <a class="work-card" data-repo="Chami537/qqbot" href="https://github.com/Chami537/qqbot" target="_blank"><div class="num">01</div><h3>QQ Bot</h3><p>群聊机器人 · NoneBot2 驱动 · 插件系统 + SQLite 数据面板 · Windows 本地常驻</p><div class="line-tag">Python · NoneBot2 · SQLite <span class="stars"></span></div></a>
+      <a class="work-card" data-repo="HIT-A/HITA_Android" href="https://github.com/HIT-A/HITA_Android" target="_blank"><div class="num">02</div><h3>HITA Agent</h3><p>哈工大课表管理系统 · 周视图/考试倒计时/成绩查询</p><div class="line-tag">Kotlin · Jetpack Compose <span class="stars"></span></div></a>
+      <a class="work-card" data-repo="Chami537/DateMemory" href="https://github.com/Chami537/DateMemory" target="_blank"><div class="num">03</div><h3>DateMemory</h3><p>黑白极简倒计时/累计日 · 桌面小组件 · Material You</p><div class="line-tag">Kotlin · Jetpack Compose <span class="stars"></span></div></a>
+    </div>
   </section>
 
   <section id="essays">
     <div class="section-tag yellow">ESSAYS</div>
-    <div class="essays-list skeleton-loading" id="essays-list"></div>
+    <div class="essays-list skeleton-loading" id="essays-list">
+      <a class="essay-row" href="essays/can-xia.html"><div class="essay-left"><span class="essay-title">残夏</span><span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span></div><div class="essay-right"><span class="essay-tag">随笔</span><span class="essay-meta">2026.06 · 4 min</span><span class="essay-arr">→</span></div></a>
+    </div>
   </section>
 
   <section id="photos">
     <div class="section-tag blue">PHOTOGRAPHY</div>
-    <div class="photo-grid skeleton-loading" id="photo-grid"></div>
+    <div class="photo-grid skeleton-loading" id="photo-grid">
+      <div class="lg"><img src="images/0bafcdb21b37a78577502401bbf9be97.jpg" alt="Photo 1" class="cover-img"></div>
+      <div class="md"><img src="images/15a70814318ed74d5ec2448532f7fab5.jpg" alt="Photo 2" class="cover-img"></div>
+      <div class="sm"><img src="images/6400b35c75c004c99313eb4d07cb337f.jpg" alt="Photo 3" class="cover-img"></div>
+    </div>
   </section>
 
   <section id="music">
@@ -494,7 +496,7 @@ function initStarFetches() {
     fetch(`https://api.github.com/repos/${repo}`)
       .then(r => r.json())
       .then(d => { if (d.stargazers_count != null) el.textContent = d.stargazers_count + ' stars'; })
-      .catch(() => {});
+      .catch(e => console.debug('GitHub stars:', e.message));
   });
 }
 initStarFetches();
@@ -565,7 +567,7 @@ async function loadSection(name, containerId, renderFn) {
 
 function renderWork(data) {
   return data.map((w, i) => {
-    const num = String(i + 1).padStart(2, '0');
+    const num = String(w.id || i + 1).padStart(2, '0');
     return '<a class="work-card" data-repo="' + htmlEncode(w.repo||'') + '" href="' + htmlEncode(w.url) + '" target="_blank">' +
       '<div class="num">' + num + '</div>' +
       '<h3>' + htmlEncode(w.title) + '</h3>' +
@@ -593,9 +595,15 @@ function renderEssays(data) {
 }
 
 function renderPhotos(data) {
-  return data.map(p => {
+  const bgColors = [
+    '#ffe8e8', '#e0ecff', '#fff4d8', '#dcffe8', '#f4e0ff',
+  ];
+  const hoverColors = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
+  return data.map((p, i) => {
+    const bg = bgColors[i % bgColors.length];
+    const hover = hoverColors[i % hoverColors.length];
     var srcset = 'images/sm/' + p.filename + ' 400w, images/md/' + p.filename + ' 800w, images/lg/' + p.filename + ' 1920w';
-    return '<div class="' + p.size + '">' +
+    return '<div class="' + p.size + '" style="background:' + bg + ';--hover:' + hover + '">' +
       '<img src="images/sm/' + p.filename + '" srcset="' + srcset + '" alt="Photo" class="cover-img">' +
       '</div>';
   }).join('');
