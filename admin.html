@@ -951,9 +951,8 @@ function addAboutCustomTag() {
 function genSlug(title) {
   var s = title.replace(/[A-Z]/g, m => m.toLowerCase()).replace(/[\s]+/g, '-').replace(/[^a-z0-9\u4e00-\u9fff-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
   if (!s || !/[a-z0-9]/.test(s)) {
-    // Pure Chinese: use date as slug
-    var d = new Date();
-    s = 'essay-' + d.getFullYear() + pad2(d.getMonth()+1) + pad2(d.getDate()) + '-' + pad2(d.getHours()) + pad2(d.getMinutes());
+    // Pure Chinese: use essay- prefix + random hex (collision-free)
+    s = 'essay-' + Math.random().toString(16).slice(2, 10);
   }
   return s;
 }
