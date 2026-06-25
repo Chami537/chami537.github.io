@@ -8,7 +8,7 @@
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⻖</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@400;600;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css">
 <style>
 
@@ -137,10 +137,15 @@ nav .back:hover .arr { transform: translateX(-4px); }
 .essay-body blockquote p:first-child { margin-top: 0; }
 .essay-body blockquote p:last-child { margin-bottom: 0; }
 
+	.section-tag,
+	.essay-meta {
+	  font-family: 'Lora', 'Inter', sans-serif;
+	}
+
 .essay-title,
 .essay-epigraph,
 .essay-body {
-  font-family: 'LXGW WenKai Lite', 'Noto Serif SC', serif;
+  font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif;
 }
 .essay-body strong, .essay-body b { font-weight: bold; color: var(--fg); }
 
@@ -285,9 +290,9 @@ footer {
   <p class="essay-epigraph">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</p>
 
   <div class="essay-meta">
-    <span>生活 · 随笔</span>
+    <span>随笔</span>
     <span class="dot">·</span>
-    <span>2026年6月25日 22:11</span>
+    <span>22:11, Jun 25, 2026</span>
     <span class="dot">·</span>
     <span>1 min read</span>
   </div>
@@ -303,10 +308,10 @@ footer {
 <blockquote>
 <p>那些在夏天里没有说出口的话，最终也会随着季节一起静下来。不是消失，只是换了一种形式存在。</p>
 </blockquote>
-<p>深圳的夏天不懂收敛。它热烈、潮湿、执拗地拒绝离场。</p>
+<h2>深圳的夏天不懂收敛。它热烈、潮湿、执拗地拒绝离场。</h2>
 <p>但今年有一个傍晚，我骑车经过大沙河，忽然觉得风里多了什么——不是凉意，是某种轻微的空缺。就好像有人悄悄拿走了一样东西，而你还不确定那是什么。</p>
 <p>我想，我大概会一直喜欢这种时刻。事情将要改变但还没有改变的时刻。</p>
-<p><strong>是永远不会忘记的时刻。</strong></p>
+<p>是永远不会忘记的时刻。</p>
 <!-- RAW_MD
 夏天不是突然结束的。它像一件你不知道自己在穿的衣服，某天早上你回头，发现它已经脱落在身后很远的地方。
 
@@ -314,13 +319,13 @@ footer {
 
 >那些在夏天里没有说出口的话，最终也会随着季节一起静下来。不是消失，只是换了一种形式存在。
 
-深圳的夏天不懂收敛。它热烈、潮湿、执拗地拒绝离场。
+##深圳的夏天不懂收敛。它热烈、潮湿、执拗地拒绝离场。
 
 但今年有一个傍晚，我骑车经过大沙河，忽然觉得风里多了什么——不是凉意，是某种轻微的空缺。就好像有人悄悄拿走了一样东西，而你还不确定那是什么。
 
 我想，我大概会一直喜欢这种时刻。事情将要改变但还没有改变的时刻。
 
-**是永远不会忘记的时刻。**
+是永远不会忘记的时刻。
 
 RAW_MD -->
 
@@ -367,7 +372,7 @@ addEventListener('scroll', () => {
     const container = document.getElementById('friends-container');
     let html = '<div class="friends-label">FRIEND</div>';
     friends.forEach((f, i) => {
-      html += '<a href="' + f.url + '">' + f.name + '</a>';
+      html += '<a href="' + f.url.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '">' + f.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</a>';
       if (i < friends.length - 1) html += '<span class="sep">·</span>';
     });
     container.innerHTML = html;
