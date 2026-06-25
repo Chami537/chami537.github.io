@@ -1366,7 +1366,7 @@ document.addEventListener('drop', function(e) {
     Array.from(files).forEach(function(f) {
       if (!f.type.startsWith('image/')) return;
       var fd = new FormData(); fd.append('file', f); fd.append('size', 'sm');
-      api('POST', '/api/photos/upload', fd).then(function() { loadPhotos(); }).catch(function() {});
+      api('POST', '/api/photos/upload', fd).then(function() { loadPhotos(); }).catch(function(e) { toast('上传失败: ' + (e.message || '未知错误'), true); });
       count++;
     });
     if (count > 0) toast('已上传 ' + count + ' 张照片');
@@ -1381,7 +1381,7 @@ document.addEventListener('drop', function(e) {
         var md = '![](' + (r.url||'') + ')\n';
         ta.value = ta.value.slice(0, s) + md + ta.value.slice(ta.selectionEnd);
         ta.selectionStart = ta.selectionEnd = s + md.length;
-      }).catch(function() {});
+      }).catch(function(e) { toast('插图上传失败: ' + (e.message || '未知错误'), true); });
       count++;
     });
     if (count > 0) toast('已插入 ' + count + ' 张图片');

@@ -1,5 +1,5 @@
 """Chami Site Manager — Windows batch launcher"""
-import os, subprocess, webbrowser
+import os, sys, subprocess, webbrowser
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 
@@ -9,7 +9,7 @@ def ensure_deps():
         import flask, markdown, PIL  # noqa: F401
     except ImportError:
         print("  安装依赖...")
-        subprocess.run(["pip", "install", "flask", "markdown", "Pillow"],
+        subprocess.run([sys.executable, "-m", "pip", "install", "flask", "markdown", "Pillow"],
                        capture_output=True)
 
 
@@ -36,22 +36,36 @@ def git_commit():
         print("  消息不能为空")
         return
     subprocess.run(["git", "add", "-A"], cwd=BASE)
-    subprocess.run(["git", "commit", "-m", msg], cwd=BASE)
+    r = subprocess.run(["git", "commit", "-m", msg], cwd=BASE, capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f"  提交失败: {r.stderr.strip()}")
+        return
     print("  已提交。")
     if input("  推送? [y/n] ").strip().lower() == "y":
-        subprocess.run(["git", "push"], cwd=BASE)
+        r = subprocess.run(["git", "push"], cwd=BASE, capture_output=True, text=True)
+        if r.returncode != 0:
+            print(f"  推送失败: {r.stderr.strip()}")
+        else:
+            print("  已推送。")
 
 
 def git_push():
-    subprocess.run(["git", "fetch"], cwd=BASE)
+    r = subprocess.run(["git", "fetch"], cwd=BASE, capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f"  Fetch 失败: {r.stderr.strip()}")
+        return
     print()
     subprocess.run(["git", "status", "-sb"], cwd=BASE)
     if input("\n  确认推送? [y/n] ").strip().lower() == "y":
-        subprocess.run(["git", "push"], cwd=BASE)
+        r = subprocess.run(["git", "push"], cwd=BASE, capture_output=True, text=True)
+        if r.returncode != 0:
+            print(f"  推送失败: {r.stderr.strip()}")
+        else:
+            print("  已推送。")
 
 
 def install_deps():
-    subprocess.run(["pip", "install", "flask", "markdown", "Pillow"])
+    subprocess.run([sys.executable, "-m", "pip", "install", "flask", "markdown", "Pillow"])
     print("\n  完成。")
 
 

@@ -62,6 +62,8 @@ def list_work():
 
 @app.route('/api/work', methods=['POST'])
 def create_work():
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     work = load_json('work.json')
     item = request.json
     item['id'] = max((w['id'] for w in work), default=0) + 1
@@ -71,6 +73,8 @@ def create_work():
 
 @app.route('/api/work/<int:id>', methods=['PUT'])
 def update_work(id):
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     work = load_json('work.json')
     for i, w in enumerate(work):
         if w['id'] == id:
@@ -437,7 +441,7 @@ addEventListener('scroll', () => {{
     const container = document.getElementById('friends-container');
     let html = '<div class="friends-label">FRIEND</div>';
     friends.forEach((f, i) => {{
-      html += '<a href="' + f.url + '">' + f.name + '</a>';
+      html += '<a href="' + f.url.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '">' + f.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</a>';
       if (i < friends.length - 1) html += '<span class="sep">·</span>';
     }});
     container.innerHTML = html;
@@ -485,6 +489,11 @@ document.addEventListener('keydown', function(e) {{
 
 </body>
 </html>'''
+
+
+def _fe(s):
+    """HTML-escape + brace-escape for Python .format() safety."""
+    return html_mod.escape(str(s)).replace('{', '{{').replace('}', '}}')
 
 
 def _calc_read_time(text):
@@ -583,6 +592,8 @@ def list_essays():
 
 @app.route('/api/essays', methods=['POST'])
 def create_essay():
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     essays = load_json('essays.json')
     item = request.json
     slug = item.get('slug', '')
@@ -601,16 +612,17 @@ def create_essay():
     prev_nav, next_nav = _build_nav(essays, slug)
     tag_raw = item.get('tag', '')
     tag_display = tag_raw.replace(', ', ' · ').replace(',', ' · ')
+    be = lambda s: s.replace('{', '{{').replace('}', '}}')
     html = ESSAY_TEMPLATE.format(
-        title=html_mod.escape(item.get('title', '')),
-        excerpt=html_mod.escape(item.get('excerpt', '')),
-        epigraph=html_mod.escape(item.get('epigraph', '')),
-        tag=html_mod.escape(tag_display),
-        date_display=date_display,
+        title=_fe(item.get('title', '')),
+        excerpt=_fe(item.get('excerpt', '')),
+        epigraph=_fe(item.get('epigraph', '')),
+        tag=_fe(tag_display),
+        date_display=_fe(date_display),
         read_time=read_time,
         body_html='',
-        prev_nav=prev_nav,
-        next_nav=next_nav,
+        prev_nav=be(prev_nav),
+        next_nav=be(next_nav),
     )
     os.makedirs(ESSAYS_DIR, exist_ok=True)
     with open(os.path.join(ESSAYS_DIR, f"{slug}.html"), 'w', encoding='utf-8') as f:
@@ -624,6 +636,8 @@ def create_essay():
 
 @app.route('/api/essays/<slug>', methods=['PUT'])
 def update_essay_meta(slug):
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     essays = load_json('essays.json')
     for i, e in enumerate(essays):
         if e['slug'] == slug:
@@ -654,6 +668,11 @@ def _sync_essay_html(essay, raw_md_memory=None):
         md_match = re.search(r'<!-- RAW_MD\n(.*?)\nRAW_MD -->', full_html, flags=re.DOTALL)
         if md_match:
             raw_md = md_match.group(1)
+        else:
+            # Fallback: extract HTML from legacy essays without RAW_MD comment
+            content_match = re.search(r'<!-- CONTENT_START -->\n(.*?)\n\s*<!-- CONTENT_END -->', full_html, flags=re.DOTALL)
+            if content_match:
+                raw_md = _html_to_md(content_match.group(1))
 
     # 2. 将 Markdown 渲染为 HTML 正文
     rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists']) if raw_md else ""
@@ -664,20 +683,21 @@ def _sync_essay_html(essay, raw_md_memory=None):
     prev_nav, next_nav = _build_nav(essays, slug)
 
     tag_raw = essay.get('tag', '')
-    tag_display = html_mod.escape(tag_raw.replace(', ', ' · ').replace(',', ' · '))
-    date_display = _parse_date(essay.get('date', ''))
+    tag_display = _fe(tag_raw.replace(', ', ' · ').replace(',', ' · '))
+    date_display = _fe(_parse_date(essay.get('date', '')))
 
     # 4. 全量重新渲染 HTML
+    be = lambda s: s.replace('{', '{{').replace('}', '}}')
     html = ESSAY_TEMPLATE.format(
-        title=html_mod.escape(essay.get('title', '')),
-        excerpt=html_mod.escape(essay.get('excerpt', '')),
-        epigraph=html_mod.escape(essay.get('epigraph', '')),
+        title=_fe(essay.get('title', '')),
+        excerpt=_fe(essay.get('excerpt', '')),
+        epigraph=_fe(essay.get('epigraph', '')),
         tag=tag_display,
         date_display=date_display,
         read_time=essay.get('readTime', 1),
-        body_html=body_html,
-        prev_nav=prev_nav,
-        next_nav=next_nav,
+        body_html=be(body_html),
+        prev_nav=be(prev_nav),
+        next_nav=be(next_nav),
     )
 
     # 5. 覆盖写入
@@ -720,6 +740,8 @@ def get_essay_content(slug):
 
 @app.route('/api/essays/<slug>/content', methods=['PUT'])
 def update_essay_content(slug):
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     md_content = request.json.get('content', '')
 
     # 1. 自动计算阅读时间
@@ -751,6 +773,8 @@ def upload_essay_image():
     if not file.filename:
         return jsonify({"error": "No filename"}), 400
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
+    if ext not in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
+        return jsonify({"error": f"不支持的文件类型: .{ext}"}), 400
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
     img_dir = os.path.join(BASE_DIR, 'images', 'essays')
     os.makedirs(img_dir, exist_ok=True)
@@ -760,6 +784,8 @@ def upload_essay_image():
 @app.route('/api/essays/<slug>/html', methods=['GET', 'POST'])
 def preview_essay_html(slug):
     """Preview Markdown → HTML (no save)"""
+    if request.method == 'POST' and not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     md_content = request.args.get('md', '') if request.method == 'GET' else request.json.get('md', '')
     html_content = md_to_html(md_content, extensions=['extra', 'fenced_code', 'sane_lists'])
     return jsonify({"html": html_content})
@@ -803,6 +829,8 @@ def upload_photo():
         return jsonify({"error": "No filename"}), 400
 
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
+    if ext not in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
+        return jsonify({"error": f"不支持的文件类型: .{ext}"}), 400
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
     try:
         img = Image.open(file.stream)
@@ -853,6 +881,8 @@ def list_friends():
 
 @app.route('/api/friends', methods=['POST'])
 def add_friend():
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     friends = load_json('friends.json')
     friends.append(request.json)
     atomic_write_json('friends.json', friends)
@@ -860,6 +890,8 @@ def add_friend():
 
 @app.route('/api/friends/<int:index>', methods=['PUT'])
 def update_friend(index):
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     friends = load_json('friends.json')
     if index < 0 or index >= len(friends):
         return jsonify({"error": "Index out of range"}), 404
@@ -892,7 +924,16 @@ def upload_avatar():
     file = request.files['file']
     if not file.filename:
         return jsonify({"error": "No filename"}), 400
-    filename = 'avatar.' + file.filename.rsplit('.', 1)[-1].lower()
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
+    if ext not in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
+        return jsonify({"error": f"不支持的文件类型: .{ext}"}), 400
+    try:
+        img = Image.open(file.stream)
+        img.verify()
+        file.stream.seek(0)
+    except Exception:
+        return jsonify({"error": "Invalid or corrupted image file"}), 400
+    filename = 'avatar.' + ext
     filepath = os.path.join(BASE_DIR, 'images', filename)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)
     file.save(filepath)
@@ -923,6 +964,8 @@ def update_contact():
 
 @app.route('/api/contact', methods=['POST'])
 def add_contact():
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     contacts = load_json('contact.json')
     contacts.append(request.json)
     atomic_write_json('contact.json', contacts)
@@ -930,6 +973,8 @@ def add_contact():
 
 @app.route('/api/contact/<int:index>', methods=['PUT'])
 def update_contact_item(index):
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     contacts = load_json('contact.json')
     if index < 0 or index >= len(contacts):
         return jsonify({"error": "Index out of range"}), 404
@@ -957,6 +1002,8 @@ def list_music():
 
 @app.route('/api/music', methods=['POST'])
 def create_music():
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     music = load_json('music.json')
     item = request.json
     item['id'] = max((m['id'] for m in music), default=0) + 1
@@ -966,6 +1013,8 @@ def create_music():
 
 @app.route('/api/music/<int:id>', methods=['PUT'])
 def update_music(id):
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     music = load_json('music.json')
     for i, m in enumerate(music):
         if m['id'] == id:
@@ -1025,6 +1074,8 @@ def git_status():
 
 @app.route('/api/git/commit', methods=['POST'])
 def git_commit():
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     msg = request.json.get('message', '').strip()
     if not msg:
         return jsonify({"error": "Commit message required"}), 400
