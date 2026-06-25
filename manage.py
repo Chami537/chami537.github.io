@@ -205,7 +205,7 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 }}
 
 .essay-meta {{
-  font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif;
+  font-family: 'Lora', 'Inter', serif;
   display: flex; gap: 16px; align-items: center;
   font-size: 12px; color: var(--muted); font-weight: 500;
   margin-bottom: 40px;
@@ -260,7 +260,7 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 .essay-title,
 .essay-epigraph,
 .essay-body {{
-  font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif;
+  font-family: 'Lora', 'Inter', serif;
 }}
 .essay-body strong, .essay-body b {{ font-weight: bold; color: var(--fg); }}
 
