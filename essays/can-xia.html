@@ -158,6 +158,22 @@ nav .back:hover .arr { transform: translateX(-4px); }
 .essay-end .next-arr { transition: transform .2s; display: inline-block; }
 .essay-end .next-link:hover .next-arr { transform: translateX(4px); }
 
+footer {
+  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+  letter-spacing: .04em; border-top: 1px solid var(--line);
+}
+.friends { margin-bottom: 20px; }
+.friends-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: #ccc; margin-bottom: 8px;
+}
+.friends a {
+  font-size: 11px; color: #bbb; text-decoration: none;
+  letter-spacing: .04em; transition: color .2s;
+}
+.friends a:hover { color: var(--fg); }
+.friends .sep { color: #ddd; margin: 0 8px; }
+
 @media (max-width: 768px) {
   nav { padding: 0 16px; }
   .reading { padding: 100px 24px 80px; }
@@ -229,7 +245,13 @@ nav .back:hover .arr { transform: translateX(-4px); }
 
 </main>
 
-<footer style="padding:60px 0;text-align:center;font-size:11px;color:#bbb;letter-spacing:.04em;border-top:1px solid var(--line);">
+<footer>
+  <div class="friends">
+    <div class="friends-label">FOLLOW</div>
+    <a href="#">好友A</a><span class="sep">·</span>
+    <a href="#">好友B</a><span class="sep">·</span>
+    <a href="#">好友C</a>
+  </div>
   &copy; <script>document.write(new Date().getFullYear())</script> Chami
 </footer>
 
