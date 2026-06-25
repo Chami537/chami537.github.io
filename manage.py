@@ -106,7 +106,7 @@ ESSAY_TEMPLATE = '''<!DOCTYPE html>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⻖</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@400;600;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css">
 <style>
 
@@ -235,10 +235,15 @@ nav .back:hover .arr {{ transform: translateX(-4px); }}
 .essay-body blockquote p:first-child {{ margin-top: 0; }}
 .essay-body blockquote p:last-child {{ margin-bottom: 0; }}
 
+	.section-tag,
+	.essay-meta {{
+	  font-family: 'Lora', 'Inter', sans-serif;
+	}}
+
 .essay-title,
 .essay-epigraph,
 .essay-body {{
-  font-family: 'LXGW WenKai Lite', 'Noto Serif SC', serif;
+  font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif;
 }}
 .essay-body strong, .essay-body b {{ font-weight: bold; color: var(--fg); }}
 
@@ -509,24 +514,26 @@ def _calc_read_time(text):
 
 
 def _parse_date(date_str):
-    """'2026-06' or '2026-06-25 14:30' → '2026年6月' or '2026年6月25日 14:30'"""
+    """'2026-06' or '2026-06-25 14:30' → 'Jun 2026' or '14:30, Jun 25, 2026'"""
     if not isinstance(date_str, str) or not date_str.strip():
         return date_str if isinstance(date_str, str) else ''
     try:
+        MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
         parts = date_str.split(' ')
-        date_part = parts[0]
-        date_segments = date_part.split('-')
+        date_segments = parts[0].split('-')
 
         result = ''
-        if len(date_segments) >= 2 and date_segments[1]:
-            result = f"{date_segments[0]}年{int(date_segments[1])}月"
-        if len(date_segments) >= 3 and date_segments[2]:
-            result += f"{int(date_segments[2])}日"
+        if len(date_segments) >= 3 and date_segments[2] and len(date_segments) >= 2 and date_segments[1]:
+            m = MONTHS[int(date_segments[1]) - 1]
+            result = f"{m} {int(date_segments[2])}, {date_segments[0]}"
+        elif len(date_segments) >= 2 and date_segments[1]:
+            m = MONTHS[int(date_segments[1]) - 1]
+            result = f"{m} {date_segments[0]}"
 
         if len(parts) >= 2 and parts[1]:
             time_segments = parts[1].split(':')
             if len(time_segments) >= 2:
-                result += f" {time_segments[0]}:{time_segments[1]}"
+                result = f"{time_segments[0]}:{time_segments[1]}, {result}"
 
         return result or date_str
     except (ValueError, IndexError):
