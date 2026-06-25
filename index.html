@@ -196,12 +196,12 @@
   .music-row:hover { padding-left: 24px; background: rgba(255,255,255,0.5); }
   .music-row.playing { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
   .music-row.playing:hover { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
-  .music-row .idx { font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s, transform .3s; display: inline-block; }
+  .music-row .idx { font-family: 'Lora', 'Inter', serif; font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s, transform .3s; display: inline-block; }
   .music-row.playing .idx { color: var(--idx-color); animation: pulse 0.8s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
   .music-row.paused .idx { animation-play-state: paused !important; }
-  .music-row .title { font-size: 17px; font-weight: 600; }
-  .music-row .artist { font-size: 14px; color: var(--muted); }
+  .music-row .title { font-family: 'Lora', 'Inter', serif; font-size: 17px; font-weight: 600; }
+  .music-row .artist { font-family: 'Lora', 'Inter', serif; font-size: 14px; color: var(--muted); }
   .stars { font-size: 11px; color: #ccc; }
   .stars::before { content: '· '; }
 
@@ -214,7 +214,7 @@
     transition: padding-left .3s, background .3s;
   }
   .contact-row:hover { padding-left: 24px; background: rgba(156,39,176,0.05); }
-  .contact-row .value { font-size: 17px; font-weight: 600; }
+  .contact-row .value { font-family: 'Lora', 'Inter', serif; font-size: 17px; font-weight: 600; }
   .contact-row .arr { font-size: 18px; transition: transform .2s ease; }
   .contact-row:hover .arr { transform: translateX(4px); }
 
