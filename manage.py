@@ -205,6 +205,7 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 }}
 
 .essay-meta {{
+  font-family: 'Lora', 'Inter', sans-serif;
   display: flex; gap: 16px; align-items: center;
   font-size: 12px; color: var(--muted); font-weight: 500;
   margin-bottom: 40px;
@@ -446,7 +447,7 @@ footer {{
   <div class="friends" id="friends-container">
     <div class="friends-label">FRIEND</div>
   </div>
-  &copy; <script>document.write(new Date().getFullYear())</script> Chami
+  &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
 </footer>
 
 <script>

@@ -51,10 +51,12 @@ nav .inner {
   align-items: center; justify-content: space-between; height: 56px;
 }
 nav .logo {
+  font-family: 'Lora', 'Inter', serif;
   font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
   text-decoration: none; color: var(--fg);
 }
 nav .back {
+  font-family: 'Lora', 'Inter', serif;
   font-size: 12px; font-weight: 600; letter-spacing: .08em;
   color: var(--muted); text-decoration: none;
   display: flex; align-items: center; gap: 6px; transition: color .2s;
@@ -63,7 +65,20 @@ nav .back:hover { color: var(--c3); }
 nav .back .arr { transition: transform .2s ease; display: inline-block; }
 nav .back:hover .arr { transform: translateX(-4px); }
 
+nav .theme-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--line); background: none;
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .2s, border-color .2s;
+  padding: 0; line-height: 1; color: inherit;
+  flex-shrink: 0;
+}
+nav .theme-btn:hover { background: var(--line); }
+html.dark nav .theme-btn { border-color: #666; color: #ffd43b; }
+
 .reading {
+  font-family: 'Lora', 'Inter', serif;
   max-width: 680px;
   margin: 0 auto;
   padding: 120px 48px 100px;
@@ -103,6 +118,7 @@ nav .back:hover .arr { transform: translateX(-4px); }
 }
 
 .essay-lede {
+  font-family: 'Lora', 'Inter', serif;
   font-size: 19px;
   color: var(--fg);
   line-height: 1.75;
@@ -212,6 +228,7 @@ html.dark .essay-body img { border-color: rgba(255,255,255,0.1); }
   display: flex; justify-content: space-between; align-items: flex-end;
 }
 .essay-end .back-link {
+  font-family: 'Lora', 'Inter', serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; align-items: center; gap: 6px;
   transition: color .2s;
@@ -221,6 +238,7 @@ html.dark .essay-body img { border-color: rgba(255,255,255,0.1); }
 .essay-end .back-link:hover .arr { transform: translateX(-4px); }
 
 .essay-end .prev-link, .essay-end .next-link {
+  font-family: 'Lora', 'Inter', serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; flex-direction: column;
   gap: 4px; transition: color .2s;
@@ -240,15 +258,18 @@ html.dark .essay-body img { border-color: rgba(255,255,255,0.1); }
 .essay-end .next-link:hover .next-arr { transform: translateX(4px); }
 
 footer {
+  font-family: 'Lora', 'Inter', serif;
   padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
   letter-spacing: .04em; border-top: 1px solid var(--line);
 }
 .friends { margin-bottom: 20px; }
 .friends-label {
+  font-family: 'Lora', 'Inter', serif;
   font-size: 10px; font-weight: 700; letter-spacing: .12em;
   text-transform: uppercase; color: #ccc; margin-bottom: 8px;
 }
 .friends a {
+  font-family: 'Lora', 'Inter', serif;
   font-size: 11px; color: #bbb; text-decoration: none;
   letter-spacing: .04em; transition: color .2s;
 }
@@ -278,6 +299,7 @@ footer {
       <span class="arr">←</span>
       <span>Essays</span>
     </a>
+    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
   </div>
 </nav>
 
@@ -290,7 +312,7 @@ footer {
   <p class="essay-epigraph">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</p>
 
   <div class="essay-meta">
-    <span>随笔 · 生活</span>
+    <span>随笔</span>
     <span class="dot">·</span>
     <span>22:11, Jun 25, 2026</span>
     <span class="dot">·</span>
@@ -408,6 +430,23 @@ document.addEventListener('keydown', function(e) {
   if (e.key === 'ArrowLeft') lbNav(-1);
   if (e.key === 'ArrowRight') lbNav(1);
 });
+
+(function initThemeBtn() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.getElementById('theme-btn').textContent = '☀';
+  }
+})();
+function toggleTheme() {
+  var html = document.documentElement;
+  var btn = document.getElementById('theme-btn');
+  if (html.classList.toggle('dark')) {
+    localStorage.setItem('theme', 'dark');
+    btn.textContent = '☀';
+  } else {
+    localStorage.removeItem('theme');
+    btn.textContent = '🌙';
+  }
+}
 </script>
 
 <div id="lb" class="lb-overlay" onclick="lbClose()">
