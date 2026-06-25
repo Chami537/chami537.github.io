@@ -126,7 +126,33 @@ nav .back:hover .arr { transform: translateX(-4px); }
 .essay-body img {
   max-width: 100%; height: auto;
   display: block; border-radius: 4px;
-  margin: 2em auto;
+  margin: 2em auto; cursor: zoom-in;
+}
+
+/* Lightbox */
+.lb-overlay {
+  display: none; position: fixed; inset: 0; z-index: 1000;
+  background: rgba(0,0,0,0.92); cursor: zoom-out;
+}
+.lb-overlay.show { display: flex; align-items: center; justify-content: center; }
+.lb-overlay img { max-width: 90vw; max-height: 85vh; object-fit: contain; cursor: default; }
+.lb-close {
+  position: fixed; top: 20px; right: 28px; z-index: 1001;
+  background: none; border: none; color: #fff; font-size: 36px;
+  cursor: pointer; opacity: 0.6; transition: opacity .2s;
+}
+.lb-close:hover { opacity: 1; }
+.lb-prev, .lb-next {
+  position: fixed; top: 50%; z-index: 1001;
+  background: none; border: none; color: #fff;
+  font-size: 48px; cursor: pointer; opacity: 0.4;
+  transition: opacity .2s; transform: translateY(-50%);
+}
+.lb-prev { left: 20px; } .lb-next { right: 20px; }
+.lb-prev:hover, .lb-next:hover { opacity: 1; }
+.lb-counter {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  color: rgba(255,255,255,0.5); font-size: 13px; z-index: 1001;
 }
 
 .essay-end {
@@ -280,7 +306,42 @@ addEventListener('scroll', () => {
   } catch(e) {}
 })();
 
+// Lightbox
+var lbImgs = [];
+var lbIdx = 0;
+document.querySelector('.essay-body').addEventListener('click', function(e) {
+  if (e.target.tagName !== 'IMG') return;
+  lbImgs = Array.from(document.querySelectorAll('.essay-body img'));
+  lbIdx = lbImgs.indexOf(e.target);
+  document.getElementById('lb').classList.add('show');
+  document.getElementById('lb-img').src = e.target.src;
+  document.getElementById('lb-counter').textContent = (lbIdx + 1) + ' / ' + lbImgs.length;
+  document.body.style.overflow = 'hidden';
+});
+function lbClose() {
+  document.getElementById('lb').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function lbNav(d) {
+  lbIdx = (lbIdx + d + lbImgs.length) % lbImgs.length;
+  document.getElementById('lb-img').src = lbImgs[lbIdx].src;
+  document.getElementById('lb-counter').textContent = (lbIdx + 1) + ' / ' + lbImgs.length;
+}
+document.addEventListener('keydown', function(e) {
+  if (!document.getElementById('lb').classList.contains('show')) return;
+  if (e.key === 'Escape') lbClose();
+  if (e.key === 'ArrowLeft') lbNav(-1);
+  if (e.key === 'ArrowRight') lbNav(1);
+});
 </script>
+
+<div id="lb" class="lb-overlay" onclick="lbClose()">
+  <button class="lb-close" onclick="lbClose()">×</button>
+  <button class="lb-prev" onclick="lbNav(-1);event.stopPropagation()">‹</button>
+  <button class="lb-next" onclick="lbNav(1);event.stopPropagation()">›</button>
+  <img id="lb-img" src="" alt="">
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
 
 </body>
 </html>
