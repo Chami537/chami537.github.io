@@ -738,9 +738,7 @@ function renderEssayList() {
   shown.forEach(function(e) {
     var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var dp = (e.date || '').split(' ')[0].split('-');
-    var dateDisplay = dp.length >= 3 ? M[+dp[1]-1] + ' ' + (+dp[2]) + ', ' + dp[0] : dp.length >= 2 ? M[+dp[1]-1] + ' ' + dp[0] : (e.date || '');
-    var hasTime = (e.date || '').split(' ').length >= 2;
-    if (hasTime) dateDisplay = (e.date || '').split(' ')[1].split(':').slice(0,2).join(':') + ', ' + dateDisplay;
+    var dateDisplay = dp.length >= 2 ? M[+dp[1]-1] + ' ' + dp[0] : (e.date || '');
     html += '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html">' +
       '<div class="essay-left">' +
       '<span class="essay-title">' + htmlEncode(e.title) + '</span>' +
