@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>残夏 — Chami</title>
+<meta name="description" content="关于那些正在消逝的夏天。">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⻖</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #fafaf8;
+  --fg: #111;
+  --c3: #ffb800;
+  --line: #e0dcd5;
+  --muted: #999;
+}
+
+body {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+.progress {
+  position: fixed; top: 0; left: 0; height: 2px;
+  background: var(--c3); z-index: 999; width: 0; will-change: width;
+}
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 48px;
+  background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--fg);
+}
+nav .inner {
+  max-width: 1200px; margin: 0 auto; display: flex;
+  align-items: center; justify-content: space-between; height: 56px;
+}
+nav .logo {
+  font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
+  text-decoration: none; color: var(--fg);
+}
+nav .back {
+  font-size: 12px; font-weight: 600; letter-spacing: .08em;
+  color: var(--muted); text-decoration: none;
+  display: flex; align-items: center; gap: 6px; transition: color .2s;
+}
+nav .back:hover { color: var(--c3); }
+nav .back .arr { transition: transform .2s ease; display: inline-block; }
+nav .back:hover .arr { transform: translateX(-4px); }
+
+.reading {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 120px 48px 100px;
+}
+
+.section-tag {
+  display: inline-block; font-size: 12px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  color: var(--c3); border-left: 2px solid var(--c3);
+  padding-left: 10px; margin-bottom: 24px;
+}
+
+.essay-title {
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 900;
+  line-height: 1.0;
+  letter-spacing: -0.025em;
+  margin-bottom: 16px;
+}
+
+.essay-epigraph {
+  font-size: 15px;
+  color: var(--muted);
+  font-style: italic;
+  font-weight: 400;
+  margin-bottom: 28px;
+}
+
+.essay-meta {
+  display: flex; gap: 16px; align-items: center;
+  font-size: 12px; color: var(--muted); font-weight: 500;
+  margin-bottom: 40px;
+}
+.essay-meta .dot { color: #ddd; }
+
+.essay-divider {
+  border: none; border-top: 1px solid var(--line); margin-bottom: 40px;
+}
+
+.essay-lede {
+  font-size: 19px;
+  color: #555;
+  line-height: 1.75;
+  font-weight: 400;
+  margin-bottom: 0;
+}
+
+.essay-body p {
+  font-size: 17px;
+  line-height: 1.9;
+  color: var(--fg);
+  margin-top: 1.6em;
+}
+
+.essay-body h2 {
+  font-size: 21px; font-weight: 700;
+  margin-top: 2.5em; margin-bottom: .4em;
+  letter-spacing: -0.01em;
+}
+
+.essay-body blockquote {
+  border-left: 2px solid var(--c3);
+  padding-left: 20px;
+  margin: 2em 0;
+  color: #555;
+  font-size: 16px;
+  line-height: 1.85;
+  font-style: italic;
+}
+
+.essay-end {
+  margin-top: 64px; padding-top: 32px;
+  border-top: 1px solid var(--line);
+  display: flex; justify-content: space-between; align-items: flex-end;
+}
+
+.essay-end .back-link {
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  text-decoration: none; display: flex; align-items: center; gap: 6px;
+  transition: color .2s;
+}
+.essay-end .back-link:hover { color: var(--c3); }
+.essay-end .back-link .arr { transition: transform .2s; display: inline-block; }
+.essay-end .back-link:hover .arr { transform: translateX(-4px); }
+
+.essay-end .next-link {
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  text-decoration: none; display: flex; flex-direction: column;
+  align-items: flex-end; gap: 4px; transition: color .2s;
+}
+.essay-end .next-link:hover { color: var(--fg); }
+.essay-end .next-label {
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: #ccc;
+}
+.essay-end .next-title {
+  display: flex; align-items: center; gap: 6px;
+}
+.essay-end .next-arr { transition: transform .2s; display: inline-block; }
+.essay-end .next-link:hover .next-arr { transform: translateX(4px); }
+
+@media (max-width: 768px) {
+  nav { padding: 0 16px; }
+  .reading { padding: 100px 24px 80px; }
+}
+
+</style>
+</head>
+<body>
+
+<div class="progress"></div>
+
+<nav>
+  <div class="inner">
+    <a href="/" class="logo">Chami</a>
+    <a href="/#essays" class="back">
+      <span class="arr">←</span>
+      <span>Essays</span>
+    </a>
+  </div>
+</nav>
+
+<main class="reading">
+
+  <div class="section-tag">ESSAYS</div>
+
+  <h1 class="essay-title">残夏</h1>
+
+  <p class="essay-epigraph">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</p>
+
+  <div class="essay-meta">
+    <span>随笔</span>
+    <span class="dot">·</span>
+    <span>2025年7月</span>
+    <span class="dot">·</span>
+    <span>4 min read</span>
+  </div>
+
+  <hr class="essay-divider">
+
+  <p class="essay-lede">
+    夏天不是突然结束的。它像一件你不知道自己在穿的衣服，某天早上你回头，发现它已经脱落在身后很远的地方。
+  </p>
+
+  <div class="essay-body">
+
+    <p>空气里还残留着它的温度，但那种热度已经开始向内收缩，变成一种只有自己知道的感觉。我一直觉得"残夏"这个词比"初秋"更准确。残，是余留，是未竟，是某种还没来得及珍惜就已经在消散的东西。</p>
+
+    <blockquote>那些在夏天里没有说出口的话，最终也会随着季节一起静下来。不是消失，只是换了一种形式存在。</blockquote>
+
+    <p>深圳的夏天不懂收敛。它热烈、潮湿、执拗地拒绝离场。但今年有一个傍晚，我骑车经过莲花山，忽然觉得风里多了什么——不是凉意，是某种轻微的空缺。</p>
+
+    <p>我想，我大概会一直喜欢这种时刻。事情将要改变但还没有改变的时刻。</p>
+
+  </div>
+
+  <div class="essay-end">
+    <a href="/#essays" class="back-link">
+      <span class="arr">←</span>
+      <span>返回随笔</span>
+    </a>
+    <a href="qi-xing-yu-gu-du.html" class="next-link">
+      <span class="next-label">下一篇</span>
+      <div class="next-title">
+        <span>骑行与孤独</span>
+        <span class="next-arr">→</span>
+      </div>
+    </a>
+  </div>
+
+</main>
+
+<footer style="padding:60px 0;text-align:center;font-size:11px;color:#bbb;letter-spacing:.04em;border-top:1px solid var(--line);">
+  &copy; <script>document.write(new Date().getFullYear())</script> Chami
+</footer>
+
+<script>
+const bar = document.querySelector('.progress');
+addEventListener('scroll', () => {
+  const h = document.documentElement.scrollHeight - innerHeight;
+  if (h > 0) bar.style.width = (scrollY / h * 100) + '%';
+});
+</script>
+
+</body>
+</html>

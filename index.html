@@ -218,14 +218,71 @@
 
   /* Essays */
   .essays-list { display: flex; flex-direction: column; }
+
   .essay-row {
-    display: flex; justify-content: space-between; align-items: baseline;
-    padding: 20px 0; border-bottom: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 22px 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+    color: var(--fg);
+    cursor: pointer;
     transition: padding-left .3s, background .3s;
+    gap: 16px;
   }
-  .essay-row:hover { padding-left: 24px; background: rgba(255,184,0,0.05); }
-  .essay-title { font-size: 17px; font-weight: 600; }
-  .essay-date { font-size: 13px; color: #ccc; }
+  .essay-row:hover {
+    padding-left: 24px;
+    background: rgba(255,184,0,0.05);
+  }
+
+  .essay-left  { flex: 1; min-width: 0; }
+
+  .essay-title {
+    font-size: 17px;
+    font-weight: 600;
+    display: block;
+  }
+
+  .essay-excerpt {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 5px;
+    display: block;
+    line-height: 1.5;
+  }
+
+  .essay-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+  }
+
+  .essay-tag {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .10em;
+    text-transform: uppercase;
+    color: var(--c3);
+  }
+
+  .essay-meta {
+    font-size: 12px;
+    color: #ccc;
+    white-space: nowrap;
+  }
+
+  .essay-arr {
+    font-size: 16px;
+    color: #ccc;
+    transition: transform .2s ease, color .2s ease;
+    display: inline-block;
+  }
+  .essay-row:hover .essay-arr {
+    transform: translateX(5px);
+    color: var(--c3);
+  }
 
   footer {
     padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
@@ -280,6 +337,9 @@
     .photo-grid { grid-template-columns: repeat(2, 1fr); }
     .photo-grid .lg, .photo-grid .md, .photo-grid .sm { grid-column: span 2; }
     .music-row { grid-template-columns: 30px 1fr auto; }
+    .essay-right { gap: 10px; }
+    .essay-tag   { display: none; }
+    .essay-meta  { font-size: 11px; }
   }
 </style>
 </head>
@@ -358,7 +418,19 @@
   <section id="essays">
     <div class="section-tag yellow">ESSAYS</div>
     <div class="essays-list">
-      <div class="essay-row"><span class="essay-title">Coming soon</span><span class="essay-date">—</span></div>
+
+      <a class="essay-row" href="essays/can-xia.html">
+        <div class="essay-left">
+          <span class="essay-title">残夏</span>
+          <span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span>
+        </div>
+        <div class="essay-right">
+          <span class="essay-tag">随笔</span>
+          <span class="essay-meta">2025.07 · 4 min</span>
+          <span class="essay-arr">→</span>
+        </div>
+      </a>
+
     </div>
   </section>
 
