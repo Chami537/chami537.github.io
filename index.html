@@ -710,7 +710,7 @@ function renderMusic(data) {
   return data.map((m, i) => {
     var num = String(i + 1).padStart(2, '0');
     var t = themes[i % themes.length];
-    return '<div class="music-row" data-src="music/' + encodeURI(m.filename) + '" style="--theme:' + t[0] + ';--idx-color:' + t[1] + '">' +
+    return '<div class="music-row" data-src="music/' + htmlEncode(m.filename) + '" style="--theme:' + t[0] + ';--idx-color:' + t[1] + '">' +
       '<span class="idx">' + num + '</span>' +
       '<span class="title">' + htmlEncode(m.title) + '</span>' +
       '<span class="artist">' + htmlEncode(m.artist) + '</span>' +
