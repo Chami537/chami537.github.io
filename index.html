@@ -554,7 +554,7 @@
 <script>
 const bar = document.querySelector('.progress');
 const nlinks = document.querySelectorAll('nav .links a');
-const secs = document.querySelectorAll('section[id]');
+const secs = document.querySelectorAll('section[id]:not(#about)');
 
 // Cached layout values — avoid forced reflow on every scroll tick
 var sectionTops = [];
