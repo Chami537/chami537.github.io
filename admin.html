@@ -697,29 +697,48 @@ async function deleteWork(id) {  const confirmed = await confirmDialog('确定�
 async function loadEssays() {
   try {
     const data = await api('GET', '/api/essays');
-    document.getElementById('essay-list').innerHTML = data.map(e => `
-    <div class="card">
-      <div class="card-header">
-        <div>
-          <div class="card-title">${esc(e.title)}</div>
-          <div class="card-meta">${esc(e.tag)} · ${esc(e.date)} · ${e.readTime ?? 1} min · slug: ${esc(e.slug)}</div>
-          <div class="card-meta" style="font-style:italic;">${esc(e.epigraph||'')}</div>
-        </div>
-        <div class="card-actions">
-          <button class="btn btn-sm" onclick="editEssayMeta('${esc(e.slug)}')">元数据</button>
-          <button class="btn btn-sm" onclick="editEssayContent('${esc(e.slug)}')">编辑正文</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteEssay('${esc(e.slug)}')">删除</button>
-        </div>
-      </div>
-    </div>
-  `).join('');
+
+    // 按照主标签（第一个标签）分组
+    var grouped = {};
+    var defaultCategory = '未分类';
+    data.forEach(function(e) {
+      var primaryTag = defaultCategory;
+      if (e.tag && e.tag.trim() !== '') {
+        primaryTag = e.tag.split(/[,，]/)[0].trim();
+      }
+      if (!grouped[primaryTag]) grouped[primaryTag] = [];
+      grouped[primaryTag].push(e);
+    });
+
+    var html = '';
+    var sortedTags = Object.keys(grouped).sort();
+    sortedTags.forEach(function(tag) {
+      html += '<div style="margin:32px 0 12px;padding-bottom:8px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:8px;">' +
+        '<span style="width:4px;height:16px;background:var(--accent);border-radius:2px;"></span>' +
+        '<h3 style="margin:0;font-size:16px;font-weight:700;">' + esc(tag) + '</h3>' +
+        '<span style="font-size:12px;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:12px;">' + grouped[tag].length + ' 篇</span>' +
+        '</div>';
+      grouped[tag].forEach(function(e) {
+        html += '<div class="card">' +
+          '<div class="card-header"><div>' +
+          '<div class="card-title">' + esc(e.title) + '</div>' +
+          '<div class="card-meta">' + esc(e.tag) + ' · ' + esc(e.date) + ' · ' + (e.readTime || 1) + ' min · slug: ' + esc(e.slug) + '</div>' +
+          '<div class="card-meta" style="font-style:italic;">' + esc(e.epigraph||'') + '</div>' +
+          '</div><div class="card-actions">' +
+          '<button class="btn btn-sm" onclick="editEssayMeta(\'' + esc(e.slug) + '\')">元数据</button>' +
+          '<button class="btn btn-sm" onclick="editEssayContent(\'' + esc(e.slug) + '\')">编辑正文</button>' +
+          '<button class="btn btn-sm btn-danger" onclick="deleteEssay(\'' + esc(e.slug) + '\')">删除</button>' +
+          '</div></div></div>';
+      });
+    });
+    document.getElementById('essay-list').innerHTML = html;
   } catch(e) { toast(e.message, true); }
 }
 
 // ═══ Tag system ═══
 function getTags() {
-  try { var stored = JSON.parse(localStorage.getItem('essay-tags') || '["随笔","生活","技术"]'); }
-  catch(e) { stored = ['随笔','生活','技术']; }
+  try { var stored = JSON.parse(localStorage.getItem('essay-tags') || '["摄影","剪辑","骑行","投资","随笔"]'); }
+  catch(e) { stored = ['摄影','剪辑','骑行','投资','随笔']; }
   // Merge tags from current selection (may include tags from data file not yet in localStorage)
   var cur = document.getElementById('essay-tag').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
   cur.forEach(function(t) { if (stored.indexOf(t) < 0) stored.push(t); });
@@ -904,14 +923,19 @@ function showEssayForm() {
   var form = document.getElementById('essay-form');
   if (form.style.display === 'block') { form.style.display = 'none'; return; }
   document.getElementById('essay-edit-slug').value = '';
-  ['essay-title','essay-tag','essay-date','essay-epigraph','essay-excerpt'].forEach(function(id) {
+  ['essay-title','essay-date','essay-readtime','essay-epigraph','essay-excerpt'].forEach(function(id) {
     document.getElementById(id).value = '';
   });
   document.getElementById('slug-preview').textContent = '';
+  document.getElementById('essay-readtime').value = '4';
   var now = new Date();
   document.getElementById('essay-date').value = now.getFullYear() + '-' + pad2(now.getMonth()+1) + '-' + pad2(now.getDate()) + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
   document.getElementById('essay-form-title').textContent = '新建随笔';
-  renderTagChips('');
+  // Auto-select the first tag as default
+  var tags = getTags();
+  var defaultTag = tags.length > 0 ? tags[0] : '随笔';
+  document.getElementById('essay-tag').value = defaultTag;
+  renderTagChips(defaultTag);
   form.style.display = 'block';
   form.scrollIntoView({ behavior: 'smooth' });
 }
