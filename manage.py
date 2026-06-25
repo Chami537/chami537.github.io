@@ -149,10 +149,12 @@ nav .inner {{
   align-items: center; justify-content: space-between; height: 56px;
 }}
 nav .logo {{
+  font-family: 'Lora', 'Inter', serif;
   font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
   text-decoration: none; color: var(--fg);
 }}
 nav .back {{
+  font-family: 'Lora', 'Inter', serif;
   font-size: 12px; font-weight: 600; letter-spacing: .08em;
   color: var(--muted); text-decoration: none;
   display: flex; align-items: center; gap: 6px; transition: color .2s;
@@ -160,6 +162,18 @@ nav .back {{
 nav .back:hover {{ color: var(--c3); }}
 nav .back .arr {{ transition: transform .2s ease; display: inline-block; }}
 nav .back:hover .arr {{ transform: translateX(-4px); }}
+
+nav .theme-btn {{
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--line); background: none;
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .2s, border-color .2s;
+  padding: 0; line-height: 1; color: inherit;
+  flex-shrink: 0;
+}}
+nav .theme-btn:hover {{ background: var(--line); }}
+html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 
 .reading {{
   max-width: 680px;
@@ -376,6 +390,7 @@ footer {{
       <span class="arr">←</span>
       <span>Essays</span>
     </a>
+    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
   </div>
 </nav>
 
@@ -482,6 +497,23 @@ document.addEventListener('keydown', function(e) {{
   if (e.key === 'ArrowLeft') lbNav(-1);
   if (e.key === 'ArrowRight') lbNav(1);
 }});
+
+(function initThemeBtn() {{
+  if (localStorage.getItem('theme') === 'dark') {{
+    document.getElementById('theme-btn').textContent = '☀';
+  }}
+}})();
+function toggleTheme() {{
+  var html = document.documentElement;
+  var btn = document.getElementById('theme-btn');
+  if (html.classList.toggle('dark')) {{
+    localStorage.setItem('theme', 'dark');
+    btn.textContent = '☀';
+  }} else {{
+    localStorage.removeItem('theme');
+    btn.textContent = '🌙';
+  }}
+}}
 </script>
 
 <div id="lb" class="lb-overlay" onclick="lbClose()">

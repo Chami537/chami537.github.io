@@ -8,7 +8,8 @@
 <meta property="og:title" content="Chami">
 <meta property="og:description" content="CS Student & Photographer · Building things that feel right.">
 <meta property="og:type" content="website">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⻖</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -49,9 +50,10 @@
     max-width: 1200px; margin: 0 auto; display: flex; align-items: center;
     justify-content: space-between; height: 56px;
   }
-  nav .logo { font-size: 17px; font-weight: 800; letter-spacing: -0.01em; text-decoration: none; color: var(--fg); }
+  nav .logo { font-family: 'Lora', 'Inter', serif; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; text-decoration: none; color: var(--fg); }
   nav .links { display: flex; gap: 32px; }
   nav .links a {
+    font-family: 'Lora', 'Inter', serif;
     font-size: 13px; color: #666; text-decoration: none; letter-spacing: 0.04em;
     font-weight: 600; transition: color .2s; position: relative;
   }
@@ -357,6 +359,11 @@
   .lb-prev { left: 20px; }
   .lb-next { right: 20px; }
   .lb-prev:hover, .lb-next:hover { opacity: 1; }
+  .lb-exif {
+    position: fixed; bottom: 52px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.35); font-size: 12px; z-index: 1001;
+    font-family: 'Lora', 'Inter', serif; letter-spacing: 0.03em;
+  }
   .lb-counter {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
     color: rgba(255,255,255,0.5); font-size: 13px; z-index: 1001;
@@ -530,6 +537,7 @@
   <button class="lb-prev" onclick="navLB(-1); event.stopPropagation();" aria-label="上一张">‹</button>
   <button class="lb-next" onclick="navLB(1); event.stopPropagation();" aria-label="下一张">›</button>
   <img id="lb-img" src="" alt="">
+  <div class="lb-exif" id="lb-exif"></div>
   <div class="lb-counter" id="lb-counter"></div>
 </div>
 
@@ -746,7 +754,7 @@ function renderEssayList() {
       '</a>';
   });
   if (hidden > 0) {
-    html += '<div class="essay-row" style="justify-content:center;color:var(--muted);font-size:13px;">还有 ' + hidden + ' 篇…</div>';
+    html += '<a class="essay-row" href="#essays" style="justify-content:center;color:var(--muted);font-size:13px;text-decoration:none;" onclick="filterEssays(\'\');return false;">查看全部（' + hidden + ' 篇）→</a>';
   }
   document.getElementById('essays-list').innerHTML = html;
   document.getElementById('essays-list').classList.remove('skeleton-loading');
@@ -776,8 +784,9 @@ function renderPhotos(data) {
     const size = assignSize(i, data.length);
     var fn = encodeURIComponent(p.filename);
     var srcset = 'images/sm/' + fn + ' 400w, images/md/' + fn + ' 800w, images/lg/' + fn + ' 1920w';
+    var exifStr = (p.exif && p.exif.camera) ? p.exif.camera + (p.exif.aperture ? ' · ' + p.exif.aperture : '') + (p.exif.shutter ? ' · ' + p.exif.shutter : '') + (p.exif.iso ? ' · ISO' + p.exif.iso : '') : '';
     return '<div class="' + size + '" style="background:' + bg + ';--hover:' + hover + '">' +
-      '<img src="images/sm/' + fn + '" srcset="' + srcset + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo ' + htmlEncode(p.filename) + '" class="cover-img" loading="lazy">' +
+      '<img src="images/sm/' + fn + '" srcset="' + srcset + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo ' + htmlEncode(p.filename) + '" class="cover-img" loading="lazy" data-exif="' + htmlEncode(exifStr) + '">' +
       '</div>';
   }).join('');
 }
@@ -879,7 +888,7 @@ function initLB() {
     if (!img) return;
     lbPhotos = Array.from(document.querySelectorAll('#photo-grid img')).map(function(el) {
       var filename = el.src.split('/').pop().split('?')[0];
-      return { src: 'images/lg/' + filename, alt: el.alt };
+      return { src: 'images/lg/' + filename, alt: el.alt, exif: el.dataset.exif || '' };
     });
     var clickedFile = img.src.split('/').pop().split('?')[0];
     lbIndex = lbPhotos.findIndex(function(p) { return p.src.endsWith('/' + clickedFile); });
@@ -918,6 +927,7 @@ function updateLB() {
   var p = lbPhotos[lbIndex];
   document.getElementById('lb-img').src = p.src;
   document.getElementById('lb-img').alt = p.alt;
+  document.getElementById('lb-exif').textContent = p.exif || '';
   document.getElementById('lb-counter').textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
 }
 </script>
