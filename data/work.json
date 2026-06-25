@@ -5,7 +5,11 @@
     "description": "群聊机器人 · NoneBot2 驱动 · 插件系统 + SQLite 数据面板 · Windows 本地常驻",
     "url": "https://github.com/Chami537/qqbot",
     "repo": "Chami537/qqbot",
-    "tags": ["Python", "NoneBot2", "SQLite"]
+    "tags": [
+      "Python",
+      "NoneBot2",
+      "SQLite"
+    ]
   },
   {
     "id": 2,
@@ -13,7 +17,10 @@
     "description": "哈工大课表管理系统 · 周视图/考试倒计时/成绩查询",
     "url": "https://github.com/HIT-A/HITA_Android",
     "repo": "HIT-A/HITA_Android",
-    "tags": ["Kotlin", "Jetpack Compose"]
+    "tags": [
+      "Kotlin",
+      "Jetpack Compose"
+    ]
   },
   {
     "id": 3,
@@ -21,7 +28,10 @@
     "description": "黑白极简倒计时/累计日 · 桌面小组件 · Material You",
     "url": "https://github.com/Chami537/DateMemory",
     "repo": "Chami537/DateMemory",
-    "tags": ["Kotlin", "Jetpack Compose"]
+    "tags": [
+      "Kotlin",
+      "Jetpack Compose"
+    ]
   },
   {
     "id": 4,
@@ -29,7 +39,9 @@
     "description": "机票比价工具 · 多平台聚合搜索 · 价格趋势追踪",
     "url": "https://github.com/Chami537/flightcompare",
     "repo": "Chami537/flightcompare",
-    "tags": ["Kotlin"]
+    "tags": [
+      "Kotlin"
+    ]
   },
   {
     "id": 5,
@@ -37,7 +49,10 @@
     "description": "自用 Claude Code 工作流技能集 · 含 MCP Server · dev/fix/refactor 全流程",
     "url": "https://github.com/Chami537/claude-skills",
     "repo": "Chami537/claude-skills",
-    "tags": ["Markdown", "Python"]
+    "tags": [
+      "Markdown",
+      "Python"
+    ]
   },
   {
     "id": 6,
@@ -45,6 +60,10 @@
     "description": "手写 HTML/CSS/JS · 零框架零依赖 · 一个下午 vibecoding 产物",
     "url": "https://github.com/Chami537/chami537.github.io",
     "repo": "Chami537/chami537.github.io",
-    "tags": ["HTML", "CSS", "JavaScript"]
+    "tags": [
+      "HTML",
+      "CSS",
+      "JavaScript"
+    ]
   }
 ]
