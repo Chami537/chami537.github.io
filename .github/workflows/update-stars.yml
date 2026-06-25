@@ -1,0 +1,56 @@
+name: Update GitHub Stars
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # daily at UTC midnight
+  workflow_dispatch:      # manual trigger
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch star counts
+        run: |
+          python3 << 'PYEOF'
+          import json, urllib.request, os
+
+          with open('data/work.json', 'r', encoding='utf-8') as f:
+              works = json.load(f)
+
+          changed = False
+          for w in works:
+              repo = w.get('repo', '')
+              if not repo:
+                  continue
+              try:
+                  url = f'https://api.github.com/repos/{repo}'
+                  req = urllib.request.Request(url, headers={'User-Agent': 'Chami/1.0'})
+                  data = json.loads(urllib.request.urlopen(req, timeout=15).read())
+                  stars = data.get('stargazers_count', 0)
+                  if w.get('stars') != stars:
+                      w['stars'] = stars
+                      changed = True
+                      print(f'{repo}: {stars} stars')
+              except Exception as e:
+                  print(f'{repo}: error - {e}')
+
+          if changed:
+              with open('data/work.json', 'w', encoding='utf-8') as f:
+                  json.dump(works, f, ensure_ascii=False, indent=2)
+              print('Updated work.json')
+          else:
+              print('No changes')
+          PYEOF
+
+      - name: Commit and push
+        if: success()
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add data/work.json
+          git diff --staged --quiet || git commit -m 'chore: update GitHub star counts'
+          git push
