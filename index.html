@@ -59,6 +59,16 @@
     background: var(--fg); transform: scaleX(0); transition: transform .25s;
   }
   nav .links a.active::after { transform: scaleX(1); }
+  nav .theme-btn {
+    width: 32px; height: 32px; border-radius: 50%;
+    border: 1px solid var(--line); background: none;
+    font-size: 16px; cursor: pointer; display: flex;
+    align-items: center; justify-content: center;
+    transition: background .2s, border-color .2s;
+    padding: 0; line-height: 1; color: inherit;
+  }
+  nav .theme-btn:hover { background: var(--line); }
+  html.dark .theme-btn { border-color: #666; color: #ffd43b; }
 
   .container { max-width: 1200px; margin: 0 auto; padding: 0 48px; position: relative; z-index: 1; }
 
@@ -94,6 +104,8 @@
   section { padding: 120px 0; position: relative; }
   section[id] { border-bottom: 1px solid var(--line); }
   section[id]:last-of-type { border-bottom: none; }
+  #about { padding: 60px 0 20px; }
+  .about-text { font-size: 17px; line-height: 1.8; color: var(--muted); max-width: 600px; white-space: pre-line; }
   #work  { padding: 140px 0 120px; }
   #photos { padding: 100px 0; }
   #music { padding: 160px 0 120px; }
@@ -174,20 +186,12 @@
     position: relative; transition: padding-left .3s;
     --progress: 0%;
   }
-  .music-row:nth-child(1) { --theme: rgba(255,77,77,0.10); }
-  .music-row:nth-child(2) { --theme: rgba(0,102,255,0.10); }
-  .music-row:nth-child(3) { --theme: rgba(255,184,0,0.10); }
-  .music-row:nth-child(4) { --theme: rgba(0,200,83,0.10); }
-  .music-row:nth-child(5) { --theme: rgba(156,39,176,0.10); }
+  .music-row { --theme: rgba(255,184,0,0.10); --idx-color: #ffb800; } /* fallback */
   .music-row:hover { padding-left: 24px; background: rgba(255,255,255,0.5); }
   .music-row.playing { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
   .music-row.playing:hover { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
   .music-row .idx { font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s, transform .3s; display: inline-block; }
-  .music-row:nth-child(1).playing .idx { color: var(--c1); animation: pulse 0.8s ease-in-out infinite; }
-  .music-row:nth-child(2).playing .idx { color: var(--c2); animation: pulse 0.8s ease-in-out infinite; }
-  .music-row:nth-child(3).playing .idx { color: var(--c3); animation: pulse 0.8s ease-in-out infinite; }
-  .music-row:nth-child(4).playing .idx { color: var(--c4); animation: pulse 0.8s ease-in-out infinite; }
-  .music-row:nth-child(5).playing .idx { color: var(--c5); animation: pulse 0.8s ease-in-out infinite; }
+  .music-row.playing .idx { color: var(--idx-color); animation: pulse 0.8s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
   .music-row.paused .idx { animation-play-state: paused !important; }
   .music-row .title { font-size: 17px; font-weight: 600; }
@@ -295,6 +299,47 @@
   /* Skeleton loading */
   .skeleton-loading { opacity: 0.5; pointer-events: none; filter: grayscale(60%); transition: opacity .3s ease, filter .3s ease; }
 
+  /* Dark mode */
+  html.dark { --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }
+  html.dark nav { background: rgba(26,26,28,0.88); }
+  html.dark .portrait::after { border-color: #2e2e30; }
+  html.dark .work-card:hover { background: #222; }
+  html.dark .work-card .num { color: #333; }
+  html.dark .photo-grid div::after { border-color: var(--fg); }
+  html.dark .progress { background: rgba(255,255,255,0.3); }
+  html.dark .essay-row:hover { background: rgba(255,184,0,0.08); }
+  html.dark .music-row:hover { background: rgba(255,255,255,0.03); }
+  html.dark .contact-row:hover { background: rgba(156,39,176,0.08); }
+
+  /* Lightbox */
+  .lb-overlay {
+    display: none; position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.92); cursor: zoom-out;
+    animation: lb-in .2s ease;
+  }
+  @keyframes lb-in { from { opacity: 0; } }
+  .lb-overlay.show { display: flex; align-items: center; justify-content: center; }
+  .lb-overlay img { max-width: 90vw; max-height: 85vh; object-fit: contain; cursor: default; }
+  .lb-close {
+    position: fixed; top: 20px; right: 28px; z-index: 1001;
+    background: none; border: none; color: #fff; font-size: 36px;
+    cursor: pointer; opacity: 0.6; transition: opacity .2s; line-height: 1;
+  }
+  .lb-close:hover { opacity: 1; }
+  .lb-prev, .lb-next {
+    position: fixed; top: 50%; z-index: 1001;
+    background: none; border: none; color: #fff;
+    font-size: 48px; cursor: pointer; opacity: 0.4;
+    transition: opacity .2s; transform: translateY(-50%);
+  }
+  .lb-prev { left: 20px; }
+  .lb-next { right: 20px; }
+  .lb-prev:hover, .lb-next:hover { opacity: 1; }
+  .lb-counter {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    color: rgba(255,255,255,0.5); font-size: 13px; z-index: 1001;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
@@ -363,6 +408,7 @@
       <a href="#music">Music</a>
       <a href="#contact">Contact</a>
     </div>
+    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
   </div>
 </nav>
 
@@ -379,12 +425,19 @@
     <div class="portrait" aria-hidden="true"><img src="images/avatar.jpg" alt="头像" class="cover-img"></div>
   </section>
 
+  <section id="about" class="about-section">
+    <p class="about-text skeleton-loading" id="about-text">CS 学生、摄影师，现居深圳。喜欢拍街道和天空，写点随笔，偶尔做点小工具。相信好的设计不需要太多解释。</p>
+  </section>
+
   <section id="work">
     <div class="section-tag red">WORK</div>
     <div class="work-grid skeleton-loading" id="work-container">
       <a class="work-card" data-repo="Chami537/qqbot" href="https://github.com/Chami537/qqbot" target="_blank"><div class="num">01</div><h3>QQ Bot</h3><p>群聊机器人 · NoneBot2 驱动 · 插件系统 + SQLite 数据面板 · Windows 本地常驻</p><div class="line-tag">Python · NoneBot2 · SQLite <span class="stars"></span></div></a>
       <a class="work-card" data-repo="HIT-A/HITA_Android" href="https://github.com/HIT-A/HITA_Android" target="_blank"><div class="num">02</div><h3>HITA Agent</h3><p>哈工大课表管理系统 · 周视图/考试倒计时/成绩查询</p><div class="line-tag">Kotlin · Jetpack Compose <span class="stars"></span></div></a>
       <a class="work-card" data-repo="Chami537/DateMemory" href="https://github.com/Chami537/DateMemory" target="_blank"><div class="num">03</div><h3>DateMemory</h3><p>黑白极简倒计时/累计日 · 桌面小组件 · Material You</p><div class="line-tag">Kotlin · Jetpack Compose <span class="stars"></span></div></a>
+      <a class="work-card" data-repo="Chami537/flightcompare" href="https://github.com/Chami537/flightcompare" target="_blank"><div class="num">04</div><h3>FlightCompare</h3><p>机票比价工具 · 多平台聚合搜索 · 价格趋势追踪</p><div class="line-tag">Kotlin <span class="stars"></span></div></a>
+      <a class="work-card" data-repo="Chami537/claude-skills" href="https://github.com/Chami537/claude-skills" target="_blank"><div class="num">05</div><h3>Claude Skills</h3><p>自用 Claude Code 工作流技能集 · 含 MCP Server · dev/fix/refactor 全流程</p><div class="line-tag">Markdown · Python <span class="stars"></span></div></a>
+      <a class="work-card" data-repo="Chami537/chami537.github.io" href="https://github.com/Chami537/chami537.github.io" target="_blank"><div class="num">06</div><h3>本站</h3><p>手写 HTML/CSS/JS · 零框架零依赖 · 一个下午 vibecoding 产物</p><div class="line-tag">HTML · CSS · JavaScript <span class="stars"></span></div></a>
     </div>
   </section>
 
@@ -398,15 +451,17 @@
   <section id="photos">
     <div class="section-tag blue">PHOTOGRAPHY</div>
     <div class="photo-grid skeleton-loading" id="photo-grid">
-      <div class="lg"><img src="images/0bafcdb21b37a78577502401bbf9be97.jpg" alt="Photo 1" class="cover-img"></div>
-      <div class="md"><img src="images/15a70814318ed74d5ec2448532f7fab5.jpg" alt="Photo 2" class="cover-img"></div>
-      <div class="sm"><img src="images/6400b35c75c004c99313eb4d07cb337f.jpg" alt="Photo 3" class="cover-img"></div>
+      <div class="lg" style="background:#ffe8e8;--hover:#ff4d4d"><img src="images/0bafcdb21b37a78577502401bbf9be97.jpg" alt="Photo 1" class="cover-img"></div>
+      <div class="md" style="background:#e0ecff;--hover:#0066ff"><img src="images/15a70814318ed74d5ec2448532f7fab5.jpg" alt="Photo 2" class="cover-img"></div>
+      <div class="sm" style="background:#fff4d8;--hover:#ffb800"><img src="images/6400b35c75c004c99313eb4d07cb337f.jpg" alt="Photo 3" class="cover-img"></div>
+      <div class="sm" style="background:#dcffe8;--hover:#00c853"><img src="images/68b93d07a342daef4f8483cdb249c4f7.jpg" alt="Photo 4" class="cover-img"></div>
+      <div class="sm" style="background:#f4e0ff;--hover:#9c27b0"><img src="images/d799f0dd4097ac45c2680798af20b457.jpg" alt="Photo 5" class="cover-img"></div>
     </div>
   </section>
 
   <section id="music">
     <div class="section-tag green">LISTENING</div>
-    <div class="music-list">
+    <div class="music-list skeleton-loading" id="music-list">
       <div class="music-row" data-src="music/AYANE - ごめんね.mp3"><span class="idx">01</span><span class="title">ごめんね</span><span class="artist">AYANE</span></div>
       <div class="music-row" data-src="music/The Beatles - Let It Be (Remastered).mp3"><span class="idx">02</span><span class="title">Let It Be (Remastered)</span><span class="artist">The Beatles</span></div>
       <div class="music-row" data-src="music/elijah woods - 24_7, 365.mp3"><span class="idx">03</span><span class="title">24/7, 365</span><span class="artist">elijah woods</span></div>
@@ -418,7 +473,7 @@
 
   <section id="contact">
     <div class="section-tag purple">CONTACT</div>
-    <div class="contact-list">
+    <div class="contact-list skeleton-loading" id="contact-list">
       <a href="https://github.com/Chami537" target="_blank" class="contact-row">
         <span class="value">GitHub <span style="color:#999;font-weight:400;">/ Chami537</span></span>
         <span class="arr">→</span>
@@ -437,9 +492,18 @@
   </section>
 </main>
 
+<!-- Lightbox -->
+<div id="lightbox" class="lb-overlay" onclick="closeLB()">
+  <button class="lb-close" onclick="closeLB()">×</button>
+  <button class="lb-prev" onclick="navLB(-1); event.stopPropagation();">‹</button>
+  <button class="lb-next" onclick="navLB(1); event.stopPropagation();">›</button>
+  <img id="lb-img" src="" alt="">
+  <div class="lb-counter" id="lb-counter"></div>
+</div>
+
 <footer>
   <div class="friends skeleton-loading" id="friends-container">
-    <div class="friends-label">FOLLOW</div>
+    <div class="friends-label">FRIEND</div>
   </div>
   © <script>document.write(new Date().getFullYear())</script> Chami
 </footer>
@@ -501,42 +565,45 @@ function initStarFetches() {
 }
 initStarFetches();
 
-const player = document.getElementById('player');
-const rows = document.querySelectorAll('.music-row');
-let curRow = null;
+var player, curRow;
+var musicTimeHandler, musicEndHandler;
 
-rows.forEach(row => {
-  row.addEventListener('click', () => {
-    const src = row.dataset.src;
-    if (!src) return;
-
-    if (curRow === row) {
-      if (player.paused) { player.play(); row.classList.remove('paused'); }
-      else { player.pause(); row.classList.add('paused'); }
-      return;
-    }
-
-    if (curRow) { curRow.classList.remove('playing', 'paused'); curRow.style.removeProperty('--progress'); }
-    curRow = row;
-    row.classList.add('playing');
-    player.src = encodeURI(src);
-    player.play();
-  });
-});
-
-player.addEventListener('timeupdate', () => {
-  if (curRow && player.duration) {
-    curRow.style.setProperty('--progress', (player.currentTime / player.duration * 100).toFixed(2) + '%');
-  }
-});
-
-player.addEventListener('ended', () => {
-  if (curRow) {
-    curRow.classList.remove('playing');
-    curRow.style.removeProperty('--progress');
-  }
+function initMusicPlayer() {
+  player = document.getElementById('player');
+  if (!player) return;
   curRow = null;
-});
+  if (musicTimeHandler) player.removeEventListener('timeupdate', musicTimeHandler);
+  if (musicEndHandler) player.removeEventListener('ended', musicEndHandler);
+
+  document.querySelectorAll('.music-row').forEach(row => {
+    row.addEventListener('click', () => {
+      const src = row.dataset.src;
+      if (!src) return;
+      if (curRow === row) {
+        if (player.paused) { player.play(); row.classList.remove('paused'); }
+        else { player.pause(); row.classList.add('paused'); }
+        return;
+      }
+      if (curRow) { curRow.classList.remove('playing', 'paused'); curRow.style.removeProperty('--progress'); }
+      curRow = row;
+      row.classList.add('playing');
+      player.src = encodeURI(src);
+      player.play();
+    });
+  });
+
+  musicTimeHandler = () => {
+    if (curRow && player.duration) {
+      curRow.style.setProperty('--progress', (player.currentTime / player.duration * 100).toFixed(2) + '%');
+    }
+  };
+  musicEndHandler = () => {
+    if (curRow) { curRow.classList.remove('playing'); curRow.style.removeProperty('--progress'); }
+    curRow = null;
+  };
+  player.addEventListener('timeupdate', musicTimeHandler);
+  player.addEventListener('ended', musicEndHandler);
+}
 
 // ═══════════════════════════════════
 // JSON Data Loading (skeleton + cache busting + fallback)
@@ -598,19 +665,33 @@ function renderPhotos(data) {
   const bgColors = [
     '#ffe8e8', '#e0ecff', '#fff4d8', '#dcffe8', '#f4e0ff',
   ];
-  const hoverColors = ['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
+  const hoverColors = ['#ff4d4d','#0066ff','#ffb800','#00c853','#9c27b0'];
+
+  // Auto-size for beautiful grid:
+  //   N=1: [lg]
+  //   N=2: [lg, md]
+  //   N>=3: [lg, md, md, sm, sm, sm, ...]
+  //   Grid: lg spans 2 rows left, md×2 fill right column, sm×3 fill bottom rows
+  function assignSize(i, total) {
+    if (total === 1) return 'lg';
+    if (i === 0) return 'lg';
+    if (i <= 2) return 'md';
+    return 'sm';
+  }
+
   return data.map((p, i) => {
     const bg = bgColors[i % bgColors.length];
     const hover = hoverColors[i % hoverColors.length];
+    const size = assignSize(i, data.length);
     var srcset = 'images/sm/' + p.filename + ' 400w, images/md/' + p.filename + ' 800w, images/lg/' + p.filename + ' 1920w';
-    return '<div class="' + p.size + '" style="background:' + bg + ';--hover:' + hover + '">' +
+    return '<div class="' + size + '" style="background:' + bg + ';--hover:' + hover + '">' +
       '<img src="images/sm/' + p.filename + '" srcset="' + srcset + '" alt="Photo" class="cover-img">' +
       '</div>';
   }).join('');
 }
 
 function renderFriends(data) {
-  var html = '<div class="friends-label">FOLLOW</div>';
+  var html = '<div class="friends-label">FRIEND</div>';
   data.forEach((f, i) => {
     html += '<a href="' + htmlEncode(f.url) + '">' + htmlEncode(f.name) + '</a>';
     if (i < data.length - 1) html += '<span class="sep">·</span>';
@@ -618,12 +699,124 @@ function renderFriends(data) {
   return html;
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  loadSection('work', 'work-container', renderWork);
-  loadSection('essays', 'essays-list', renderEssays);
-  loadSection('photos', 'photo-grid', renderPhotos);
-  loadSection('friends', 'friends-container', renderFriends);
+function renderMusic(data) {
+  const themes = [
+    ['rgba(255,77,77,0.10)', '#ff4d4d'],
+    ['rgba(0,102,255,0.10)', '#0066ff'],
+    ['rgba(255,184,0,0.10)', '#ffb800'],
+    ['rgba(0,200,83,0.10)', '#00c853'],
+    ['rgba(156,39,176,0.10)', '#9c27b0'],
+  ];
+  return data.map((m, i) => {
+    var num = String(i + 1).padStart(2, '0');
+    var t = themes[i % themes.length];
+    return '<div class="music-row" data-src="music/' + encodeURI(m.filename) + '" style="--theme:' + t[0] + ';--idx-color:' + t[1] + '">' +
+      '<span class="idx">' + num + '</span>' +
+      '<span class="title">' + htmlEncode(m.title) + '</span>' +
+      '<span class="artist">' + htmlEncode(m.artist) + '</span>' +
+      '</div>';
+  }).join('');
+}
+
+function renderContact(data) {
+  return data.map(c => {
+    var inner = '<span class="value">' + htmlEncode(c.label) + ' <span style="color:#999;font-weight:400;">' + htmlEncode(c.handle) + '</span></span>';
+    if (c.url) {
+      return '<a href="' + htmlEncode(c.url) + '" target="_blank" class="contact-row">' + inner + '<span class="arr">→</span></a>';
+    }
+    return '<div class="contact-row">' + inner + '</div>';
+  }).join('');
+}
+
+document.addEventListener('DOMContentLoaded', async function() {
+  // About
+  try {
+    const about = await fetch('data/about.json?v=' + TS).then(r => r.json());
+    document.getElementById('about-text').textContent = about.content;
+    document.getElementById('about-text').classList.remove('skeleton-loading');
+  } catch(e) {
+    document.getElementById('about-text').classList.remove('skeleton-loading');
+  }
+  await loadSection('work', 'work-container', renderWork);
+  await loadSection('essays', 'essays-list', renderEssays);
+  await loadSection('photos', 'photo-grid', renderPhotos);
+  await loadSection('contact', 'contact-list', renderContact);
+  await loadSection('friends', 'friends-container', renderFriends);
+  await loadSection('music', 'music-list', renderMusic);
+  initMusicPlayer();
+  // Init theme & lightbox after photos loaded
+  initTheme();
+  initLB();
 });
+
+// ═══ Dark Mode ═══
+function initTheme() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+    document.getElementById('theme-btn').textContent = '☀';
+  }
+}
+function toggleTheme() {
+  var html = document.documentElement;
+  var btn = document.getElementById('theme-btn');
+  if (html.classList.toggle('dark')) {
+    localStorage.setItem('theme', 'dark');
+    btn.textContent = '☀';
+  } else {
+    localStorage.removeItem('theme');
+    btn.textContent = '🌙';
+  }
+}
+
+// ═══ Lightbox ═══
+var lbPhotos = [];
+var lbIndex = 0;
+function initLB() {
+  // Collect photos from the grid (re-run after dynamic render)
+  document.querySelector('#photo-grid').addEventListener('click', function(e) {
+    var img = e.target.closest('.photo-grid div')?.querySelector('img');
+    if (!img) return;
+    lbPhotos = Array.from(document.querySelectorAll('#photo-grid img')).map(function(el) {
+      return { src: el.src.replace('/sm/', '/lg/'), alt: el.alt };
+    });
+    lbIndex = lbPhotos.findIndex(function(p) { return p.src === img.src.replace('/sm/', '/lg/'); });
+    openLB();
+  });
+  document.addEventListener('keydown', function(e) {
+    if (!document.getElementById('lightbox').classList.contains('show')) return;
+    if (e.key === 'Escape') closeLB();
+    if (e.key === 'ArrowLeft') navLB(-1);
+    if (e.key === 'ArrowRight') navLB(1);
+  });
+  // Touch swipe
+  var touchX = 0;
+  var lb = document.getElementById('lightbox');
+  lb.addEventListener('touchstart', function(e) { touchX = e.touches[0].clientX; }, {passive: true});
+  lb.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - touchX;
+    if (Math.abs(dx) > 50) navLB(dx < 0 ? 1 : -1);
+  }, {passive: true});
+}
+function openLB() {
+  var lb = document.getElementById('lightbox');
+  lb.classList.add('show');
+  updateLB();
+  document.body.style.overflow = 'hidden';
+}
+function closeLB() {
+  document.getElementById('lightbox').classList.remove('show');
+  document.body.style.overflow = '';
+}
+function navLB(dir) {
+  lbIndex = (lbIndex + dir + lbPhotos.length) % lbPhotos.length;
+  updateLB();
+}
+function updateLB() {
+  var p = lbPhotos[lbIndex];
+  document.getElementById('lb-img').src = p.src;
+  document.getElementById('lb-img').alt = p.alt;
+  document.getElementById('lb-counter').textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
+}
 </script>
 
 </body>

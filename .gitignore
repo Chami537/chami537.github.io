@@ -2,4 +2,7 @@
 CLAUDE.md
 manage.py
 admin.html
+manage.bat
+manage_launcher.py
 requirements.txt
+__pycache__/

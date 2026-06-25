@@ -1,7 +1,27 @@
 [
-  {"filename": "0bafcdb21b37a78577502401bbf9be97.jpg", "size": "lg", "exif": {}},
-  {"filename": "15a70814318ed74d5ec2448532f7fab5.jpg", "size": "md", "exif": {}},
-  {"filename": "6400b35c75c004c99313eb4d07cb337f.jpg", "size": "sm", "exif": {}},
-  {"filename": "68b93d07a342daef4f8483cdb249c4f7.jpg", "size": "sm", "exif": {}},
-  {"filename": "d799f0dd4097ac45c2680798af20b457.jpg", "size": "sm", "exif": {}}
+  {
+    "filename": "0bafcdb21b37a78577502401bbf9be97.jpg",
+    "size": "lg",
+    "exif": {}
+  },
+  {
+    "filename": "15a70814318ed74d5ec2448532f7fab5.jpg",
+    "size": "md",
+    "exif": {}
+  },
+  {
+    "filename": "6400b35c75c004c99313eb4d07cb337f.jpg",
+    "size": "sm",
+    "exif": {}
+  },
+  {
+    "filename": "68b93d07a342daef4f8483cdb249c4f7.jpg",
+    "size": "sm",
+    "exif": {}
+  },
+  {
+    "filename": "d799f0dd4097ac45c2680798af20b457.jpg",
+    "size": "sm",
+    "exif": {}
+  }
 ]

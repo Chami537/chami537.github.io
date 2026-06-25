@@ -213,13 +213,12 @@ footer {
 
   <hr class="essay-divider">
 
-  <p class="essay-lede">
+<!-- CONTENT_START -->
+<p class="essay-lede">
     夏天不是突然结束的。它像一件你不知道自己在穿的衣服，某天早上你回头，发现它已经脱落在身后很远的地方。
   </p>
 
   <div class="essay-body">
-
-<!-- CONTENT_START -->
 <p>空气里还残留着它的温度，但那种热度已经开始向内收缩，变成一种只有自己知道的感觉。我一直觉得"残夏"这个词比"初秋"更准确。残，是余留，是未竟，是某种还没来得及珍惜就已经在消散的东西。</p>
 <blockquote>
 <p>那些在夏天里没有说出口的话，最终也会随着季节一起静下来。不是消失，只是换了一种形式存在。</p>
@@ -227,15 +226,15 @@ footer {
 <p>深圳的夏天不懂收敛。它热烈、潮湿、执拗地拒绝离场。但今年有一个傍晚，我骑车经过莲花山，忽然觉得风里多了什么——不是凉意，是某种轻微的空缺。</p>
 <p>我想，我大概会一直喜欢这种时刻。事情将要改变但还没有改变的时刻。</p>
 <!-- RAW_MD
+夏天不是突然结束的。它像一件你不知道自己在穿的衣服，某天早上你回头，发现它已经脱落在身后很远的地方。
+
+  
 空气里还残留着它的温度，但那种热度已经开始向内收缩，变成一种只有自己知道的感觉。我一直觉得"残夏"这个词比"初秋"更准确。残，是余留，是未竟，是某种还没来得及珍惜就已经在消散的东西。
 
-    
 > 那些在夏天里没有说出口的话，最终也会随着季节一起静下来。不是消失，只是换了一种形式存在。
 
-    
 深圳的夏天不懂收敛。它热烈、潮湿、执拗地拒绝离场。但今年有一个傍晚，我骑车经过莲花山，忽然觉得风里多了什么——不是凉意，是某种轻微的空缺。
 
-    
 我想，我大概会一直喜欢这种时刻。事情将要改变但还没有改变的时刻。
 RAW_MD -->
 <!-- CONTENT_END -->
@@ -247,23 +246,13 @@ RAW_MD -->
       <span class="arr">←</span>
       <span>返回随笔</span>
     </a>
-    <a href="qi-xing-yu-gu-du.html" class="next-link">
-      <span class="next-label">下一篇</span>
-      <div class="next-title">
-        <span>骑行与孤独</span>
-        <span class="next-arr">→</span>
-      </div>
-    </a>
   </div>
 
 </main>
 
 <footer>
-  <div class="friends">
-    <div class="friends-label">FOLLOW</div>
-    <a href="#">好友A</a><span class="sep">·</span>
-    <a href="#">好友B</a><span class="sep">·</span>
-    <a href="#">好友C</a>
+  <div class="friends" id="friends-container">
+    <div class="friends-label">FRIEND</div>
   </div>
   &copy; <script>document.write(new Date().getFullYear())</script> Chami
 </footer>
@@ -274,6 +263,21 @@ addEventListener('scroll', () => {
   const h = document.documentElement.scrollHeight - innerHeight;
   if (h > 0) bar.style.width = (scrollY / h * 100) + '%';
 });
+
+// Dynamic friends
+(async () => {
+  try {
+    const friends = await fetch('/data/friends.json?v=' + Date.now()).then(r => r.json());
+    const container = document.getElementById('friends-container');
+    let html = '<div class="friends-label">FRIEND</div>';
+    friends.forEach((f, i) => {
+      html += '<a href="' + (f.url||'#') + '">' + f.name + '</a>';
+      if (i < friends.length - 1) html += '<span class="sep">·</span>';
+    });
+    container.innerHTML = html;
+  } catch(e) {}
+})();
+
 </script>
 
 </body>
