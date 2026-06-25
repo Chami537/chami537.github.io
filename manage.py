@@ -205,7 +205,7 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 }}
 
 .essay-meta {{
-  font-family: 'Lora', 'Inter', sans-serif;
+  font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif;
   display: flex; gap: 16px; align-items: center;
   font-size: 12px; color: var(--muted); font-weight: 500;
   margin-bottom: 40px;
