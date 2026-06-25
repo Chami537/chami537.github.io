@@ -653,7 +653,7 @@ function renderEssays(data) {
       (e.excerpt ? '<span class="essay-excerpt">' + htmlEncode(e.excerpt) + '</span>' : '') +
       '</div>' +
       '<div class="essay-right">' +
-      '<span class="essay-tag">' + htmlEncode(e.tag) + '</span>' +
+      '<span class="essay-tag">' + htmlEncode(e.tag.replace(/, ?/g, ' · ')) + '</span>' +
       '<span class="essay-meta">' + dateDisplay + ' · ' + e.readTime + ' min</span>' +
       '<span class="essay-arr">→</span>' +
       '</div>' +
