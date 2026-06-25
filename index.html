@@ -280,6 +280,21 @@
     color: var(--c3);
   }
 
+  .essay-filter { display: flex; flex-wrap: wrap; gap: 6px; }
+  .essay-filter .ef-chip {
+    display: inline-block; padding: 3px 12px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; cursor: pointer;
+    border: 1px solid var(--line); color: var(--muted);
+    transition: all .15s; user-select: none;
+  }
+  .essay-filter .ef-chip:hover { border-color: var(--c3); color: var(--c3); }
+  .essay-filter .ef-chip.active { background: var(--c3); color: #fff; border-color: var(--c3); }
+  .essay-filter .ef-more {
+    display: inline-block; padding: 3px 12px; font-size: 11px;
+    color: var(--muted); cursor: pointer; user-select: none;
+  }
+  .essay-filter .ef-more:hover { color: var(--fg); }
+
   footer {
     padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
     letter-spacing: 0.04em; border-top: 1px solid var(--line);
@@ -443,6 +458,7 @@
 
   <section id="essays">
     <div class="section-tag yellow">ESSAYS</div>
+    <div id="essay-tag-filter" class="essay-filter" style="margin-bottom:16px;"></div>
     <div class="essays-list skeleton-loading" id="essays-list">
       <a class="essay-row" href="essays/can-xia.html"><div class="essay-left"><span class="essay-title">残夏</span><span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span></div><div class="essay-right"><span class="essay-tag">随笔</span><span class="essay-meta">2026.06 · 4 min</span><span class="essay-arr">→</span></div></a>
     </div>
@@ -644,21 +660,58 @@ function renderWork(data) {
   }).join('');
 }
 
-function renderEssays(data) {
-  return data.map(e => {
-    var dateDisplay = e.date.split('-').join('.');
-    return '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html">' +
+var _essayData = [];
+var _essayFilter = '';
+
+function buildEssayFilter() {
+  var tags = new Set();
+  _essayData.forEach(function(e) {
+    (e.tag || '').split(/[,，]/).forEach(function(t) { t = t.trim(); if (t) tags.add(t); });
+  });
+  var html = '<span class="ef-chip' + (!_essayFilter ? ' active' : '') + '" onclick="filterEssays(\'\')">全部</span>';
+  tags.forEach(function(t) {
+    html += '<span class="ef-chip' + (_essayFilter === t ? ' active' : '') + '" onclick="filterEssays(\'' + t + '\')">' + t + '</span>';
+  });
+  document.getElementById('essay-tag-filter').innerHTML = html;
+}
+
+function filterEssays(tag) {
+  _essayFilter = tag;
+  buildEssayFilter();
+  renderEssayList();
+}
+
+function renderEssayList() {
+  var filtered = _essayData;
+  if (_essayFilter) {
+    filtered = _essayData.filter(function(e) {
+      return (e.tag || '').split(/[,，]/).some(function(t) { return t.trim() === _essayFilter; });
+    });
+  }
+  var MAX = 5;
+  var html = '';
+  var shown = filtered.slice(0, MAX);
+  var hidden = filtered.length - MAX;
+  shown.forEach(function(e) {
+    var dateDisplay = (e.date || '').split(' ')[0].split('-').join('.');
+    html += '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html">' +
       '<div class="essay-left">' +
       '<span class="essay-title">' + htmlEncode(e.title) + '</span>' +
       (e.excerpt ? '<span class="essay-excerpt">' + htmlEncode(e.excerpt) + '</span>' : '') +
       '</div>' +
       '<div class="essay-right">' +
-      '<span class="essay-tag">' + htmlEncode(e.tag.replace(/, ?/g, ' · ')) + '</span>' +
+      '<span class="essay-tag">' + htmlEncode((e.tag || '').replace(/, ?/g, ' · ')) + '</span>' +
       '<span class="essay-meta">' + dateDisplay + ' · ' + e.readTime + ' min</span>' +
       '<span class="essay-arr">→</span>' +
       '</div>' +
       '</a>';
-  }).join('');
+  });
+  if (hidden > 0) {
+    html += '<div class="essay-row" style="justify-content:center;color:var(--muted);font-size:13px;">还有 ' + hidden + ' 篇…</div>';
+  }
+  document.getElementById('essays-list').innerHTML = html;
+  document.getElementById('essays-list').classList.remove('skeleton-loading');
+}
 }
 
 function renderPhotos(data) {
@@ -739,7 +792,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('about-text').classList.remove('skeleton-loading');
   }
   await loadSection('work', 'work-container', renderWork);
-  await loadSection('essays', 'essays-list', renderEssays);
+  // Essays: manual load for filter support
+  try {
+    var r = await fetch('data/essays.json?v=' + TS);
+    if (r.ok) { _essayData = await r.json(); buildEssayFilter(); renderEssayList(); }
+    else { document.getElementById('essays-list').classList.remove('skeleton-loading'); }
+  } catch(e) { document.getElementById('essays-list').classList.remove('skeleton-loading'); }
   await loadSection('photos', 'photo-grid', renderPhotos);
   await loadSection('contact', 'contact-list', renderContact);
   await loadSection('friends', 'friends-container', renderFriends);

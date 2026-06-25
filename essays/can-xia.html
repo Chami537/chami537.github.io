@@ -158,9 +158,10 @@ nav .back:hover .arr { transform: translateX(-4px); }
 .essay-end {
   margin-top: 64px; padding-top: 32px;
   border-top: 1px solid var(--line);
+}
+.essay-end-row {
   display: flex; justify-content: space-between; align-items: flex-end;
 }
-
 .essay-end .back-link {
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; align-items: center; gap: 6px;
@@ -170,20 +171,23 @@ nav .back:hover .arr { transform: translateX(-4px); }
 .essay-end .back-link .arr { transition: transform .2s; display: inline-block; }
 .essay-end .back-link:hover .arr { transform: translateX(-4px); }
 
-.essay-end .next-link {
+.essay-end .prev-link, .essay-end .next-link {
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; flex-direction: column;
-  align-items: flex-end; gap: 4px; transition: color .2s;
+  gap: 4px; transition: color .2s;
 }
-.essay-end .next-link:hover { color: var(--fg); }
-.essay-end .next-label {
+.essay-end .prev-link { align-items: flex-start; }
+.essay-end .next-link { align-items: flex-end; }
+.essay-end .prev-link:hover, .essay-end .next-link:hover { color: var(--fg); }
+.essay-end .prev-label, .essay-end .next-label {
   font-size: 10px; font-weight: 700; letter-spacing: .12em;
   text-transform: uppercase; color: #ccc;
 }
-.essay-end .next-title {
+.essay-end .prev-title, .essay-end .next-title {
   display: flex; align-items: center; gap: 6px;
 }
-.essay-end .next-arr { transition: transform .2s; display: inline-block; }
+.essay-end .prev-arr, .essay-end .next-arr { transition: transform .2s; display: inline-block; }
+.essay-end .prev-link:hover .prev-arr { transform: translateX(-4px); }
 .essay-end .next-link:hover .next-arr { transform: translateX(4px); }
 
 footer {
@@ -271,6 +275,15 @@ RAW_MD -->
     <a href="/index.html#essays" class="back-link">
       <span class="arr">←</span>
       <span>返回随笔</span>
+    </a>
+    <a href="essay-20260625-2047.html" class="next-link">
+      <span class="next-label">下一篇</span>
+      <div class="next-title">
+        <span>占位符</span>
+        <span class="next-arr">→</span>
+      </div>
+    </a>
+  </div>
     </a>
   </div>
 
