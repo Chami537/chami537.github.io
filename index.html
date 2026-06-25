@@ -685,7 +685,7 @@ function renderPhotos(data) {
     const size = assignSize(i, data.length);
     var srcset = 'images/sm/' + p.filename + ' 400w, images/md/' + p.filename + ' 800w, images/lg/' + p.filename + ' 1920w';
     return '<div class="' + size + '" style="background:' + bg + ';--hover:' + hover + '">' +
-      '<img src="images/sm/' + p.filename + '" srcset="' + srcset + '" alt="Photo" class="cover-img">' +
+      '<img src="images/sm/' + p.filename + '" srcset="' + srcset + '" alt="Photo" class="cover-img" loading="lazy">' +
       '</div>';
   }).join('');
 }
