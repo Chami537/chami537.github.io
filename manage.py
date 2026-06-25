@@ -479,9 +479,7 @@ addEventListener('scroll', () => {{
     }});
     container.innerHTML = html;
     pageHeight = document.documentElement.scrollHeight - innerHeight;
-  }} catch(e) {{
-    document.getElementById('friends-container').innerHTML += '<a href=\"https://wdgaster703.github.io\">W.D.Gaster</a><span class=\"sep\">·</span><a href=\"https://strayrn.com/\">软糯</a>';
-  }}
+  }} catch(e) {{}}
 }})();
 
 // Lightbox
