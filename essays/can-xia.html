@@ -163,11 +163,12 @@ nav .back:hover .arr { transform: translateX(-4px); }
 }
 .essay-end-row {
   display: flex; justify-content: space-between; align-items: flex-end;
+  margin-bottom: 20px;
 }
 .essay-end .back-link {
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; align-items: center; gap: 6px;
-  transition: color .2s;
+  transition: color .2s; justify-content: center;
 }
 .essay-end .back-link:hover { color: var(--c3); }
 .essay-end .back-link .arr { transition: transform .2s; display: inline-block; }
@@ -276,12 +277,18 @@ RAW_MD -->
   <div class="essay-end">
     <div class="essay-end-row">
       <div></div>
-      <a href="/index.html#essays" class="back-link">
+      <a href="essay-20260625-2120.html" class="next-link">
+      <span class="next-label">下一篇</span>
+      <div class="next-title">
+        <span>占位符</span>
+        <span class="next-arr">→</span>
+      </div>
+    </a>
+    </div>
+    <a href="/index.html#essays" class="back-link">
         <span class="arr">←</span>
         <span>返回随笔</span>
       </a>
-      <div></div>
-    </div>
   </div>
 
 </main>
