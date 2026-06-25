@@ -422,7 +422,7 @@
         <span>SHENZHEN</span>
       </div>
     </div>
-    <div class="portrait" aria-hidden="true"><img src="images/avatar.jpg" alt="头像" class="cover-img"></div>
+    <div class="portrait" aria-hidden="true"><img src="images/avatar.jpg" alt="头像" class="cover-img" id="portrait-img"></div>
   </section>
 
   <section id="about" class="about-section">
@@ -734,6 +734,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     const about = await fetch('data/about.json?v=' + TS).then(r => r.json());
     document.getElementById('about-text').textContent = about.content;
     document.getElementById('about-text').classList.remove('skeleton-loading');
+    if (about.avatar) document.getElementById('portrait-img').src = about.avatar;
   } catch(e) {
     document.getElementById('about-text').classList.remove('skeleton-loading');
   }
