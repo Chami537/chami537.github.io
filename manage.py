@@ -176,6 +176,7 @@ nav .theme-btn:hover {{ background: var(--line); }}
 html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 
 .reading {{
+  font-family: 'Lora', 'Inter', serif;
   max-width: 680px;
   margin: 0 auto;
   padding: 120px 48px 100px;
@@ -215,6 +216,7 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 }}
 
 .essay-lede {{
+  font-family: 'Lora', 'Inter', serif;
   font-size: 19px;
   color: var(--fg);
   line-height: 1.75;
@@ -324,6 +326,7 @@ html.dark .essay-body img {{ border-color: rgba(255,255,255,0.1); }}
   display: flex; justify-content: space-between; align-items: flex-end;
 }}
 .essay-end .back-link {{
+  font-family: 'Lora', 'Inter', serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; align-items: center; gap: 6px;
   transition: color .2s;
@@ -333,6 +336,7 @@ html.dark .essay-body img {{ border-color: rgba(255,255,255,0.1); }}
 .essay-end .back-link:hover .arr {{ transform: translateX(-4px); }}
 
 .essay-end .prev-link, .essay-end .next-link {{
+  font-family: 'Lora', 'Inter', serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; flex-direction: column;
   gap: 4px; transition: color .2s;
@@ -352,15 +356,18 @@ html.dark .essay-body img {{ border-color: rgba(255,255,255,0.1); }}
 .essay-end .next-link:hover .next-arr {{ transform: translateX(4px); }}
 
 footer {{
+  font-family: 'Lora', 'Inter', serif;
   padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
   letter-spacing: .04em; border-top: 1px solid var(--line);
 }}
 .friends {{ margin-bottom: 20px; }}
 .friends-label {{
+  font-family: 'Lora', 'Inter', serif;
   font-size: 10px; font-weight: 700; letter-spacing: .12em;
   text-transform: uppercase; color: #ccc; margin-bottom: 8px;
 }}
 .friends a {{
+  font-family: 'Lora', 'Inter', serif;
   font-size: 11px; color: #bbb; text-decoration: none;
   letter-spacing: .04em; transition: color .2s;
 }}
