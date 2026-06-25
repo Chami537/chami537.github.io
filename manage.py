@@ -211,6 +211,9 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
   margin-bottom: 40px;
 }}
 .essay-meta .dot {{ color: var(--muted); }}
+.essay-meta-tag {{ font-family: 'Lora', 'Inter', serif; }}
+.essay-meta-date {{ font-variant-numeric: tabular-nums; }}
+.essay-meta-read {{ font-variant-numeric: tabular-nums; }}
 
 .essay-divider {{
   border: none; border-top: 1px solid var(--line); margin-bottom: 40px;
@@ -411,11 +414,11 @@ footer {{
   <p class="essay-epigraph">{epigraph}</p>
 
   <div class="essay-meta">
-    <span>{tag}</span>
+    <span class="essay-meta-tag">{tag}</span>
     <span class="dot">·</span>
-    <span>{date_display}</span>
+    <span class="essay-meta-date">{date_display}</span>
     <span class="dot">·</span>
-    <span>{read_time} min read</span>
+    <span class="essay-meta-read">{read_time} min read</span>
   </div>
 
   <hr class="essay-divider">
