@@ -236,7 +236,7 @@ nav .back:hover .arr {{ transform: translateX(-4px); }}
 .essay-body {{
   font-family: 'LXGW WenKai Lite', 'Noto Serif SC', serif;
 }}
-.essay-body strong, .essay-body b {{ font-weight: bold; font-size: 1.08em; color: var(--fg); }}
+.essay-body strong, .essay-body b {{ font-weight: bold; color: var(--fg); }}
 
 .essay-body img {{
   max-width: 100%; height: auto;
@@ -248,7 +248,7 @@ nav .back:hover .arr {{ transform: translateX(-4px); }}
 html.dark .essay-body img {{ border-color: rgba(255,255,255,0.1); }}
 
 .essay-body img.bleed {{
-  width: 100vw;
+  width: calc(100vw - 20px);
   max-width: 900px;
   position: relative;
   left: 50%;
@@ -441,6 +441,7 @@ addEventListener('scroll', () => {{
       if (i < friends.length - 1) html += '<span class="sep">·</span>';
     }});
     container.innerHTML = html;
+    pageHeight = document.documentElement.scrollHeight - innerHeight;
   }} catch(e) {{}}
 }})();
 
@@ -500,22 +501,27 @@ def _calc_read_time(text):
 
 def _parse_date(date_str):
     """'2026-06' or '2026-06-25 14:30' → '2026年6月' or '2026年6月25日 14:30'"""
-    parts = date_str.split(' ')
-    date_part = parts[0]
-    date_segments = date_part.split('-')
+    if not isinstance(date_str, str) or not date_str.strip():
+        return date_str if isinstance(date_str, str) else ''
+    try:
+        parts = date_str.split(' ')
+        date_part = parts[0]
+        date_segments = date_part.split('-')
 
-    result = ''
-    if len(date_segments) >= 2:
-        result = f"{date_segments[0]}年{int(date_segments[1])}月"
-    if len(date_segments) >= 3:
-        result += f"{int(date_segments[2])}日"
+        result = ''
+        if len(date_segments) >= 2 and date_segments[1]:
+            result = f"{date_segments[0]}年{int(date_segments[1])}月"
+        if len(date_segments) >= 3 and date_segments[2]:
+            result += f"{int(date_segments[2])}日"
 
-    if len(parts) >= 2 and parts[1]:
-        time_segments = parts[1].split(':')
-        if len(time_segments) >= 2:
-            result += f" {time_segments[0]}:{time_segments[1]}"
+        if len(parts) >= 2 and parts[1]:
+            time_segments = parts[1].split(':')
+            if len(time_segments) >= 2:
+                result += f" {time_segments[0]}:{time_segments[1]}"
 
-    return result or date_str
+        return result or date_str
+    except (ValueError, IndexError):
+        return date_str
 
 
 def _html_to_md(html):
@@ -770,6 +776,8 @@ def list_photos():
 @app.route('/api/photos', methods=['PUT'])
 def reorder_photos():
     """Replace entire photo array (for reordering)"""
+    if not isinstance(request.json, list):
+        return jsonify({"error": "Expected a JSON array"}), 400
     atomic_write_json('photos.json', request.json)
     return jsonify({"status": "reordered"})
 
@@ -796,7 +804,13 @@ def upload_photo():
 
     ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
-    img = Image.open(file.stream)
+    try:
+        img = Image.open(file.stream)
+        img.verify()
+        file.stream.seek(0)
+        img = Image.open(file.stream)
+    except Exception:
+        return jsonify({"error": "Invalid or corrupted image file"}), 400
 
     # Extract EXIF
     exif_data = {}
@@ -886,6 +900,8 @@ def upload_avatar():
 
 @app.route('/api/about', methods=['PUT'])
 def update_about():
+    if not isinstance(request.json, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
     atomic_write_json('about.json', request.json)
     return jsonify({"status": "updated"})
 
@@ -900,6 +916,8 @@ def list_contact():
 
 @app.route('/api/contact', methods=['PUT'])
 def update_contact():
+    if not isinstance(request.json, list):
+        return jsonify({"error": "Expected a JSON array"}), 400
     atomic_write_json('contact.json', request.json)
     return jsonify({"status": "updated"})
 
@@ -1010,7 +1028,9 @@ def git_commit():
     msg = request.json.get('message', '').strip()
     if not msg:
         return jsonify({"error": "Commit message required"}), 400
-    _run_git(['add', '-A'])
+    add_r = _run_git(['add', '-A'])
+    if add_r.returncode != 0:
+        return jsonify({"error": "git add failed: " + add_r.stderr.strip()}), 500
     r = _run_git(['commit', '-m', msg])
     if r.returncode != 0:
         return jsonify({"error": r.stderr.strip()}), 500

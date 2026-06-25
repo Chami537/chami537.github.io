@@ -824,6 +824,13 @@ async function editEssayContent(slug) {
   if (editor.style.display === 'block' && editor.dataset.slug === slug) {
     editor.style.display = 'none'; return;
   }
+  // Autosave current essay before switching
+  var oldSlug = editor.dataset.slug;
+  if (oldSlug && oldSlug !== slug) {
+    var md = document.getElementById('essay-content-md').value;
+    if (md.trim()) localStorage.setItem('draft:' + oldSlug, md);
+  }
+  clearInterval(_autosaveInterval);
   editor.style.display = 'block';
   document.getElementById('essay-content-title').textContent = '— ' + slug;
   editor.dataset.slug = slug;
@@ -833,7 +840,6 @@ async function editEssayContent(slug) {
     startAutosave(slug);
     checkDraft(slug);
   } catch(e) {
-    clearInterval(_autosaveInterval);
     document.getElementById('essay-content-md').value = '';
     toast('加载失败: ' + e.message, true);
   }
@@ -951,8 +957,8 @@ async function loadPhotos() {
     const data = await api('GET', '/api/photos');
   document.getElementById('photo-grid').innerHTML = data.map((p, i) => `
     <div class="photo-card">
-      <img src="/images/${p.filename}" alt="${esc(p.filename)}" loading="lazy">
-      <button class="del-btn" onclick="deletePhoto('${esc(p.filename)}')">×</button>
+      <img src="/images/${encodeURIComponent(p.filename)}" alt="${esc(p.filename)}" loading="lazy">
+      <button class="del-btn" data-filename="${esc(p.filename)}" onclick="deletePhoto(this.dataset.filename)">×</button>
       <div class="photo-info">
         <div class="fn">${esc(p.filename)}</div>
         <div class="sz">${p.size} ${p.exif && p.exif.camera ? '· '+esc(p.exif.camera) : ''}</div>

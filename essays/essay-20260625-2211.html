@@ -142,7 +142,7 @@ nav .back:hover .arr { transform: translateX(-4px); }
 .essay-body {
   font-family: 'LXGW WenKai Lite', 'Noto Serif SC', serif;
 }
-.essay-body strong, .essay-body b { font-weight: bold; font-size: 1.08em; color: var(--fg); }
+.essay-body strong, .essay-body b { font-weight: bold; color: var(--fg); }
 
 .essay-body img {
   max-width: 100%; height: auto;
@@ -154,7 +154,7 @@ nav .back:hover .arr { transform: translateX(-4px); }
 html.dark .essay-body img { border-color: rgba(255,255,255,0.1); }
 
 .essay-body img.bleed {
-  width: 100vw;
+  width: calc(100vw - 20px);
   max-width: 900px;
   position: relative;
   left: 50%;
@@ -371,6 +371,7 @@ addEventListener('scroll', () => {
       if (i < friends.length - 1) html += '<span class="sep">·</span>';
     });
     container.innerHTML = html;
+    pageHeight = document.documentElement.scrollHeight - innerHeight;
   } catch(e) {}
 })();
 
