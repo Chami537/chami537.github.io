@@ -17,6 +17,8 @@
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
+  :focus-visible { outline: 2px solid var(--c3); outline-offset: 2px; }
+
   :root {
     --bg: #fafaf8;
     --fg: #111;
@@ -265,13 +267,13 @@
 
   .essay-meta {
     font-size: 12px;
-    color: #ccc;
+    color: var(--muted);
     white-space: nowrap;
   }
 
   .essay-arr {
     font-size: 16px;
-    color: #ccc;
+    color: var(--muted);
     transition: transform .2s ease, color .2s ease;
     display: inline-block;
   }
@@ -302,14 +304,14 @@
   .friends { margin-bottom: 20px; }
   .friends-label {
     font-size: 10px; font-weight: 700; letter-spacing: .12em;
-    text-transform: uppercase; color: #ccc; margin-bottom: 8px;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
   }
   .friends a {
-    font-size: 11px; color: #bbb; text-decoration: none;
+    font-size: 11px; color: var(--muted); text-decoration: none;
     letter-spacing: 0.04em; transition: color .2s;
   }
   .friends a:hover { color: var(--fg); }
-  .friends .sep { color: #ddd; margin: 0 8px; }
+  .friends .sep { color: var(--muted); margin: 0 8px; }
 
   /* Skeleton loading */
   .skeleton-loading { opacity: 0.5; pointer-events: none; filter: grayscale(60%); transition: opacity .3s ease, filter .3s ease; }
@@ -320,11 +322,11 @@
   html.dark .portrait::after { border-color: #2e2e30; }
   html.dark .work-card:hover { background: #222; }
   html.dark .work-card .num { color: #333; }
-  html.dark .photo-grid div::after { border-color: var(--fg); }
   html.dark .progress { background: rgba(255,255,255,0.3); }
   html.dark .essay-row:hover { background: rgba(255,184,0,0.08); }
   html.dark .music-row:hover { background: rgba(255,255,255,0.03); }
   html.dark .contact-row:hover { background: rgba(156,39,176,0.08); }
+  html.dark .hero h1 mark { color: #1a1a1c; }
 
   /* Lightbox */
   .lb-overlay {
@@ -372,10 +374,14 @@
     }
     nav .links {
       width: 100%;
-      justify-content: center;
-      flex-wrap: wrap; /* 允许装不下的链接自动换行 */
-      gap: 12px 20px;
+      justify-content: flex-start;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 20px;
+      padding-bottom: 4px;
     }
+    nav .links::-webkit-scrollbar { display: none; }
 
     /* 2. 首屏自适应：改用 Flex 垂直排版，靠内容自身撑开高度，彻底消除巨大空隙 */
     .hero {
@@ -408,6 +414,11 @@
     .essay-meta  { font-size: 11px; }
   }
 </style>
+<script>
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+  }
+</script>
 </head>
 <body>
 
@@ -460,7 +471,7 @@
     <div class="section-tag yellow">ESSAYS</div>
     <div id="essay-tag-filter" class="essay-filter" style="margin-bottom:16px;"></div>
     <div class="essays-list skeleton-loading" id="essays-list">
-      <a class="essay-row" href="essays/can-xia.html"><div class="essay-left"><span class="essay-title">残夏</span><span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span></div><div class="essay-right"><span class="essay-tag">随笔</span><span class="essay-meta">2026.06 · 4 min</span><span class="essay-arr">→</span></div></a>
+      <a class="essay-row" href="essays/essay-20260625-2211.html"><div class="essay-left"><span class="essay-title">残夏</span><span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span></div><div class="essay-right"><span class="essay-tag">生活 · 随笔</span><span class="essay-meta">2026.06 · 1 min</span><span class="essay-arr">→</span></div></a>
     </div>
   </section>
 
@@ -510,9 +521,9 @@
 
 <!-- Lightbox -->
 <div id="lightbox" class="lb-overlay" onclick="closeLB()">
-  <button class="lb-close" onclick="closeLB()">×</button>
-  <button class="lb-prev" onclick="navLB(-1); event.stopPropagation();">‹</button>
-  <button class="lb-next" onclick="navLB(1); event.stopPropagation();">›</button>
+  <button class="lb-close" onclick="closeLB();event.stopPropagation();" aria-label="关闭">×</button>
+  <button class="lb-prev" onclick="navLB(-1); event.stopPropagation();" aria-label="上一张">‹</button>
+  <button class="lb-next" onclick="navLB(1); event.stopPropagation();" aria-label="下一张">›</button>
   <img id="lb-img" src="" alt="">
   <div class="lb-counter" id="lb-counter"></div>
 </div>
@@ -526,46 +537,63 @@
 
 <script>
 const bar = document.querySelector('.progress');
-addEventListener('scroll', () => {
-  const h = document.documentElement.scrollHeight - innerHeight;
-  if (h > 0) {
-    const t = scrollY / h;
-    bar.style.width = (t*100)+'%';
+const nlinks = document.querySelectorAll('nav .links a');
+const secs = document.querySelectorAll('section[id]');
+
+// Cached layout values — avoid forced reflow on every scroll tick
+var sectionTops = [];
+var pageHeight = 0;
+
+function updateLayoutCache() {
+  sectionTops = Array.from(secs).map(function(s) { return { id: s.id, top: s.offsetTop - 200 }; });
+  pageHeight = document.documentElement.scrollHeight - innerHeight;
+}
+
+function progressColor(t) {
+  var colors = ['#ff4d4d', '#ffb800', '#0066ff', '#00c853', '#9c27b0'];
+  if (pageHeight <= 0 || sectionTops.length < 2) return colors[0];
+  var stops = sectionTops.map(function(s) { return s.top / pageHeight; });
+  if (t < stops[0]) return colors[0];
+  for (var i = 0; i < stops.length - 1; i++) {
+    if (t >= stops[i] && t < stops[i+1]) {
+      var seg = (t - stops[i]) / (stops[i+1] - stops[i]);
+      return lerpColor(colors[i], colors[Math.min(i+1, colors.length-1)], seg);
+    }
+  }
+  return colors[colors.length - 1];
+}
+
+function lerpColor(a, b, t) {
+  var ah = parseInt(a.slice(1), 16), bh = parseInt(b.slice(1), 16);
+  var ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
+  var br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
+  return 'rgb(' + Math.round(ar + (br - ar) * t) + ',' + Math.round(ag + (bg - ag) * t) + ',' + Math.round(ab + (bb - ab) * t) + ')';
+}
+
+updateLayoutCache();
+addEventListener('resize', updateLayoutCache);
+window.addEventListener('load', updateLayoutCache);
+
+// Single merged scroll handler — reads only cached values, no offsetTop / scrollHeight reflow
+addEventListener('scroll', function() {
+  if (pageHeight > 0) {
+    var t = scrollY / pageHeight;
+    bar.style.width = (t * 100) + '%';
     bar.style.background = progressColor(t);
   } else {
     bar.style.width = '0';
   }
 
-  function progressColor(t) {
-    const colors = ['#ff4d4d', '#ffb800', '#0066ff', '#00c853', '#9c27b0'];
-    const total = document.documentElement.scrollHeight - innerHeight;
-    if (total <= 0 || secs.length < 2) return colors[0];
-    const stops = secs.length ? Array.from(secs).map(s => (s.offsetTop - 200) / total) : [];
-    if (t < stops[0]) return colors[0];
-    for (let i = 0; i < stops.length - 1; i++) {
-      if (t >= stops[i] && t < stops[i+1]) {
-        const seg = (t - stops[i]) / (stops[i+1] - stops[i]);
-        return lerpColor(colors[i], colors[Math.min(i+1, colors.length-1)], seg);
-      }
-    }
-    return colors[colors.length - 1];
+  var cur = '';
+  for (var i = 0; i < sectionTops.length; i++) {
+    if (scrollY >= sectionTops[i].top) cur = sectionTops[i].id;
   }
-  function lerpColor(a, b, t) {
-    const ah = parseInt(a.slice(1), 16), bh = parseInt(b.slice(1), 16);
-    const ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
-    const br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
-    return `rgb(${Math.round(ar + (br - ar) * t)},${Math.round(ag + (bg - ag) * t)},${Math.round(ab + (bb - ab) * t)})`;
+  if (scrollY + innerHeight >= pageHeight + innerHeight - 2) {
+    cur = sectionTops[sectionTops.length - 1].id;
   }
-});
-
-const nlinks = document.querySelectorAll('nav .links a');
-const secs = document.querySelectorAll('section[id]');
-addEventListener('scroll', () => {
-  let cur = '';
-  secs.forEach(s => { if (scrollY >= s.offsetTop - 200) cur = s.id; });
-  const atBottom = scrollY + innerHeight >= document.documentElement.scrollHeight - 2;
-  if (atBottom) cur = secs[secs.length - 1].id;
-  nlinks.forEach(a => a.classList.toggle('active', a.getAttribute('href')==='#'+cur));
+  for (var i = 0; i < nlinks.length; i++) {
+    nlinks[i].classList.toggle('active', nlinks[i].getAttribute('href') === '#' + cur);
+  }
 });
 
 // Live star counts
@@ -604,7 +632,9 @@ function initMusicPlayer() {
       curRow = row;
       row.classList.add('playing');
       player.src = encodeURI(src);
-      player.play();
+      player.play().catch(function() {
+        if (curRow) { curRow.classList.remove('playing', 'paused'); curRow.style.removeProperty('--progress'); curRow = null; }
+      });
     });
   });
 
@@ -627,7 +657,7 @@ function initMusicPlayer() {
 function htmlEncode(str) {
   const d = document.createElement('div');
   d.textContent = str;
-  return d.innerHTML;
+  return d.innerHTML.replace(/"/g, '&quot;');
 }
 
 const TS = Date.now(); // cache busting timestamp, fixed per page load
@@ -670,7 +700,7 @@ function buildEssayFilter() {
   });
   var html = '<span class="ef-chip' + (!_essayFilter ? ' active' : '') + '" onclick="filterEssays(\'\')">全部</span>';
   tags.forEach(function(t) {
-    html += '<span class="ef-chip' + (_essayFilter === t ? ' active' : '') + '" onclick="filterEssays(\'' + t + '\')">' + t + '</span>';
+    html += '<span class="ef-chip' + (_essayFilter === t ? ' active' : '') + '" data-tag="' + htmlEncode(t) + '" onclick="filterEssays(this.getAttribute(\'data-tag\'))">' + htmlEncode(t) + '</span>';
   });
   document.getElementById('essay-tag-filter').innerHTML = html;
 }
@@ -701,7 +731,7 @@ function renderEssayList() {
       '</div>' +
       '<div class="essay-right">' +
       '<span class="essay-tag">' + htmlEncode((e.tag || '').replace(/, ?/g, ' · ')) + '</span>' +
-      '<span class="essay-meta">' + dateDisplay + ' · ' + e.readTime + ' min</span>' +
+      '<span class="essay-meta">' + dateDisplay + ' · ' + (e.readTime || 1) + ' min</span>' +
       '<span class="essay-arr">→</span>' +
       '</div>' +
       '</a>';
@@ -735,9 +765,10 @@ function renderPhotos(data) {
     const bg = bgColors[i % bgColors.length];
     const hover = hoverColors[i % hoverColors.length];
     const size = assignSize(i, data.length);
-    var srcset = 'images/sm/' + p.filename + ' 400w, images/md/' + p.filename + ' 800w, images/lg/' + p.filename + ' 1920w';
+    var fn = encodeURIComponent(p.filename);
+    var srcset = 'images/sm/' + fn + ' 400w, images/md/' + fn + ' 800w, images/lg/' + fn + ' 1920w';
     return '<div class="' + size + '" style="background:' + bg + ';--hover:' + hover + '">' +
-      '<img src="images/sm/' + p.filename + '" srcset="' + srcset + '" alt="Photo" class="cover-img" loading="lazy">' +
+      '<img src="images/sm/' + fn + '" srcset="' + srcset + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo ' + htmlEncode(p.filename) + '" class="cover-img" loading="lazy">' +
       '</div>';
   }).join('');
 }
@@ -802,15 +833,15 @@ document.addEventListener('DOMContentLoaded', async function() {
   await loadSection('friends', 'friends-container', renderFriends);
   await loadSection('music', 'music-list', renderMusic);
   initMusicPlayer();
-  // Init theme & lightbox after photos loaded
-  initTheme();
+  // Init theme button icon & lightbox after photos loaded
+  initThemeBtn();
   initLB();
+  updateLayoutCache();
 });
 
 // ═══ Dark Mode ═══
-function initTheme() {
+function initThemeBtn() {
   if (localStorage.getItem('theme') === 'dark') {
-    document.documentElement.classList.add('dark');
     document.getElementById('theme-btn').textContent = '☀';
   }
 }
@@ -835,9 +866,11 @@ function initLB() {
     var img = e.target.closest('.photo-grid div')?.querySelector('img');
     if (!img) return;
     lbPhotos = Array.from(document.querySelectorAll('#photo-grid img')).map(function(el) {
-      return { src: el.src.replace('/sm/', '/lg/'), alt: el.alt };
+      var filename = el.src.split('/').pop().split('?')[0];
+      return { src: 'images/lg/' + filename, alt: el.alt };
     });
-    lbIndex = lbPhotos.findIndex(function(p) { return p.src === img.src.replace('/sm/', '/lg/'); });
+    var clickedFile = img.src.split('/').pop().split('?')[0];
+    lbIndex = lbPhotos.findIndex(function(p) { return p.src.endsWith('/' + clickedFile); });
     openLB();
   });
   document.addEventListener('keydown', function(e) {
