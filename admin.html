@@ -118,7 +118,7 @@ body {
   padding: 2px 8px; border-radius: 4px; background: #f0f0f0; color: #666;
 }
 .tag-chip {
-  display: inline-block; padding: 4px 12px; border-radius: 20px;
+  display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px;
   font-size: 12px; font-weight: 600; cursor: pointer;
   border: 1px solid var(--border); background: var(--card-bg);
   color: var(--muted); transition: all .15s;
@@ -126,6 +126,10 @@ body {
 }
 .tag-chip:hover { border-color: var(--accent); color: var(--accent); }
 .tag-chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.tag-chip[draggable] { cursor: grab; }
+.tag-chip[draggable]:active { cursor: grabbing; }
+.tag-del { font-size: 14px; line-height: 1; opacity: 0.4; transition: opacity .15s; cursor: pointer; }
+.tag-del:hover { opacity: 1; color: var(--danger); }
 
 /* Photo grid */
 .photo-grid-admin {
@@ -270,6 +274,15 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
           <img id="about-avatar-preview" src="" alt="头像" style="width:64px;height:64px;border-radius:50%;object-fit:cover;border:2px solid var(--border);">
           <input type="file" id="about-avatar-file" accept="image/*" onchange="uploadAvatar()" style="font-size:12px;">
         </div>
+      </div>
+      <div class="form-group">
+        <label>首页标签</label>
+        <div id="about-tag-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+        <div style="display:flex;gap:4px;">
+          <input id="about-new-tag" placeholder="新增标签..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
+          <button class="btn btn-sm" onclick="addAboutCustomTag()">+</button>
+        </div>
+        <input type="hidden" id="about-tags">
       </div>
       <div class="form-group">
         <label>简介内容</label>
@@ -561,6 +574,8 @@ async function loadAbout() {
     const data = await api('GET', '/api/about');
     document.getElementById('about-content').value = data.content || '';
     document.getElementById('about-avatar-preview').src = data.avatar || '';
+    document.getElementById('about-tags').value = (data.tags || []).join(', ');
+    renderAboutTagChips();
   } catch(e) { toast(e.message, true); }
 }
 
@@ -580,6 +595,7 @@ async function saveAbout() {
   try {
     await api('PUT', '/api/about', {
       content: document.getElementById('about-content').value,
+      tags: (function() { var all = getAboutTags(), sel = document.getElementById('about-tags').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean); return all.filter(function(t){return sel.indexOf(t)>=0;}); })(),
       avatar: document.getElementById('about-avatar-preview').dataset.path || document.getElementById('about-avatar-preview').src.split('/').slice(-2).join('/')
     });
     markClean();
@@ -702,8 +718,12 @@ async function loadEssays() {
 
 // ═══ Tag system ═══
 function getTags() {
-  try { return JSON.parse(localStorage.getItem('essay-tags') || '["随笔","生活","技术"]'); }
-  catch(e) { return ['随笔','生活','技术']; }
+  try { var stored = JSON.parse(localStorage.getItem('essay-tags') || '["随笔","生活","技术"]'); }
+  catch(e) { stored = ['随笔','生活','技术']; }
+  // Merge tags from current selection (may include tags from data file not yet in localStorage)
+  var cur = document.getElementById('essay-tag').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
+  cur.forEach(function(t) { if (stored.indexOf(t) < 0) stored.push(t); });
+  return stored;
 }
 function saveTags(tags) { localStorage.setItem('essay-tags', JSON.stringify(tags)); }
 
@@ -712,10 +732,24 @@ function renderTagChips(selected) {
   var html = '';
   tags.forEach(function(t) {
     var active = (selected || '').split(/[,，]/).map(function(s){return s.trim();}).indexOf(t) >= 0;
-    html += '<span class="tag-chip' + (active ? ' active' : '') + '" data-tag="' + esc(t) + '" onclick="toggleTag(this.getAttribute(\'data-tag\'))">' + esc(t) + '</span>';
+    html += '<span class="tag-chip' + (active ? ' active' : '') + '" data-tag="' + esc(t) + '">' +
+      '<span onclick="toggleTag(\'' + esc(t) + '\')">' + esc(t) + '</span>' +
+      '<span class="tag-del" onclick="event.stopPropagation();deleteTag(\'' + esc(t) + '\')" title="删除标签">×</span>' +
+      '</span>';
   });
   document.getElementById('tag-chips').innerHTML = html;
   document.getElementById('essay-tag-display').textContent = selected ? '已选: ' + selected : '';
+}
+
+function deleteTag(tag) {
+  var tags = getTags();
+  var idx_t = tags.indexOf(tag);
+  if (idx_t >= 0) { tags.splice(idx_t, 1); saveTags(tags); }
+  // Also remove from current selection
+  var cur = document.getElementById('essay-tag').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
+  var idx_c = cur.indexOf(tag);
+  if (idx_c >= 0) { cur.splice(idx_c, 1); document.getElementById('essay-tag').value = cur.join(', '); }
+  renderTagChips(document.getElementById('essay-tag').value);
 }
 
 function toggleTag(tag) {
@@ -737,6 +771,116 @@ function addCustomTag() {
   renderTagChips(document.getElementById('essay-tag').value);
   // Auto-select the new tag
   toggleTag(tag);
+}
+
+// ═══ About tag system ═══
+function getAboutTags() {
+  try { var stored = JSON.parse(localStorage.getItem('about-tags') || '["CS STUDENT","PHOTOGRAPHER","SHENZHEN"]'); }
+  catch(e) { stored = ['CS STUDENT','PHOTOGRAPHER','SHENZHEN']; }
+  // Merge tags from current selection (may include tags from data file not yet in localStorage)
+  var cur = document.getElementById('about-tags').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
+  cur.forEach(function(t) { if (stored.indexOf(t) < 0) stored.push(t); });
+  return stored;
+}
+function saveAboutTags(tags) { localStorage.setItem('about-tags', JSON.stringify(tags)); }
+
+var _aboutDragIdx = -1;
+var _aboutEditingTag = null;
+
+function renderAboutTagChips() {
+  var tags = getAboutTags();
+  var selected = document.getElementById('about-tags').value;
+  var selList = selected ? selected.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean) : [];
+  var html = '';
+  tags.forEach(function(t, i) {
+    var active = selList.indexOf(t) >= 0;
+    html += '<span class="tag-chip' + (active ? ' active' : '') + '" data-tag="' + esc(t) + '" data-idx="' + i + '" draggable="true"' +
+      ' ondragstart="aboutDragStart(event,' + i + ')" ondragover="aboutDragOver(event)" ondrop="aboutDrop(event,' + i + ')" ondragend="aboutDragEnd(event)">' +
+      '<span onclick="editAboutChip(\'' + esc(t) + '\')">' + esc(t) + '</span>' +
+      '<span class="tag-del" onclick="event.stopPropagation();deleteAboutTag(\'' + esc(t) + '\')" title="删除标签">×</span>' +
+      '</span>';
+  });
+  document.getElementById('about-tag-chips').innerHTML = html;
+}
+
+function editAboutChip(tag) {
+  _aboutEditingTag = tag;
+  var input = document.getElementById('about-new-tag');
+  input.value = tag;
+  input.focus();
+  input.select();
+}
+
+function aboutDragStart(e, idx) {
+  _aboutDragIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.target.style.opacity = '0.5';
+}
+
+function aboutDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function aboutDrop(e, targetIdx) {
+  e.preventDefault();
+  if (_aboutDragIdx < 0 || _aboutDragIdx === targetIdx) return;
+  var tags = getAboutTags();
+  var moved = tags.splice(_aboutDragIdx, 1)[0];
+  tags.splice(targetIdx, 0, moved);
+  saveAboutTags(tags);
+  _aboutDragIdx = -1;
+  renderAboutTagChips();
+  saveAbout(); // auto-sync tag order to server
+}
+
+function aboutDragEnd(e) {
+  e.target.style.opacity = '';
+  _aboutDragIdx = -1;
+}
+
+function deleteAboutTag(tag) {
+  var tags = getAboutTags();
+  var idx_t = tags.indexOf(tag);
+  if (idx_t >= 0) { tags.splice(idx_t, 1); saveAboutTags(tags); }
+  var cur = document.getElementById('about-tags').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
+  var idx_c = cur.indexOf(tag);
+  if (idx_c >= 0) { cur.splice(idx_c, 1); document.getElementById('about-tags').value = cur.join(', '); }
+  renderAboutTagChips();
+}
+
+function toggleAboutTag(tag) {
+  var cur = document.getElementById('about-tags').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
+  var idx = cur.indexOf(tag);
+  if (idx >= 0) { cur.splice(idx, 1); } else { cur.push(tag); }
+  document.getElementById('about-tags').value = cur.join(', ');
+  renderAboutTagChips();
+}
+
+function addAboutCustomTag() {
+  var input = document.getElementById('about-new-tag');
+  var tag = input.value.trim();
+  if (!tag) return;
+  var tags = getAboutTags();
+  // If editing an existing tag (rename)
+  if (_aboutEditingTag && tags.indexOf(_aboutEditingTag) >= 0 && tag !== _aboutEditingTag) {
+    var idx = tags.indexOf(_aboutEditingTag);
+    tags[idx] = tag;
+    // Also update hidden input selection
+    var cur = document.getElementById('about-tags').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
+    var ci = cur.indexOf(_aboutEditingTag);
+    if (ci >= 0) { cur[ci] = tag; document.getElementById('about-tags').value = cur.join(', '); }
+    saveAboutTags(tags);
+    _aboutEditingTag = null;
+    input.value = '';
+    renderAboutTagChips();
+    return;
+  }
+  _aboutEditingTag = null;
+  if (tags.indexOf(tag) < 0) { tags.push(tag); saveAboutTags(tags); }
+  input.value = '';
+  renderAboutTagChips();
+  toggleAboutTag(tag);
 }
 
 function genSlug(title) {

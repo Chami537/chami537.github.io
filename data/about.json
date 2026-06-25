@@ -1,4 +1,15 @@
 {
-  "content": "HITSZ 大一 \nCS 学生、摄影师，现居深圳。\n喜欢拍天空，写点随笔，偶尔做点小工具。相信好的设计不需要太多解释。",
+  "content": "HITSZ 大一 \nCS 学生、摄影师，现居深圳。\n喜欢拍天空，写点随笔，偶尔做点小工具。\n相信好的设计不需要太多解释。",
+  "tags": [
+    "CS Student",
+    "ShenZhen/Hong Kong",
+    "Photographer",
+    "Reading",
+    "Vibe Coding",
+    "Python",
+    "C#",
+    "Investment",
+    "Riding"
+  ],
   "avatar": "images/avatar.jpg"
 }

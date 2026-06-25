@@ -88,7 +88,7 @@
     background: var(--c3); color: var(--fg); padding: 0 8px;
   }
   .hero .meta {
-    display: flex; gap: 40px; margin-top: 36px; padding-top: 0;
+    display: flex; flex-wrap: wrap; gap: 40px; margin-top: 36px; padding-top: 0;
   }
   .hero .meta span { font-size: 13px; font-weight: 600; letter-spacing: 0.04em; }
   .cover-img { width: 100%; height: 100%; object-fit: cover; }
@@ -442,7 +442,7 @@
   <section class="hero">
     <div>
       <h1>Building<br>things that<br><mark>feel right</mark></h1>
-      <div class="meta">
+      <div class="meta" id="hero-meta">
         <span>CS STUDENT</span>
         <span>PHOTOGRAPHER</span>
         <span>SHENZHEN</span>
@@ -723,7 +723,11 @@ function renderEssayList() {
   var shown = filtered.slice(0, MAX);
   var hidden = filtered.length - MAX;
   shown.forEach(function(e) {
-    var dateDisplay = (e.date || '').split(' ')[0].split('-').join('.');
+    var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var dp = (e.date || '').split(' ')[0].split('-');
+    var dateDisplay = dp.length >= 3 ? M[+dp[1]-1] + ' ' + (+dp[2]) + ', ' + dp[0] : dp.length >= 2 ? M[+dp[1]-1] + ' ' + dp[0] : (e.date || '');
+    var hasTime = (e.date || '').split(' ').length >= 2;
+    if (hasTime) dateDisplay = (e.date || '').split(' ')[1].split(':').slice(0,2).join(':') + ', ' + dateDisplay;
     html += '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html">' +
       '<div class="essay-left">' +
       '<span class="essay-title">' + htmlEncode(e.title) + '</span>' +
@@ -818,6 +822,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     document.getElementById('about-text').textContent = about.content;
     document.getElementById('about-text').classList.remove('skeleton-loading');
     if (about.avatar) document.getElementById('portrait-img').src = about.avatar;
+    if (about.tags && about.tags.length) {
+      document.getElementById('hero-meta').innerHTML = about.tags.map(function(t) { return '<span>' + htmlEncode(t) + '</span>'; }).join('');
+    }
   } catch(e) {
     document.getElementById('about-text').classList.remove('skeleton-loading');
   }
