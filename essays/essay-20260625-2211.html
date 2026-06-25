@@ -235,7 +235,8 @@ html.dark .essay-body img { border-color: rgba(255,255,255,0.1); }
 .essay-end .back-link {
   font-family: 'Lora', 'Inter', serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
-  text-decoration: none; display: flex; align-items: center; gap: 6px;
+  text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 24px;
   transition: color .2s;
 }
 .essay-end .back-link:hover { color: var(--c3); }
@@ -363,10 +364,6 @@ RAW_MD -->
   <div class="essay-end">
     <div class="essay-end-row">
       <div></div>
-      <a href="/index.html#essays" class="back-link">
-        <span class="arr">←</span>
-        <span>返回随笔</span>
-      </a>
       <a href="essay-20260626-0152.html" class="next-link">
       <span class="next-label">下一篇</span>
       <div class="next-title">
@@ -375,6 +372,10 @@ RAW_MD -->
       </div>
     </a>
     </div>
+    <a href="/" class="back-link">
+      <span class="arr">←</span>
+      <span>返回主页</span>
+    </a>
   </div>
 
 </main>

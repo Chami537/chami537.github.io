@@ -235,7 +235,8 @@ html.dark .essay-body img { border-color: rgba(255,255,255,0.1); }
 .essay-end .back-link {
   font-family: 'Lora', 'Inter', serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
-  text-decoration: none; display: flex; align-items: center; gap: 6px;
+  text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;
+  margin-top: 24px;
   transition: color .2s;
 }
 .essay-end .back-link:hover { color: var(--c3); }
@@ -521,12 +522,12 @@ RAW_MD -->
         <span>残夏</span>
       </div>
     </a>
-      <a href="/index.html#essays" class="back-link">
-        <span class="arr">←</span>
-        <span>返回随笔</span>
-      </a>
       <div></div>
     </div>
+    <a href="/" class="back-link">
+      <span class="arr">←</span>
+      <span>返回主页</span>
+    </a>
   </div>
 
 </main>
