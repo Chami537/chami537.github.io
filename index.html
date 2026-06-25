@@ -300,6 +300,9 @@
   .friends a:hover { color: var(--fg); }
   .friends .sep { color: #ddd; margin: 0 8px; }
 
+  /* Skeleton loading */
+  .skeleton-loading { opacity: 0.5; pointer-events: none; filter: grayscale(60%); transition: opacity .3s ease, filter .3s ease; }
+
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
@@ -386,74 +389,17 @@
 
   <section id="work">
     <div class="section-tag red">WORK</div>
-    <div class="work-grid">
-      <a class="work-card" data-repo="Chami537/qqbot" href="https://github.com/Chami537/qqbot" target="_blank">
-        <div class="num">01</div>
-        <h3>QQ Bot</h3>
-        <p>群聊机器人 · NoneBot2 驱动 · 插件系统 + SQLite 数据面板 · Windows 本地常驻</p>
-        <div class="line-tag">Python · NoneBot2 · SQLite <span class="stars"></span></div>
-      </a>
-      <a class="work-card" data-repo="HIT-A/HITA_Android" href="https://github.com/HIT-A/HITA_Android" target="_blank">
-        <div class="num">02</div>
-        <h3>HITA Agent</h3>
-        <p>哈工大课表管理系统 · 周视图/考试倒计时/成绩查询</p>
-        <div class="line-tag">Kotlin · Jetpack Compose <span class="stars"></span></div>
-      </a>
-      <a class="work-card" data-repo="Chami537/DateMemory" href="https://github.com/Chami537/DateMemory" target="_blank">
-        <div class="num">03</div>
-        <h3>DateMemory</h3>
-        <p>黑白极简倒计时/累计日 · 桌面小组件 · Material You</p>
-        <div class="line-tag">Kotlin · Jetpack Compose <span class="stars"></span></div>
-      </a>
-      <a class="work-card" data-repo="Chami537/flightcompare" href="https://github.com/Chami537/flightcompare" target="_blank">
-        <div class="num">04</div>
-        <h3>FlightCompare</h3>
-        <p>机票比价工具 · 多平台聚合搜索 · 价格趋势追踪</p>
-        <div class="line-tag">Kotlin <span class="stars"></span></div>
-      </a>
-      <a class="work-card" data-repo="Chami537/claude-skills" href="https://github.com/Chami537/claude-skills" target="_blank">
-        <div class="num">05</div>
-        <h3>Claude Skills</h3>
-        <p>自用 Claude Code 工作流技能集 · 含 MCP Server · dev/fix/refactor 全流程</p>
-        <div class="line-tag">Markdown · Python <span class="stars"></span></div>
-      </a>
-      <a class="work-card" data-repo="Chami537/chami537.github.io" href="https://github.com/Chami537/chami537.github.io" target="_blank">
-        <div class="num">06</div>
-        <h3>本站</h3>
-        <p>手写 HTML/CSS/JS · 零框架零依赖 · 一个下午 vibecoding 产物</p>
-        <div class="line-tag">HTML · CSS · JavaScript <span class="stars"></span></div>
-      </a>
-    </div>
+    <div class="work-grid skeleton-loading" id="work-container"></div>
   </section>
 
   <section id="essays">
     <div class="section-tag yellow">ESSAYS</div>
-    <div class="essays-list">
-
-      <a class="essay-row" href="essays/can-xia.html">
-        <div class="essay-left">
-          <span class="essay-title">残夏</span>
-          <span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span>
-        </div>
-        <div class="essay-right">
-          <span class="essay-tag">随笔</span>
-          <span class="essay-meta">2025.07 · 4 min</span>
-          <span class="essay-arr">→</span>
-        </div>
-      </a>
-
-    </div>
+    <div class="essays-list skeleton-loading" id="essays-list"></div>
   </section>
 
   <section id="photos">
     <div class="section-tag blue">PHOTOGRAPHY</div>
-    <div class="photo-grid">
-      <div class="lg"><img src="images/0bafcdb21b37a78577502401bbf9be97.jpg" alt="Photo 1" class="cover-img"></div>
-      <div class="md"><img src="images/15a70814318ed74d5ec2448532f7fab5.jpg" alt="Photo 2" class="cover-img"></div>
-      <div class="sm"><img src="images/6400b35c75c004c99313eb4d07cb337f.jpg" alt="Photo 3" class="cover-img"></div>
-      <div class="sm"><img src="images/68b93d07a342daef4f8483cdb249c4f7.jpg" alt="Photo 4" class="cover-img"></div>
-      <div class="sm"><img src="images/d799f0dd4097ac45c2680798af20b457.jpg" alt="Photo 5" class="cover-img"></div>
-    </div>
+    <div class="photo-grid skeleton-loading" id="photo-grid"></div>
   </section>
 
   <section id="music">
@@ -490,11 +436,8 @@
 </main>
 
 <footer>
-  <div class="friends">
+  <div class="friends skeleton-loading" id="friends-container">
     <div class="friends-label">FOLLOW</div>
-    <a href="#">好友A</a><span class="sep">·</span>
-    <a href="#">好友B</a><span class="sep">·</span>
-    <a href="#">好友C</a>
   </div>
   © <script>document.write(new Date().getFullYear())</script> Chami
 </footer>
@@ -544,14 +487,17 @@ addEventListener('scroll', () => {
 });
 
 // Live star counts
-document.querySelectorAll('[data-repo]').forEach(card => {
-  const repo = card.dataset.repo;
-  const el = card.querySelector('.stars');
-  fetch(`https://api.github.com/repos/${repo}`)
-    .then(r => r.json())
-    .then(d => { if (d.stargazers_count != null) el.textContent = d.stargazers_count + ' stars'; })
-    .catch(() => {});
-});
+function initStarFetches() {
+  document.querySelectorAll('[data-repo]').forEach(card => {
+    const repo = card.dataset.repo;
+    const el = card.querySelector('.stars');
+    fetch(`https://api.github.com/repos/${repo}`)
+      .then(r => r.json())
+      .then(d => { if (d.stargazers_count != null) el.textContent = d.stargazers_count + ' stars'; })
+      .catch(() => {});
+  });
+}
+initStarFetches();
 
 const player = document.getElementById('player');
 const rows = document.querySelectorAll('.music-row');
@@ -588,6 +534,87 @@ player.addEventListener('ended', () => {
     curRow.style.removeProperty('--progress');
   }
   curRow = null;
+});
+
+// ═══════════════════════════════════
+// JSON Data Loading (skeleton + cache busting + fallback)
+// ═══════════════════════════════════
+function htmlEncode(str) {
+  const d = document.createElement('div');
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+const TS = Date.now(); // cache busting timestamp, fixed per page load
+
+async function loadSection(name, containerId, renderFn) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  try {
+    const r = await fetch('data/' + name + '.json?v=' + TS);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const data = await r.json();
+    container.innerHTML = renderFn(data);
+    container.classList.remove('skeleton-loading');
+    if (name === 'work') initStarFetches();
+  } catch(e) {
+    console.info('[本地预览] ' + name + ' 降级使用内嵌 HTML');
+    container.classList.remove('skeleton-loading');
+  }
+}
+
+function renderWork(data) {
+  return data.map((w, i) => {
+    const num = String(i + 1).padStart(2, '0');
+    return '<a class="work-card" data-repo="' + htmlEncode(w.repo||'') + '" href="' + htmlEncode(w.url) + '" target="_blank">' +
+      '<div class="num">' + num + '</div>' +
+      '<h3>' + htmlEncode(w.title) + '</h3>' +
+      '<p>' + htmlEncode(w.description) + '</p>' +
+      '<div class="line-tag">' + htmlEncode((w.tags||[]).join(' · ')) + ' <span class="stars"></span></div>' +
+      '</a>';
+  }).join('');
+}
+
+function renderEssays(data) {
+  return data.map(e => {
+    var dateDisplay = e.date.split('-').join('.');
+    return '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html">' +
+      '<div class="essay-left">' +
+      '<span class="essay-title">' + htmlEncode(e.title) + '</span>' +
+      (e.excerpt ? '<span class="essay-excerpt">' + htmlEncode(e.excerpt) + '</span>' : '') +
+      '</div>' +
+      '<div class="essay-right">' +
+      '<span class="essay-tag">' + htmlEncode(e.tag) + '</span>' +
+      '<span class="essay-meta">' + dateDisplay + ' · ' + e.readTime + ' min</span>' +
+      '<span class="essay-arr">→</span>' +
+      '</div>' +
+      '</a>';
+  }).join('');
+}
+
+function renderPhotos(data) {
+  return data.map(p => {
+    var srcset = 'images/sm/' + p.filename + ' 400w, images/md/' + p.filename + ' 800w, images/lg/' + p.filename + ' 1920w';
+    return '<div class="' + p.size + '">' +
+      '<img src="images/sm/' + p.filename + '" srcset="' + srcset + '" alt="Photo" class="cover-img">' +
+      '</div>';
+  }).join('');
+}
+
+function renderFriends(data) {
+  var html = '<div class="friends-label">FOLLOW</div>';
+  data.forEach((f, i) => {
+    html += '<a href="' + htmlEncode(f.url) + '">' + htmlEncode(f.name) + '</a>';
+    if (i < data.length - 1) html += '<span class="sep">·</span>';
+  });
+  return html;
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  loadSection('work', 'work-container', renderWork);
+  loadSection('essays', 'essays-list', renderEssays);
+  loadSection('photos', 'photo-grid', renderPhotos);
+  loadSection('friends', 'friends-container', renderFriends);
 });
 </script>
 
