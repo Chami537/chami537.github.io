@@ -57,13 +57,14 @@
   {
     "id": 6,
     "title": "本站",
-    "description": "手写 HTML/CSS/JS · 零框架零依赖 · 一个下午 vibecoding 产物",
+    "description": " HTML/CSS/JS · 后端管理 · panel",
     "url": "https://github.com/Chami537/chami537.github.io",
     "repo": "Chami537/chami537.github.io",
     "tags": [
       "HTML",
       "CSS",
-      "JavaScript"
+      "JavaScript",
+      "Python"
     ]
   }
 ]
