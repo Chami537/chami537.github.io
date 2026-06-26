@@ -562,10 +562,25 @@ def update_essay_meta(slug):
     essays = load_json('essays.json')
     for i, e in enumerate(essays):
         if e['slug'] == slug:
+            new_slug = request.json.get('slug', slug)
+            if not new_slug or not re.match(r'^[a-z0-9-]+$', new_slug):
+                return jsonify({"error": "slug 只能包含小写字母、数字和连字符"}), 400
+            if new_slug != slug and any(e2['slug'] == new_slug for e2 in essays):
+                return jsonify({"error": "slug 已存在"}), 409
             essays[i].update(request.json)
-            essays[i]['slug'] = slug
+            essays[i]['slug'] = new_slug
             atomic_write_json('essays.json', essays)
-            _sync_essay_html(essays[i])
+            # Rename HTML file if slug changed
+            if new_slug != slug:
+                old_html = os.path.join(ESSAYS_DIR, f"{slug}.html")
+                new_html = os.path.join(ESSAYS_DIR, f"{new_slug}.html")
+                if os.path.exists(old_html):
+                    os.replace(old_html, new_html)
+                # Re-sync all essays' nav links since slug ordering changed
+                for e2 in essays:
+                    _sync_essay_html(e2)
+            else:
+                _sync_essay_html(essays[i])
             _generate_feeds()
             return jsonify(essays[i])
     return jsonify({"error": "Not found"}), 404

@@ -321,6 +321,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       <h2 style="font-size:18px;">Essays 文章管理</h2>
       <div style="display:flex; gap:8px;">
         <button class="btn" onclick="promptNewTag()">+ 新建标签</button>
+        <button class="btn" id="delete-tag-btn" onclick="toggleDeleteTagMode()">删除标签</button>
         <button class="btn btn-primary" onclick="showEssayForm()">+ 新建文章</button>
       </div>
     </div>
@@ -333,14 +334,10 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
     <div id="essay-form" style="display:none;" class="card">
       <h3 id="essay-form-title">新建随笔</h3>
       <input type="hidden" id="essay-edit-slug">
-      <div class="form-group"><label>标题</label><input id="essay-title" oninput="autoSlug()"><span style="font-size:11px;color:var(--muted);margin-left:8px;" id="slug-preview"></span></div>
+      <div class="form-group"><label>标题</label><input id="essay-title"></div>
       <div class="form-group">
         <label>分类标签 <span style="font-weight:400;color:var(--muted);" id="essay-tag-display"></span></label>
         <div id="tag-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
-        <div style="display:flex;gap:4px;">
-          <input id="essay-new-tag" placeholder="新增标签..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
-          <button class="btn btn-sm" onclick="addCustomTag()">+</button>
-        </div>
         <input type="hidden" id="essay-tag">
       </div>
       <div class="form-group"><label>日期</label><input id="essay-date" placeholder="自动"></div>
@@ -733,7 +730,14 @@ async function loadEssays() {
 
       let hoverAttr = !isActive ? 'onmouseover="this.style.borderColor=\'var(--accent)\'; this.style.color=\'var(--accent)\′" onmouseout="this.style.borderColor=\'var(--border)\'; this.style.color=\'var(--muted)\′"' : '';
 
-      tabsHtml += '<button style="' + btnStyle + '" ' + hoverAttr + ' onclick="switchEssayTag(\'' + esc(tag) + '\')">' + esc(tag) + '</button>';
+      if (essayDeleteTagMode) {
+        tabsHtml += '<span style="display:inline-flex;align-items:center;gap:4px;' + btnStyle + '">' +
+          '<span onclick="switchEssayTag(\'' + esc(tag) + '\')" style="cursor:pointer;">' + esc(tag) + '</span>' +
+          '<span onclick="event.stopPropagation();deleteTagFromTabs(\'' + esc(tag) + '\')" style="cursor:pointer;font-size:14px;opacity:0.5;line-height:1;" title="删除标签">\u00D7</span>' +
+          '</span>';
+      } else {
+        tabsHtml += '<button style="' + btnStyle + '" ' + hoverAttr + ' onclick="switchEssayTag(\'' + esc(tag) + '\')">' + esc(tag) + '</button>';
+      }
     });
     document.getElementById('essay-tag-tabs').innerHTML = tabsHtml;
 
@@ -775,6 +779,7 @@ async function loadEssays() {
 // ═══ Tag system ═══
 // 全局状态：记录当前激活的标签
 let currentEssayTag = null;
+let essayDeleteTagMode = false;
 
 // 初始化标签库
 function getTags() {
@@ -803,6 +808,48 @@ function promptNewTag() {
     }
     switchEssayTag(newTag.trim());
   }
+}
+
+function toggleDeleteTagMode() {
+  essayDeleteTagMode = !essayDeleteTagMode;
+  var btn = document.getElementById('delete-tag-btn');
+  if (essayDeleteTagMode) {
+    btn.textContent = '完成';
+    btn.style.color = 'var(--danger)';
+    btn.style.borderColor = 'var(--danger)';
+  } else {
+    btn.textContent = '删除标签';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }
+  loadEssays();
+}
+
+function deleteTagFromTabs(tag) {
+  if (!confirm('确定永久删除标签 "' + tag + '"？')) return;
+  // Strip this tag from all essays that reference it, then remove from library
+  var affected = (_essayAllData || []).filter(function(e) {
+    var essayTags = (e.tag || '').split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
+    return essayTags.indexOf(tag) >= 0;
+  });
+  var updates = affected.map(function(e) {
+    var newTags = (e.tag || '').split(/[,，]/).map(function(s){return s.trim();}).filter(function(t) { return t !== tag; });
+    if (newTags.length === 0) newTags = ['随笔'];
+    return api('PUT', '/api/essays/' + e.slug, {
+      slug: e.slug, title: e.title, tag: newTags.join(', '),
+      date: e.date, epigraph: e.epigraph || '', excerpt: e.excerpt || ''
+    });
+  });
+  Promise.all(updates).then(function() {
+    var tags = getTags();
+    var idx = tags.indexOf(tag);
+    if (idx >= 0) { tags.splice(idx, 1); saveTags(tags); }
+    if (currentEssayTag === tag) { currentEssayTag = null; }
+    loadEssays();
+  }).catch(function(err) {
+    toast('删除失败: ' + (err.message || '未知错误'), true);
+    loadEssays();
+  });
 }
 
 // ═══ Pin system ═══
@@ -844,14 +891,15 @@ function renderTagChips(selected) {
     var active = (selected || '').split(/[,，]/).map(function(s){return s.trim();}).indexOf(t) >= 0;
     html += '<span class="tag-chip' + (active ? ' active' : '') + '" data-tag="' + esc(t) + '">' +
       '<span onclick="toggleTag(\'' + esc(t) + '\')">' + esc(t) + '</span>' +
-      '<span class="tag-del" onclick="event.stopPropagation();deleteTag(\'' + esc(t) + '\')" title="删除标签">×</span>' +
       '</span>';
   });
   document.getElementById('tag-chips').innerHTML = html;
   document.getElementById('essay-tag-display').textContent = selected ? '已选: ' + selected : '';
 }
 
-function deleteTag(tag) {
+
+function deleteTagGlobal(tag) {
+  // Permanently delete a tag from the global library (only callable from tag management UI)
   var tags = getTags();
   var idx_t = tags.indexOf(tag);
   if (idx_t >= 0) { tags.splice(idx_t, 1); saveTags(tags); }
@@ -860,28 +908,21 @@ function deleteTag(tag) {
   var idx_c = cur.indexOf(tag);
   if (idx_c >= 0) { cur.splice(idx_c, 1); document.getElementById('essay-tag').value = cur.join(', '); }
   renderTagChips(document.getElementById('essay-tag').value);
+  loadEssays();
 }
 
 function toggleTag(tag) {
   var cur = document.getElementById('essay-tag').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
   var idx = cur.indexOf(tag);
-  if (idx >= 0) { cur.splice(idx, 1); } else { cur.push(tag); }
+  if (idx >= 0) {
+    if (cur.length <= 1) return; // must have at least one tag
+    cur.splice(idx, 1);
+  } else { cur.push(tag); }
   var val = cur.join(', ');
   document.getElementById('essay-tag').value = val;
   renderTagChips(val);
 }
 
-function addCustomTag() {
-  var input = document.getElementById('essay-new-tag');
-  var tag = input.value.trim();
-  if (!tag) return;
-  var tags = getTags();
-  if (tags.indexOf(tag) < 0) { tags.push(tag); saveTags(tags); }
-  input.value = '';
-  renderTagChips(document.getElementById('essay-tag').value);
-  // Auto-select the new tag
-  toggleTag(tag);
-}
 
 // ═══ About tag system ═══
 function getAboutTags() {
@@ -994,20 +1035,10 @@ function addAboutCustomTag() {
 }
 
 function genSlug(title) {
-  var s = title.replace(/[A-Z]/g, m => m.toLowerCase()).replace(/[\s]+/g, '-').replace(/[^a-z0-9\u4e00-\u9fff-]/g, '').replace(/-+/g, '-').replace(/^-|-$/g, '').slice(0, 50);
-  if (!s || !/[a-z0-9]/.test(s)) {
-    // Pure Chinese: use essay- prefix + random hex (collision-free)
-    s = 'essay-' + Math.random().toString(16).slice(2, 10);
-  }
-  return s;
+  // Always use essay- prefix + random hex — robust against any title (Chinese, mixed script, emoji, etc.)
+  return 'essay-' + Math.random().toString(16).slice(2, 10);
 }
 
-function autoSlug() {
-  var editSlug = document.getElementById('essay-edit-slug').value;
-  if (editSlug) return; // editing existing, don't change slug
-  var slug = genSlug(document.getElementById('essay-title').value);
-  document.getElementById('slug-preview').textContent = '→ ' + slug + '.html';
-}
 
 function showEssayForm() {
   var form = document.getElementById('essay-form');
@@ -1018,7 +1049,6 @@ function showEssayForm() {
     document.getElementById(id).value = '';
   });
 
-  document.getElementById('slug-preview').textContent = '';
   document.getElementById('essay-readtime').value = '4';
 
   var now = new Date();
@@ -1043,7 +1073,6 @@ async function editEssayMeta(slug) {  const form = document.getElementById('essa
   const e = data.find(x => x.slug === slug);
   if (!e) return;
   document.getElementById('essay-edit-slug').value = slug;
-  document.getElementById('slug-preview').textContent = '→ ' + slug + '.html';
   document.getElementById('essay-title').value = e.title;
   document.getElementById('essay-tag').value = e.tag || '';
   document.getElementById('essay-date').value = e.date || '';
@@ -1059,7 +1088,7 @@ async function editEssayMeta(slug) {  const form = document.getElementById('essa
 async function saveEssay() {
   try {
   var editSlug = document.getElementById('essay-edit-slug').value;
-  var slug = editSlug || genSlug(document.getElementById('essay-title').value);
+  var slug = editSlug || genSlug('');
   var item = {
     slug: slug,
     title: document.getElementById('essay-title').value,
@@ -1615,8 +1644,16 @@ function toggleTheme() {
 }
 
 // ═══ Drag & Drop upload ═══
-document.addEventListener('dragover', function(e) { e.preventDefault(); });
+document.addEventListener('dragover', function(e) {
+  // Don't intercept text dragging inside the essay editor textarea
+  var ta = document.getElementById('essay-content-md');
+  if (ta && (e.target === ta || (e.target.closest && e.target.closest('#essay-content-md')))) return;
+  e.preventDefault();
+});
 document.addEventListener('drop', function(e) {
+  // Don't intercept text dropping inside the essay editor textarea
+  var ta = document.getElementById('essay-content-md');
+  if (ta && (e.target === ta || (e.target.closest && e.target.closest('#essay-content-md')))) return;
   e.preventDefault();
   var files = e.dataTransfer.files;
   if (!files.length) return;
