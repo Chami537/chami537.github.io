@@ -1,21 +1,23 @@
 /* Giscus 定制主题 — Chami 个人网站
-   暖黄色按钮 + Lora 字体 + 极简无边框风格 */
+   字体与随笔正文完全一致：Lora + LXGW WenKai Lite（霞鹜文楷） */
 
 @import url('https://giscus.app/themes/noborder_light.css');
 @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap');
+@import url('https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css');
 
-:root {
-  --color-font: 'Lora', 'Noto Sans SC', sans-serif !important;
-}
-
-body, main, button, input, textarea, a, span, div {
-  font-family: 'Lora', 'Noto Sans SC', sans-serif !important;
-  letter-spacing: 0.02em !important;
+body, main, button, input, textarea, a, span, div, p {
+  font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif !important;
+  letter-spacing: 0.04em !important;
 }
 
 .form-control {
   background-color: #fafaf8 !important;
   border-color: #e0dcd5 !important;
+  color: #111 !important;
+}
+
+.form-control::placeholder {
+  color: #999 !important;
 }
 
 .btn-primary {
