@@ -101,8 +101,8 @@ ESSAY_TEMPLATE = open(os.path.join(BASE_DIR, 'essay_template.html'), encoding='u
 
 
 def _fe(s):
-    """HTML-escape + brace-escape for Python .format() safety."""
-    return html_mod.escape(str(s)).replace('{', '{{').replace('}', '}}')
+    """HTML-escape user content for safe embedding in HTML."""
+    return html_mod.escape(str(s))
 
 
 def _calc_read_time(text):
@@ -397,7 +397,7 @@ footer {{
 
 <nav>
   <div class="inner">
-    <a href="/" class="logo">Chami</a>
+    <a href="/index.html" class="logo">Chami</a>
     <a href="/index.html#essays" class="back">
       <span>←</span>
       <span>Essays</span>
@@ -477,30 +477,80 @@ def _html_to_md(html):
     return md.strip()
 
 
+def _parse_tags(tag_str, essay=None):
+    """'生活, 摄影' → {'生活', '摄影'}. Pinned essays implicitly get '置顶' tag."""
+    tags = set(t.strip() for t in re.split(r'[,，]', tag_str) if t.strip()) if tag_str else set()
+    if essay and essay.get('pinned'):
+        tags.add('置顶')
+    return tags
+
 def _build_nav(essays, current_slug):
-    """Build prev/next essay navigation links."""
+    """Build prev/next essay navigation links, scoped to essays sharing at least one tag."""
+    current = next((e for e in essays if e['slug'] == current_slug), None)
+    current_tags = _parse_tags(current.get('tag', ''), current) if current else set()
+
+    if current_tags:
+        siblings = [e for e in essays if e['slug'] != current_slug and _parse_tags(e.get('tag', ''), e) & current_tags]
+    else:
+        siblings = [e for e in essays if e['slug'] != current_slug]
+
+    # Find prev/next among siblings by global date order
     idx = next((i for i, e in enumerate(essays) if e['slug'] == current_slug), -1)
+    prev_sib, next_sib = None, None
+    for i in range(idx - 1, -1, -1):
+        if essays[i] in siblings:
+            prev_sib = essays[i]; break
+    for i in range(idx + 1, len(essays)):
+        if essays[i] in siblings:
+            next_sib = essays[i]; break
+
     prev_nav = '<div></div>'
     next_nav = '<div></div>'
-    if idx > 0:
-        p = essays[idx - 1]
-        prev_nav = f'''<a href="{p['slug']}.html" class="prev-link">
+    if prev_sib:
+        prev_nav = f'''<a href="{prev_sib['slug']}.html" class="prev-link">
       <span class="prev-label">上一篇</span>
       <div class="prev-title">
         <span class="prev-arr">←</span>
-        <span>{html_mod.escape(p['title'])}</span>
+        <span>{html_mod.escape(prev_sib['title'])}</span>
       </div>
     </a>'''
-    if idx >= 0 and idx + 1 < len(essays):
-        n = essays[idx + 1]
-        next_nav = f'''<a href="{n['slug']}.html" class="next-link">
+    if next_sib:
+        next_nav = f'''<a href="{next_sib['slug']}.html" class="next-link">
       <span class="next-label">下一篇</span>
       <div class="next-title">
-        <span>{html_mod.escape(n['title'])}</span>
+        <span>{html_mod.escape(next_sib['title'])}</span>
         <span class="next-arr">→</span>
       </div>
     </a>'''
     return prev_nav, next_nav
+
+
+def _build_tag_nav_json(essays, slug):
+    """Build per-tag prev/next navigation data as JSON, keyed by tag name.
+    Returns a JS object string like: {"置顶":{"prev":{"slug":"x","title":"X"},"next":null},...}
+    """
+    current = next((e for e in essays if e['slug'] == slug), None)
+    if not current:
+        return '{}'
+    current_tags = _parse_tags(current.get('tag', ''), current)
+    if not current_tags:
+        return '{}'
+    result = {}
+    idx = next((i for i, e in enumerate(essays) if e['slug'] == slug), -1)
+    for tag in current_tags:
+        siblings = [e for e in essays if e['slug'] != slug and tag in _parse_tags(e.get('tag', ''), e)]
+        prev_sib, next_sib = None, None
+        for i in range(idx - 1, -1, -1):
+            if essays[i] in siblings:
+                prev_sib = essays[i]; break
+        for i in range(idx + 1, len(essays)):
+            if essays[i] in siblings:
+                next_sib = essays[i]; break
+        result[tag] = {
+            'prev': {'slug': prev_sib['slug'], 'title': prev_sib['title']} if prev_sib else None,
+            'next': {'slug': next_sib['slug'], 'title': next_sib['title']} if next_sib else None,
+        }
+    return json.dumps(result, ensure_ascii=False).replace('</', '<\\/')
 
 
 @app.route('/api/essays', methods=['GET'])
@@ -527,10 +577,10 @@ def create_essay():
     # Generate HTML file
     date_display = _parse_date(item.get('date', ''))
     prev_nav, next_nav = _build_nav(essays, slug)
+    tag_nav_json = _build_tag_nav_json(essays, slug)
     tag_raw = item.get('tag', '')
     tag_display = tag_raw.replace(', ', ' · ').replace(',', ' · ')
     og_image = _extract_first_image(item.get('body', '') or item.get('content', ''))
-    be = lambda s: s.replace('{', '{{').replace('}', '}}')
     html = ESSAY_TEMPLATE.format(
         title=_fe(item.get('title', '')),
         excerpt=_fe(item.get('excerpt', '')),
@@ -539,8 +589,9 @@ def create_essay():
         date_display=_fe(date_display),
         read_time=read_time,
         body_html='',
-        prev_nav=be(prev_nav),
-        next_nav=be(next_nav),
+        prev_nav=(prev_nav),
+        next_nav=(next_nav),
+        tag_nav_json=tag_nav_json,
         slug=slug,
         og_image=_fe(og_image),
     )
@@ -576,11 +627,9 @@ def update_essay_meta(slug):
                 new_html = os.path.join(ESSAYS_DIR, f"{new_slug}.html")
                 if os.path.exists(old_html):
                     os.replace(old_html, new_html)
-                # Re-sync all essays' nav links since slug ordering changed
-                for e2 in essays:
-                    _sync_essay_html(e2)
-            else:
-                _sync_essay_html(essays[i])
+            # Tag/order changes affect all sibling nav links — always re-sync all
+            for e2 in essays:
+                _sync_essay_html(e2)
             _generate_feeds()
             return jsonify(essays[i])
     return jsonify({"error": "Not found"}), 404
@@ -602,7 +651,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
     elif os.path.exists(html_file):
         with open(html_file, 'r', encoding='utf-8') as f:
             full_html = f.read()
-        md_match = re.search(r'<!-- RAW_MD\n(.*?)\nRAW_MD -->', full_html, flags=re.DOTALL)
+        md_match = re.search(r'<!-- RAW_MD\n(.*)\nRAW_MD -->', full_html, flags=re.DOTALL)
         if md_match:
             raw_md = md_match.group(1)
         else:
@@ -623,6 +672,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
     # 3. 准备渲染模板所需的数据
     essays = load_json('essays.json')
     prev_nav, next_nav = _build_nav(essays, slug)
+    tag_nav_json = _build_tag_nav_json(essays, slug)
 
     tag_raw = essay.get('tag', '')
     tag_display = _fe(tag_raw.replace(', ', ' · ').replace(',', ' · '))
@@ -630,7 +680,6 @@ def _sync_essay_html(essay, raw_md_memory=None):
 
     # 4. 全量重新渲染 HTML
     og_image = _extract_first_image(raw_md)
-    be = lambda s: s.replace('{', '{{').replace('}', '}}')
     html = ESSAY_TEMPLATE.format(
         title=_fe(essay.get('title', '')),
         excerpt=_fe(essay.get('excerpt', '')),
@@ -638,9 +687,10 @@ def _sync_essay_html(essay, raw_md_memory=None):
         tag=tag_display,
         date_display=date_display,
         read_time=essay.get('readTime', 1),
-        body_html=be(body_html),
-        prev_nav=be(prev_nav),
-        next_nav=be(next_nav),
+        body_html=(body_html),
+        prev_nav=(prev_nav),
+        next_nav=(next_nav),
+        tag_nav_json=tag_nav_json,
         slug=slug,
         og_image=_fe(og_image),
     )
@@ -694,7 +744,7 @@ def get_essay_content(slug):
     with open(html_file, 'r', encoding='utf-8') as f:
         full_html = f.read()
     # Extract Markdown source from comment if stored
-    md_match = re.search(r'<!-- RAW_MD\n(.*?)\nRAW_MD -->', full_html, flags=re.DOTALL)
+    md_match = re.search(r'<!-- RAW_MD\n(.*)\nRAW_MD -->', full_html, flags=re.DOTALL)
     if md_match:
         return jsonify({"content": md_match.group(1), "format": "markdown"})
     # Extract HTML content between anchors, auto-convert to Markdown
