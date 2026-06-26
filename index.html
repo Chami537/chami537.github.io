@@ -13,7 +13,7 @@
 <link rel="icon" href="images/avatar.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
 <style>
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -50,10 +50,10 @@
     max-width: 1200px; margin: 0 auto; display: flex; align-items: center;
     justify-content: space-between; height: 56px;
   }
-  nav .logo { font-family: 'Lora', 'Inter', serif; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; text-decoration: none; color: var(--fg); }
+  nav .logo { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; text-decoration: none; color: var(--fg); }
   nav .links { display: flex; gap: 32px; }
   nav .links a {
-    font-family: 'Lora', 'Inter', serif;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     font-size: 13px; color: #666; text-decoration: none; letter-spacing: 0.04em;
     font-weight: 600; transition: color .2s; position: relative;
   }
@@ -110,7 +110,10 @@
   section[id] { border-bottom: 1px solid var(--line); }
   section[id]:last-of-type { border-bottom: none; }
   #about { padding: 60px 0 20px; }
-  .about-text { font-family: 'Lora', 'Inter', serif; font-size: 17px; line-height: 1.8; color: var(--muted); max-width: 600px; white-space: pre-line; }
+  .about-text { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; line-height: 2; color: var(--muted); max-width: 600px; }
+  .about-para { display: block; }
+  .about-para + .about-para { margin-top: 0.8em; }
+  .about-lead { font-weight: 700; color: var(--fg); font-size: 18px; }
   #work  { padding: 140px 0 120px; }
   #photos { padding: 100px 0; }
   #music { padding: 160px 0 120px; }
@@ -119,7 +122,7 @@
   .section-tag {
     display: inline-block; font-size: 12px; font-weight: 700; letter-spacing: 0.05em;
     text-transform: uppercase;
-    font-family: 'Lora', 'Inter', serif;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     border-left: 2px solid; padding-left: 10px; margin-bottom: 48px;
   }
   .section-tag.red { color: var(--c1); border-color: var(--c1); }
@@ -196,12 +199,12 @@
   .music-row:hover { padding-left: 24px; background: rgba(255,255,255,0.5); }
   .music-row.playing { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
   .music-row.playing:hover { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
-  .music-row .idx { font-family: 'Lora', 'Inter', serif; font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s, transform .3s; display: inline-block; }
+  .music-row .idx { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s, transform .3s; display: inline-block; }
   .music-row.playing .idx { color: var(--idx-color); animation: pulse 0.8s ease-in-out infinite; }
   @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
   .music-row.paused .idx { animation-play-state: paused !important; }
-  .music-row .title { font-family: 'Lora', 'Inter', serif; font-size: 17px; font-weight: 600; }
-  .music-row .artist { font-family: 'Lora', 'Inter', serif; font-size: 14px; color: var(--muted); }
+  .music-row .title { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; font-weight: 600; }
+  .music-row .artist { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 14px; color: var(--muted); }
   .stars { font-size: 11px; color: #ccc; }
   .stars::before { content: '· '; }
 
@@ -214,7 +217,7 @@
     transition: padding-left .3s, background .3s;
   }
   .contact-row:hover { padding-left: 24px; background: rgba(156,39,176,0.05); }
-  .contact-row .value { font-family: 'Lora', 'Inter', serif; font-size: 17px; font-weight: 600; }
+  .contact-row .value { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; font-weight: 600; }
   .contact-row .arr { font-size: 18px; transition: transform .2s ease; }
   .contact-row:hover .arr { transform: translateX(4px); }
 
@@ -241,14 +244,14 @@
   .essay-left  { flex: 1; min-width: 0; }
 
   .essay-title {
-    font-family: 'Lora', 'Inter', serif;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     font-size: 17px;
     font-weight: 600;
     display: block;
   }
 
   .essay-excerpt {
-    font-family: 'Lora', 'Inter', serif;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     font-size: 13px;
     color: var(--muted);
     margin-top: 5px;
@@ -264,7 +267,7 @@
   }
 
   .essay-tag {
-    font-family: 'Lora', 'Inter', serif;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     font-size: 10px;
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -273,7 +276,7 @@
   }
 
   .essay-meta {
-    font-family: 'Lora', 'Inter', serif;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     font-size: 12px;
     color: var(--muted);
     white-space: nowrap;
@@ -292,7 +295,7 @@
 
   .essay-filter { display: flex; flex-wrap: wrap; gap: 6px; }
   .essay-filter .ef-chip {
-    font-family: 'Lora', 'Inter', serif;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     display: inline-block; padding: 3px 12px; border-radius: 20px;
     font-size: 11px; font-weight: 600; cursor: pointer;
     border: 1px solid var(--line); color: var(--muted);
@@ -307,7 +310,7 @@
   .essay-filter .ef-more:hover { color: var(--fg); }
 
   footer {
-    font-family: 'Lora', 'Inter', serif;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
     letter-spacing: 0.04em; border-top: 1px solid var(--line);
   }
@@ -365,7 +368,7 @@
   .lb-exif {
     position: fixed; bottom: 52px; left: 50%; transform: translateX(-50%);
     color: rgba(255,255,255,0.35); font-size: 12px; z-index: 1001;
-    font-family: 'Lora', 'Inter', serif; letter-spacing: 0.03em;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; letter-spacing: 0.03em;
   }
   .lb-counter {
     position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
@@ -486,7 +489,7 @@
     <div class="section-tag yellow">ESSAYS</div>
     <div id="essay-tag-filter" class="essay-filter" style="margin-bottom:16px;"></div>
     <div class="essays-list skeleton-loading" id="essays-list">
-      <a class="essay-row" href="essays/essay-20260625-2211.html"><div class="essay-left"><span class="essay-title">残夏</span><span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span></div><div class="essay-right"><span class="essay-tag">生活 · 随笔</span><span class="essay-meta">2026.06 · 1 min</span><span class="essay-arr">→</span></div></a>
+      <a class="essay-row" href="essays/essay-9292594d.html"><div class="essay-left"><span class="essay-title">残夏</span><span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span></div><div class="essay-right"><span class="essay-tag">随笔</span><span class="essay-meta">2026.06 · 1 min</span><span class="essay-arr">→</span></div></a>
     </div>
   </section>
 
@@ -834,7 +837,10 @@ document.addEventListener('DOMContentLoaded', async function() {
   // About
   try {
     const about = await fetch('data/about.json?v=' + TS).then(r => r.json());
-    document.getElementById('about-text').textContent = about.content;
+    var paras = about.content.split('\n').filter(Boolean);
+    document.getElementById('about-text').innerHTML = paras.map(function(p, i) {
+      return '<span class="about-para' + (i === 0 ? ' about-lead' : '') + '">' + htmlEncode(p) + '</span>';
+    }).join('');
     document.getElementById('about-text').classList.remove('skeleton-loading');
     if (about.avatar) document.getElementById('portrait-img').src = about.avatar;
     if (about.tags && about.tags.length) {

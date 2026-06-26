@@ -6,6 +6,7 @@ import os
 import json
 import re
 import subprocess
+from datetime import datetime
 import uuid
 from flask import Flask, request, jsonify, send_from_directory
 from markdown import markdown as md_to_html
@@ -106,7 +107,7 @@ ESSAY_TEMPLATE = '''<!DOCTYPE html>
 <link rel="icon" href="/images/avatar.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css">
 <style>
 
@@ -149,12 +150,12 @@ nav .inner {{
   align-items: center; justify-content: space-between; height: 56px;
 }}
 nav .logo {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
   text-decoration: none; color: var(--fg);
 }}
 nav .back {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 12px; font-weight: 600; letter-spacing: .08em;
   color: var(--muted); text-decoration: none;
   display: flex; align-items: center; gap: 6px; transition: color .2s;
@@ -176,7 +177,7 @@ nav .theme-btn:hover {{ background: var(--line); }}
 html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 
 .reading {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   max-width: 680px;
   margin: 0 auto;
   padding: 120px 48px 100px;
@@ -205,14 +206,14 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 }}
 
 .essay-meta {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   display: flex; gap: 16px; align-items: baseline;
   font-size: 12px; color: var(--muted); font-weight: 500;
   line-height: 1;
   margin-bottom: 40px;
 }}
 .essay-meta .dot {{ color: var(--muted); }}
-.essay-meta-tag {{ font-family: 'Lora', 'Inter', serif; }}
+.essay-meta-tag {{ font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; }}
 .essay-meta-date {{ font-variant-numeric: tabular-nums; }}
 .essay-meta-read {{ font-variant-numeric: tabular-nums; }}
 
@@ -221,7 +222,7 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 }}
 
 .essay-lede {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 19px;
   color: var(--fg);
   line-height: 1.75;
@@ -266,7 +267,19 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
 .essay-body {{
   font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif;
 }}
-.essay-body strong, .essay-body b {{ font-weight: bold; color: var(--fg); }}
+.essay-body strong, .essay-body b {{ font-weight: 700; color: #000; font-size: 1.06em; }}
+
+.essay-body .essay-updated {{
+  font-family: 'Lora', 'Noto Serif SC', serif;
+  font-size: 13.5px;
+  font-style: italic;
+  color: #83a2c0;
+  text-align: right;
+  margin-top: 3em;
+  margin-bottom: 0;
+  letter-spacing: 0.02em;
+}}
+html.dark .essay-body .essay-updated {{ color: #5c7f9e; }}
 
 .essay-body img {{
   max-width: 100%; height: auto;
@@ -331,7 +344,7 @@ html.dark .essay-body img {{ border-color: rgba(255,255,255,0.1); }}
   display: flex; justify-content: space-between; align-items: flex-end;
 }}
 .essay-end .back-link {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;
   margin-top: 24px;
@@ -342,7 +355,7 @@ html.dark .essay-body img {{ border-color: rgba(255,255,255,0.1); }}
 .essay-end .back-link:hover .arr {{ transform: translateX(-4px); }}
 
 .essay-end .prev-link, .essay-end .next-link {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; flex-direction: column;
   gap: 4px; transition: color .2s;
@@ -362,18 +375,18 @@ html.dark .essay-body img {{ border-color: rgba(255,255,255,0.1); }}
 .essay-end .next-link:hover .next-arr {{ transform: translateX(4px); }}
 
 footer {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
   letter-spacing: .04em; border-top: 1px solid var(--line);
 }}
 .friends {{ margin-bottom: 20px; }}
 .friends-label {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 10px; font-weight: 700; letter-spacing: .12em;
   text-transform: uppercase; color: #ccc; margin-bottom: 8px;
 }}
 .friends a {{
-  font-family: 'Lora', 'Inter', serif;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 11px; color: #bbb; text-decoration: none;
   letter-spacing: .04em; transition: color .2s;
 }}
@@ -722,7 +735,12 @@ def _sync_essay_html(essay, raw_md_memory=None):
 
     # 2. 将 Markdown 渲染为 HTML 正文
     rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists']) if raw_md else ""
-    body_html = f"{rendered_html}\n<!-- RAW_MD\n{raw_md}\nRAW_MD -->"
+    date_str = essay.get('date', '')
+    last_edited = _parse_date(date_str)
+    time_part = date_str.split(' ')[1].split(':') if ' ' in date_str and len(date_str.split(' ')) > 1 else None
+    if time_part and len(time_part) >= 2:
+        last_edited = f"{time_part[0]}:{time_part[1]}, {last_edited}"
+    body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>\n<!-- RAW_MD\n{raw_md}\nRAW_MD -->"
 
     # 3. 准备渲染模板所需的数据
     essays = load_json('essays.json')
@@ -796,9 +814,11 @@ def update_essay_content(slug):
     # 2. 更新 JSON 数据
     essays = load_json('essays.json')
     target_essay = None
+    now = datetime.now().strftime('%Y-%m-%d %H:%M')
     for e in essays:
         if e['slug'] == slug:
             e['readTime'] = read_time
+            e['date'] = now
             target_essay = e
             atomic_write_json('essays.json', essays)
             break
