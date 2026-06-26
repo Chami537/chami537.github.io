@@ -776,6 +776,8 @@ function getTags() {
 function saveTags(tags) { localStorage.setItem('essay-tags', JSON.stringify(tags)); }
 
 function switchEssayTag(tag) {
+  hideEssayForm();
+  hideEssayContentEditor();
   currentEssayTag = tag;
   loadEssays();
 }
