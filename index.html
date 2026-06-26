@@ -334,7 +334,7 @@
     padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
     letter-spacing: 0.04em; border-top: 1px solid var(--line);
   }
-  .friends { margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: baseline; }
+  .friends { margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; }
   .friends-label {
     font-size: 10px; font-weight: 700; letter-spacing: .12em;
     text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
@@ -349,7 +349,7 @@
   .friends a + a::before { content: '·'; margin: 0 8px; color: var(--muted); }
 
   /* Skeleton loading */
-  .skeleton-loading { opacity: 0.5; pointer-events: none; filter: grayscale(60%); transition: opacity .3s ease, filter .3s ease; }
+  .skeleton-loading { opacity: 0.5; pointer-events: none; }
 
   /* Dark mode */
   html.dark { --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }
@@ -407,9 +407,6 @@
   @keyframes vt-fade-out { to { opacity: 0; } }
   @keyframes vt-fade-in { from { opacity: 0; } to { opacity: 1; } }
 
-  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s ease-out, transform .7s ease-out; }
-  .reveal.visible { opacity: 1; transform: translateY(0); }
-  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
 
   @media (max-width: 768px) {
     .container { padding: 0 24px; }
@@ -476,7 +473,7 @@
 
 <nav>
   <div class="inner">
-    <a href="https://chami537.github.io/" class="logo">Chami</a>
+    <a href="/index.html" class="logo">Chami</a>
     <div class="links">
       <a href="#work">Work</a>
       <a href="#essays">Essays</a>
@@ -659,8 +656,6 @@ function initStarFetches() {
       .catch(e => console.debug('GitHub stars:', e.message));
   });
 }
-initStarFetches();
-
 var player, curRow;
 var musicTimeHandler, musicEndHandler;
 
@@ -714,21 +709,6 @@ function htmlEncode(str) {
 
 const TS = Date.now(); // cache busting timestamp, fixed per page load
 
-async function loadSection(name, containerId, renderFn) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  try {
-    const r = await fetch('data/' + name + '.json?v=' + TS);
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const data = await r.json();
-    container.innerHTML = renderFn(data);
-    container.classList.remove('skeleton-loading');
-    if (name === 'work') initStarFetches();
-  } catch(e) {
-    console.info('[本地预览] ' + name + ' 降级使用内嵌 HTML');
-    container.classList.remove('skeleton-loading');
-  }
-}
 
 function renderWork(data) {
   return data.map((w, i) => {
@@ -798,8 +778,10 @@ function renderEssayList() {
   shown.forEach(function(e) {
     var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var dp = (e.date || '').split(' ')[0].split('-');
-    var dateDisplay = dp.length >= 2 ? M[+dp[1]-1] + ' ' + dp[0] : (e.date || '');
-    html += '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html">' +
+    var mi = +dp[1] - 1;
+    var dateDisplay = dp.length >= 2 && mi >= 0 && mi < 12 ? M[mi] + ' ' + dp[0] : (e.date || '');
+    var tagParam = '?tag=' + encodeURIComponent(_essayFilter || '置顶');
+    html += '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html' + tagParam + '">' +
       '<div class="essay-left">' +
       '<span class="essay-title">' + htmlEncode(e.title) + '</span>' +
       (e.excerpt ? '<span class="essay-excerpt">' + htmlEncode(e.excerpt) + '</span>' : '') +
@@ -852,7 +834,9 @@ function renderPhotos(data) {
 function renderFriends(data) {
   var html = '<div class="friends-label">FRIEND</div>';
   data.forEach((f, i) => {
-    html += '<a href="' + htmlEncode(f.url) + '">' + htmlEncode(f.name) + '</a>';
+    var href = htmlEncode(f.url);
+    if (/^https?:\/\//i.test(f.url)) { html += '<a href="' + href + '">' + htmlEncode(f.name) + '</a>'; }
+    else { html += '<span>' + htmlEncode(f.name) + '</span>'; }
   });
   return html;
 }
@@ -880,57 +864,64 @@ function renderContact(data) {
   return data.map(c => {
     var inner = '<span class="value">' + htmlEncode(c.label) + ' <span style="color:#999;font-weight:400;">' + htmlEncode(c.handle) + '</span></span>';
     if (c.url) {
-      return '<a href="' + htmlEncode(c.url) + '" target="_blank" class="contact-row">' + inner + '<span class="arr">→</span></a>';
+      return '<a href="' + htmlEncode(c.url) + '" target="_blank" rel="noopener noreferrer" class="contact-row">' + inner + '<span class="arr">→</span></a>';
     }
     return '<div class="contact-row">' + inner + '</div>';
   }).join('');
 }
 
 document.addEventListener('DOMContentLoaded', async function() {
+  // Fetch all data in parallel, then render all at once — one layout pass, zero jank
+  var sections = ['about','work','essays','photos','contact','friends','music'];
+  var results = {};
+  try {
+    var fetched = await Promise.all(sections.map(function(s) {
+      return fetch('data/' + s + '.json?v=' + TS).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
+    }));
+    sections.forEach(function(s, i) { results[s] = fetched[i]; });
+  } catch(e) {}
+
   // About
   try {
-    const about = await fetch('data/about.json?v=' + TS).then(r => r.json());
-    var paras = about.content.split('\n').filter(Boolean);
-    document.getElementById('about-text').innerHTML = paras.map(function(p, i) {
-      return '<span class="about-para' + (i === 0 ? ' about-lead' : '') + '">' + htmlEncode(p) + '</span>';
-    }).join('');
-    document.getElementById('about-text').classList.remove('skeleton-loading');
-    if (about.avatar) document.getElementById('portrait-img').src = about.avatar;
-    if (about.tags && about.tags.length) {
-      document.getElementById('hero-meta').innerHTML = about.tags.map(function(t) { return '<span>' + htmlEncode(t) + '</span>'; }).join('');
+    var about = results.about;
+    if (about) {
+      var paras = about.content.split('\n').filter(Boolean);
+      document.getElementById('about-text').innerHTML = paras.map(function(p, i) {
+        return '<span class="about-para' + (i === 0 ? ' about-lead' : '') + '">' + htmlEncode(p) + '</span>';
+      }).join('');
+      if (about.avatar) document.getElementById('portrait-img').src = about.avatar;
+      if (about.tags && about.tags.length) {
+        document.getElementById('hero-meta').innerHTML = about.tags.map(function(t) { return '<span>' + htmlEncode(t) + '</span>'; }).join('');
+      }
     }
-  } catch(e) {
-    document.getElementById('about-text').classList.remove('skeleton-loading');
+  } catch(e) {}
+  // Work
+  if (results.work) {
+    document.getElementById('work-container').innerHTML = renderWork(results.work);
+    initStarFetches();
   }
-  await loadSection('work', 'work-container', renderWork);
-  // Essays: manual load for filter support
-  try {
-    var r = await fetch('data/essays.json?v=' + TS);
-    if (r.ok) { _essayData = await r.json(); buildEssayFilter(); renderEssayList(); }
-    else { document.getElementById('essays-list').classList.remove('skeleton-loading'); }
-  } catch(e) { document.getElementById('essays-list').classList.remove('skeleton-loading'); }
-  await loadSection('photos', 'photo-grid', renderPhotos);
-  await loadSection('contact', 'contact-list', renderContact);
-  await loadSection('friends', 'friends-container', renderFriends);
-  await loadSection('music', 'music-list', renderMusic);
+  // Essays
+  if (results.essays) {
+    _essayData = results.essays;
+    buildEssayFilter();
+    renderEssayList();
+  }
+  // Photos
+  if (results.photos) document.getElementById('photo-grid').innerHTML = renderPhotos(results.photos);
+  // Contact
+  if (results.contact) document.getElementById('contact-list').innerHTML = renderContact(results.contact);
+  // Friends
+  if (results.friends) document.getElementById('friends-container').innerHTML = renderFriends(results.friends);
+  // Music
+  if (results.music) document.getElementById('music-list').innerHTML = renderMusic(results.music);
+  // Remove all skeleton classes at once
+  document.querySelectorAll('.skeleton-loading').forEach(function(el) { el.classList.remove('skeleton-loading'); });
+
   initMusicPlayer();
-  // Init theme button icon & lightbox after photos loaded
   initThemeBtn();
   initLB();
   updateLayoutCache();
 
-  // Scroll reveal for photo grid + essay list (after dynamic render)
-  var revealObserver = new IntersectionObserver(function(entries) {
-    entries.forEach(function(e) {
-      if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); }
-    });
-  }, { threshold: 0.12 });
-  setTimeout(function() {
-    document.querySelectorAll('#photo-grid > div, #essays-list .essay-row').forEach(function(el) {
-      el.classList.add('reveal');
-      revealObserver.observe(el);
-    });
-  }, 600);
 });
 
 // ═══ Dark Mode ═══
