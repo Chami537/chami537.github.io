@@ -63,16 +63,6 @@ nav .logo {
   font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
   text-decoration: none; color: var(--fg);
 }
-nav .back {
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 12px; font-weight: 600; letter-spacing: .08em;
-  color: var(--muted); text-decoration: none;
-  display: flex; align-items: center; gap: 6px; transition: color .2s;
-}
-nav .back:hover { color: var(--c3); }
-nav .back .arr { transition: transform .2s ease; display: inline-block; }
-nav .back:hover .arr { transform: translateX(-4px); }
-
 nav .theme-btn {
   width: 32px; height: 32px; border-radius: 50%;
   border: 1px solid var(--line); background: none;
@@ -308,19 +298,21 @@ footer {
   padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
   letter-spacing: .04em; border-top: 1px solid var(--line);
 }
-.friends { margin-bottom: 20px; }
+.friends { margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; }
 .friends-label {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 10px; font-weight: 700; letter-spacing: .12em;
   text-transform: uppercase; color: #ccc; margin-bottom: 8px;
+  width: 100%;
 }
 .friends a {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 11px; color: #bbb; text-decoration: none;
   letter-spacing: .04em; transition: color .2s;
+  line-height: 2;
 }
 .friends a:hover { color: var(--fg); }
-.friends .sep { color: var(--muted); margin: 0 8px; }
+.friends a + a::before { content: '·'; margin: 0 8px; color: var(--muted); }
 
 @media (max-width: 768px) {
   nav { padding: 0 16px; }
@@ -364,11 +356,7 @@ footer {
 
 <nav>
   <div class="inner">
-    <a href="/" class="logo">Chami</a>
-    <a href="/index.html#essays" class="back">
-      <span class="arr">←</span>
-      <span>Essays</span>
-    </a>
+    <a href="/index.html" class="logo">Chami</a>
     <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
   </div>
 </nav>
@@ -379,7 +367,7 @@ footer {
 
   <h1 class="essay-title">记录一次dating</h1>
 
-  <p class="essay-epigraph">Happy</p>
+  <p class="essay-epigraph">A Happy Day</p>
 
   <div class="essay-meta">
     <span class="essay-meta-tag">生活</span>
@@ -483,39 +471,38 @@ RAW_MD -->
 <!-- CONTENT_END -->
 
   <div class="essay-end">
-    <div class="essay-end-row">
-      <a href="essay-0f8baeda.html" class="prev-link">
-      <span class="prev-label">上一篇</span>
-      <div class="prev-title">
-        <span class="prev-arr">←</span>
-        <span>活着是更难的勇气</span>
-      </div>
-    </a>
+    <div class="essay-end-row" id="nav-row">
+      <div></div>
       <div></div>
     </div>
-    <a href="/" class="back-link">
+<script id="tag-nav-data" type="application/json">{"生活": {"prev": null, "next": null}}</script>
+    <a href="/index.html" class="back-link">
       <span class="arr">←</span>
       <span>返回主页</span>
     </a>
   </div>
 
-  <div class="comments-section" style="margin-top:80px;padding-top:40px;border-top:1px dashed var(--line);">
-    <script src="https://giscus.app/client.js"
-      data-repo="Chami537/chami537.github.io"
-      data-repo-id="R_kgDOS6Xqvg"
-      data-category="General"
-      data-category-id="DIC_kwDOS6Xqvs4C_7Cz"
-      data-mapping="pathname"
-      data-strict="0"
-      data-reactions-enabled="1"
-      data-emit-metadata="0"
-      data-input-position="top"
-      data-theme="https://chami537.github.io/data/giscus.css"
-      data-lang="zh-CN"
-      crossorigin="anonymous"
-      async>
-    </script>
-  </div>
+  <div class="comments-section" id="giscus-container" style="margin-top:80px;padding-top:40px;border-top:1px dashed var(--line);"></div>
+  <script>
+    if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
+      var gs = document.createElement('script');
+      gs.src = 'https://giscus.app/client.js';
+      gs.setAttribute('data-repo', 'Chami537/chami537.github.io');
+      gs.setAttribute('data-repo-id', 'R_kgDOS6Xqvg');
+      gs.setAttribute('data-category', 'General');
+      gs.setAttribute('data-category-id', 'DIC_kwDOS6Xqvs4C_7Cz');
+      gs.setAttribute('data-mapping', 'pathname');
+      gs.setAttribute('data-strict', '0');
+      gs.setAttribute('data-reactions-enabled', '1');
+      gs.setAttribute('data-emit-metadata', '0');
+      gs.setAttribute('data-input-position', 'top');
+      gs.setAttribute('data-theme', 'https://chami537.github.io/data/giscus.css');
+      gs.setAttribute('data-lang', 'zh-CN');
+      gs.crossOrigin = 'anonymous';
+      gs.async = true;
+      document.getElementById('giscus-container').appendChild(gs);
+    }
+  </script>
 
 </main>
 
@@ -527,6 +514,33 @@ RAW_MD -->
 </footer>
 
 <script>
+// Tag-scoped navigation: read ?tag= from URL and swap prev/next links
+(function() {
+  var m = location.search.match(/[?&]tag=([^&]+)/);
+  if (!m) return;
+  var entryTag = decodeURIComponent(m[1]);
+  var dataEl = document.getElementById('tag-nav-data');
+  if (!dataEl) return;
+  try {
+    var navData = JSON.parse(dataEl.textContent);
+    var nav = navData[entryTag];
+    if (!nav) return;
+    var buildLink = function(d, cls, label, arr) {
+      if (!d) return '<div></div>';
+      var href = d.slug + '.html?tag=' + encodeURIComponent(entryTag);
+      return '<a href="' + href + '" class="' + cls + '">' +
+        '<span class="' + cls.replace('link','label') + '">' + label + '</span>' +
+        '<div class="' + cls.replace('link','title') + '">' +
+        (arr === '←' ? '<span class="prev-arr">←</span><span>' + d.title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>' : '') +
+        (arr === '→' ? '<span>' + d.title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span><span class="next-arr">→</span>' : '') +
+        '</div></a>';
+    };
+    var row = document.getElementById('nav-row');
+    row.innerHTML = buildLink(nav.prev, 'prev-link', '上一篇', '←') +
+                    buildLink(nav.next, 'next-link', '下一篇', '→');
+  } catch(e) {}
+})();
+
 const bar = document.querySelector('.progress');
 var pageHeight = document.documentElement.scrollHeight - innerHeight;
 
@@ -545,8 +559,13 @@ addEventListener('scroll', () => {
     const container = document.getElementById('friends-container');
     let html = '<div class="friends-label">FRIEND</div>';
     friends.forEach((f, i) => {
-      html += '<a href="' + f.url.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '">' + f.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</a>';
-      if (i < friends.length - 1) html += '<span class="sep">·</span>';
+      var escUrl = f.url.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var escName = f.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      if (/^https?:\/\//i.test(f.url)) {
+        html += '<a href="' + escUrl + '">' + escName + '</a>';
+      } else {
+        html += '<span>' + escName + '</span>';
+      }
     });
     container.innerHTML = html;
     pageHeight = document.documentElement.scrollHeight - innerHeight;
