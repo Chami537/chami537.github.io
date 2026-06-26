@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="view-transition" content="same-origin">
 <title>Chami — CS Student & Photographer</title>
 <meta name="description" content="Chami的个人主页 — CS 学生、摄影师，现居深圳。Building things that feel right.">
 <meta property="og:title" content="Chami">
@@ -309,6 +310,25 @@
   }
   .essay-filter .ef-more:hover { color: var(--fg); }
 
+  .essay-search {
+    margin-bottom: 12px; position: relative;
+  }
+  .essay-search input {
+    width: 100%; padding: 8px 14px 8px 34px;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+    font-size: 13px; color: var(--fg);
+    background: var(--bg); border: 1px solid var(--line);
+    border-radius: 8px; outline: none;
+    transition: border-color .2s;
+  }
+  .essay-search input:focus { border-color: var(--c3); }
+  .essay-search input::placeholder { color: #bbb; }
+  .essay-search::before {
+    content: "🔍"; position: absolute;
+    left: 10px; top: 50%; transform: translateY(-50%);
+    font-size: 13px; pointer-events: none;
+  }
+
   footer {
     font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
@@ -378,6 +398,16 @@
   @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
   }
+
+  /* View Transitions — cross-fade between page navigations */
+  ::view-transition-old(root) { animation: vt-fade-out .2s ease-out both; }
+  ::view-transition-new(root) { animation: vt-fade-in .3s ease-out .12s both; }
+  @keyframes vt-fade-out { to { opacity: 0; } }
+  @keyframes vt-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+  .reveal { opacity: 0; transform: translateY(14px); transition: opacity .7s ease-out, transform .7s ease-out; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  @media (prefers-reduced-motion: reduce) { .reveal { opacity: 1; transform: none; transition: none; } }
 
   @media (max-width: 768px) {
     .container { padding: 0 24px; }
@@ -487,6 +517,7 @@
 
   <section id="essays">
     <div class="section-tag yellow">ESSAYS</div>
+    <div class="essay-search"><input type="text" id="essay-search-input" placeholder="搜索随笔..." oninput="onEssaySearch(this.value)"></div>
     <div id="essay-tag-filter" class="essay-filter" style="margin-bottom:16px;"></div>
     <div class="essays-list skeleton-loading" id="essays-list">
       <a class="essay-row" href="essays/essay-9292594d.html"><div class="essay-left"><span class="essay-title">残夏</span><span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span></div><div class="essay-right"><span class="essay-tag">随笔</span><span class="essay-meta">2026.06 · 1 min</span><span class="essay-arr">→</span></div></a>
@@ -711,13 +742,15 @@ function renderWork(data) {
 
 var _essayData = [];
 var _essayFilter = '';
+var _essaySearchQuery = '';
+var _essaySearchTimer = null;
 
 function buildEssayFilter() {
   var tags = new Set();
   _essayData.forEach(function(e) {
     (e.tag || '').split(/[,，]/).forEach(function(t) { t = t.trim(); if (t) tags.add(t); });
   });
-  var html = '<span class="ef-chip' + (!_essayFilter ? ' active' : '') + '" onclick="filterEssays(\'\')">全部</span>';
+  var html = '<span class="ef-chip' + (!_essayFilter ? ' active' : '') + '" onclick="filterEssays(\'\')">置顶</span>';
   tags.forEach(function(t) {
     html += '<span class="ef-chip' + (_essayFilter === t ? ' active' : '') + '" data-tag="' + htmlEncode(t) + '" onclick="filterEssays(this.getAttribute(\'data-tag\'))">' + htmlEncode(t) + '</span>';
   });
@@ -730,11 +763,30 @@ function filterEssays(tag) {
   renderEssayList();
 }
 
+function onEssaySearch(query) {
+  clearTimeout(_essaySearchTimer);
+  _essaySearchTimer = setTimeout(function() {
+    _essaySearchQuery = query.toLowerCase().trim();
+    renderEssayList();
+  }, 100);
+}
+
 function renderEssayList() {
   var filtered = _essayData;
   if (_essayFilter) {
     filtered = _essayData.filter(function(e) {
       return (e.tag || '').split(/[,，]/).some(function(t) { return t.trim() === _essayFilter; });
+    });
+  } else {
+    // Show pinned articles (default "置顶" view)
+    filtered = _essayData.filter(function(e) {
+      return e.pinned === true;
+    });
+  }
+  if (_essaySearchQuery) {
+    filtered = filtered.filter(function(e) {
+      return (e.title || '').toLowerCase().indexOf(_essaySearchQuery) !== -1 ||
+             (e.excerpt || '').toLowerCase().indexOf(_essaySearchQuery) !== -1;
     });
   }
   var MAX = 5;
@@ -758,7 +810,7 @@ function renderEssayList() {
       '</a>';
   });
   if (hidden > 0) {
-    html += '<a class="essay-row" href="#essays" style="justify-content:center;color:var(--muted);font-size:13px;text-decoration:none;" onclick="filterEssays(\'\');return false;">查看全部（' + hidden + ' 篇）→</a>';
+    html += '<a class="essay-row" href="archive.html" style="justify-content:center;color:var(--muted);font-size:13px;text-decoration:none;">查看全部（' + hidden + ' 篇）→</a>';
   }
   document.getElementById('essays-list').innerHTML = html;
   document.getElementById('essays-list').classList.remove('skeleton-loading');
@@ -865,6 +917,19 @@ document.addEventListener('DOMContentLoaded', async function() {
   initThemeBtn();
   initLB();
   updateLayoutCache();
+
+  // Scroll reveal for photo grid + essay list (after dynamic render)
+  var revealObserver = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) { e.target.classList.add('visible'); revealObserver.unobserve(e.target); }
+    });
+  }, { threshold: 0.12 });
+  setTimeout(function() {
+    document.querySelectorAll('#photo-grid > div, #essays-list .essay-row').forEach(function(el) {
+      el.classList.add('reveal');
+      revealObserver.observe(el);
+    });
+  }, 600);
 });
 
 // ═══ Dark Mode ═══

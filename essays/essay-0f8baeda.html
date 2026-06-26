@@ -3,8 +3,16 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="view-transition" content="same-origin">
 <title>活着是更难的勇气 — Chami</title>
 <meta name="description" content="读《挪威的森林》有感">
+<meta property="og:title" content="活着是更难的勇气 — Chami">
+<meta property="og:description" content="读《挪威的森林》有感">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://chami537.github.io/essays/essay-0f8baeda.html">
+<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">
+<meta property="og:site_name" content="Chami">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="/images/avatar.jpg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -188,6 +196,11 @@ html.dark .essay-body .essay-updated { color: #5c7f9e; }
   margin: 2em auto; cursor: zoom-in;
   border: 1px solid rgba(0,0,0,0.05);
   box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+  transition: transform .45s ease, box-shadow .45s ease;
+}
+.essay-body img:hover {
+  transform: scale(1.015);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.08);
 }
 html.dark .essay-body img { border-color: rgba(255,255,255,0.1); }
 
@@ -259,7 +272,22 @@ html.dark .essay-body img { border-color: rgba(255,255,255,0.1); }
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 13px; font-weight: 600; color: var(--muted);
   text-decoration: none; display: flex; flex-direction: column;
-  gap: 4px; transition: color .2s;
+  gap: 4px; transition: color .25s;
+  position: relative;
+}
+.essay-end .prev-link .prev-title, .essay-end .next-link .next-title {
+  position: relative;
+}
+.essay-end .prev-link .prev-title::after, .essay-end .next-link .next-title::after {
+  content: '';
+  position: absolute; bottom: -3px; left: 0;
+  width: 100%; height: 1px;
+  background: var(--fg);
+  transform: scaleX(0);
+  transition: transform .3s ease;
+}
+.essay-end .prev-link:hover .prev-title::after, .essay-end .next-link:hover .next-title::after {
+  transform: scaleX(1);
 }
 .essay-end .prev-link { align-items: flex-start; }
 .essay-end .next-link { align-items: flex-end; }
@@ -297,6 +325,30 @@ footer {
 @media (max-width: 768px) {
   nav { padding: 0 16px; }
   .reading { padding: 100px 24px 80px; }
+}
+
+/* View Transitions — tasteful cross-fade between pages */
+::view-transition-old(root) {
+  animation: vt-fade-out .2s ease-out both;
+}
+::view-transition-new(root) {
+  animation: vt-fade-in .3s ease-out .12s both;
+}
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; } to { opacity: 1; } }
+
+/* Scroll reveal */
+.reveal {
+  opacity: 0;
+  transform: translateY(14px);
+  transition: opacity .7s ease-out, transform .7s ease-out;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
 }
 
 </style>
@@ -547,6 +599,24 @@ RAW_MD -->
     </a>
   </div>
 
+  <div class="comments-section" style="margin-top:80px;padding-top:40px;border-top:1px dashed var(--line);">
+    <script src="https://giscus.app/client.js"
+      data-repo="Chami537/chami537.github.io"
+      data-repo-id="R_kgDOS6Xqvg"
+      data-category="General"
+      data-category-id="DIC_kwDOS6Xqvs4C_7Cz"
+      data-mapping="pathname"
+      data-strict="0"
+      data-reactions-enabled="1"
+      data-emit-metadata="0"
+      data-input-position="top"
+      data-theme="https://chami537.github.io/data/giscus.css"
+      data-lang="zh-CN"
+      crossorigin="anonymous"
+      async>
+    </script>
+  </div>
+
 </main>
 
 <footer>
@@ -581,6 +651,22 @@ addEventListener('scroll', () => {
     container.innerHTML = html;
     pageHeight = document.documentElement.scrollHeight - innerHeight;
   } catch(e) {}
+})();
+
+// Scroll reveal
+(function() {
+  var observer = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) {
+      if (e.isIntersecting) {
+        e.target.classList.add('visible');
+        observer.unobserve(e.target);
+      }
+    });
+  }, { threshold: 0.15 });
+  document.querySelectorAll('.essay-body p, .essay-body h2, .essay-body img, .essay-body blockquote').forEach(function(el) {
+    el.classList.add('reveal');
+    observer.observe(el);
+  });
 })();
 
 // Lightbox
@@ -628,6 +714,38 @@ function toggleTheme() {
     btn.textContent = '🌙';
   }
 }
+</script>
+
+<!--
+  Giscus 评论区 — 评论数据存储在 GitHub Discussions 中
+  仓库: Chami537/chami537.github.io | 分类: General
+-->
+<script>
+// Sync Giscus theme with dark mode
+function syncGiscusTheme() {
+  var isDark = document.documentElement.classList.contains('dark');
+  var theme = isDark ? 'https://chami537.github.io/data/giscus-dark.css' : 'https://chami537.github.io/data/giscus.css';
+  var frame = document.querySelector('.giscus-frame');
+  if (frame) {
+    frame.contentWindow.postMessage(
+      { giscus: { setConfig: { theme: theme } } },
+      'https://giscus.app'
+    );
+  }
+}
+// Override toggleTheme to also sync Giscus
+var _origToggleTheme = toggleTheme;
+toggleTheme = function() {
+  _origToggleTheme();
+  setTimeout(syncGiscusTheme, 200);
+};
+// Listen for Giscus load
+window.addEventListener('message', function(e) {
+  if (e.origin !== 'https://giscus.app' || !e.data || !e.data.giscus) return;
+  if (e.data.giscus.discussion) {
+    syncGiscusTheme();
+  }
+});
 </script>
 
 <div id="lb" class="lb-overlay" onclick="lbClose()">

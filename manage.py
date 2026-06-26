@@ -97,461 +97,7 @@ def delete_work(id):
 # Essays CRUD + Markdown
 # ═══════════════════════════════════════════
 
-ESSAY_TEMPLATE = '''<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{title} — Chami</title>
-<meta name="description" content="{excerpt}">
-<link rel="icon" href="/images/avatar.jpg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css">
-<style>
-
-* {{ margin: 0; padding: 0; box-sizing: border-box; }}
-
-:focus-visible {{ outline: 2px solid var(--c3); outline-offset: 2px; }}
-
-:root {{
-  --bg: #fafaf8;
-  --fg: #111;
-  --c3: #ffb800;
-  --line: #e0dcd5;
-  --muted: #999;
-}}
-
-html.dark {{ --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }}
-html.dark nav {{ background: rgba(26,26,28,0.88); }}
-html.dark .essay-body blockquote {{ background: rgba(255,184,0,0.08); }}
-
-body {{
-  font-family: 'Inter', 'Noto Sans SC', sans-serif;
-  background: var(--bg);
-  color: var(--fg);
-  -webkit-font-smoothing: antialiased;
-}}
-
-.progress {{
-  position: fixed; top: 0; left: 0; height: 2px;
-  background: var(--c3); z-index: 999; width: 0; will-change: width;
-}}
-
-nav {{
-  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-  padding: 0 48px;
-  background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
-  border-bottom: 2px solid var(--fg);
-}}
-nav .inner {{
-  max-width: 1200px; margin: 0 auto; display: flex;
-  align-items: center; justify-content: space-between; height: 56px;
-}}
-nav .logo {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
-  text-decoration: none; color: var(--fg);
-}}
-nav .back {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 12px; font-weight: 600; letter-spacing: .08em;
-  color: var(--muted); text-decoration: none;
-  display: flex; align-items: center; gap: 6px; transition: color .2s;
-}}
-nav .back:hover {{ color: var(--c3); }}
-nav .back .arr {{ transition: transform .2s ease; display: inline-block; }}
-nav .back:hover .arr {{ transform: translateX(-4px); }}
-
-nav .theme-btn {{
-  width: 32px; height: 32px; border-radius: 50%;
-  border: 1px solid var(--line); background: none;
-  font-size: 16px; cursor: pointer; display: flex;
-  align-items: center; justify-content: center;
-  transition: background .2s, border-color .2s;
-  padding: 0; line-height: 1; color: inherit;
-  flex-shrink: 0;
-}}
-nav .theme-btn:hover {{ background: var(--line); }}
-html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
-
-.reading {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 120px 48px 100px;
-}}
-
-.section-tag {{
-  display: inline-block; font-size: 12px; font-weight: 700;
-  letter-spacing: 2px; text-transform: uppercase;
-  color: var(--c3); border-left: 2px solid var(--c3);
-  padding-left: 10px; margin-bottom: 24px;
-}}
-
-.essay-title {{
-  font-size: clamp(40px, 7vw, 64px);
-  font-weight: 900;
-  line-height: 1.0;
-  letter-spacing: -0.025em;
-  margin-bottom: 16px;
-}}
-
-.essay-epigraph {{
-  font-size: 15px;
-  color: var(--muted);
-  font-weight: 400;
-  margin-bottom: 28px;
-}}
-
-.essay-meta {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  display: flex; gap: 16px; align-items: baseline;
-  font-size: 12px; color: var(--muted); font-weight: 500;
-  line-height: 1;
-  margin-bottom: 40px;
-}}
-.essay-meta .dot {{ color: var(--muted); }}
-.essay-meta-tag {{ font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; }}
-.essay-meta-date {{ font-variant-numeric: tabular-nums; }}
-.essay-meta-read {{ font-variant-numeric: tabular-nums; }}
-
-.essay-divider {{
-  border: none; border-top: 1px solid var(--line); margin-bottom: 40px;
-}}
-
-.essay-lede {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 19px;
-  color: var(--fg);
-  line-height: 1.75;
-  font-weight: 400;
-  margin-bottom: 0;
-}}
-
-.essay-body p {{
-  font-size: 17px;
-  line-height: 1.9;
-  color: var(--fg);
-  margin-top: 1.6em;
-}}
-
-.essay-body h2 {{
-  font-size: 21px; font-weight: 700;
-  margin-top: 2.5em; margin-bottom: .4em;
-  letter-spacing: -0.01em;
-}}
-
-.essay-body blockquote {{
-  border-left: 3px solid var(--c3);
-  background: rgba(255,184,0,0.10);
-  padding: 0.8em 16px 0.8em 13px;
-  margin: 1.5em 0;
-  color: var(--fg);
-  font-size: 16px;
-  line-height: 1.85;
-  box-sizing: border-box;
-  max-width: 100%;
-}}
-.essay-body blockquote p:first-child {{ margin-top: 0; }}
-.essay-body blockquote p:last-child {{ margin-bottom: 0; }}
-
-	.section-tag,
-	.essay-meta {{
-	  font-family: 'Lora', 'Inter', sans-serif;
-	}}
-
-.essay-title,
-.essay-epigraph,
-.essay-body {{
-  font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif;
-}}
-.essay-body strong, .essay-body b {{ font-weight: 700; color: #000; font-size: 1.06em; }}
-
-.essay-body .essay-updated {{
-  font-family: 'Lora', 'Noto Serif SC', serif;
-  font-size: 13.5px;
-  font-style: italic;
-  color: #83a2c0;
-  text-align: right;
-  margin-top: 3em;
-  margin-bottom: 0;
-  letter-spacing: 0.02em;
-}}
-html.dark .essay-body .essay-updated {{ color: #5c7f9e; }}
-
-.essay-body img {{
-  max-width: 100%; height: auto;
-  display: block; border-radius: 4px;
-  margin: 2em auto; cursor: zoom-in;
-  border: 1px solid rgba(0,0,0,0.05);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.03);
-}}
-html.dark .essay-body img {{ border-color: rgba(255,255,255,0.1); }}
-
-.essay-body img.bleed {{
-  width: calc(100vw - 20px);
-  max-width: 900px;
-  position: relative;
-  left: 50%;
-  transform: translateX(-50%);
-  margin: 3em 0;
-  border-radius: 6px;
-}}
-
-.essay-body::after {{
-  content: "✦";
-  display: block;
-  text-align: center;
-  font-size: 18px;
-  color: var(--c3);
-  opacity: 0.5;
-  margin: 4em auto 2em;
-}}
-
-/* Lightbox */
-.lb-overlay {{
-  display: none; position: fixed; inset: 0; z-index: 1000;
-  background: rgba(0,0,0,0.92); cursor: zoom-out;
-}}
-.lb-overlay.show {{ display: flex; align-items: center; justify-content: center; }}
-.lb-overlay img {{ max-width: 90vw; max-height: 85vh; object-fit: contain; cursor: default; }}
-.lb-close {{
-  position: fixed; top: 20px; right: 28px; z-index: 1001;
-  background: none; border: none; color: #fff; font-size: 36px;
-  cursor: pointer; opacity: 0.6; transition: opacity .2s;
-}}
-.lb-close:hover {{ opacity: 1; }}
-.lb-prev, .lb-next {{
-  position: fixed; top: 50%; z-index: 1001;
-  background: none; border: none; color: #fff;
-  font-size: 48px; cursor: pointer; opacity: 0.4;
-  transition: opacity .2s; transform: translateY(-50%);
-}}
-.lb-prev {{ left: 20px; }} .lb-next {{ right: 20px; }}
-.lb-prev:hover, .lb-next:hover {{ opacity: 1; }}
-.lb-counter {{
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
-  color: rgba(255,255,255,0.5); font-size: 13px; z-index: 1001;
-}}
-
-.essay-end {{
-  margin-top: 64px; padding-top: 32px;
-  border-top: 1px solid var(--line);
-}}
-.essay-end-row {{
-  display: flex; justify-content: space-between; align-items: flex-end;
-}}
-.essay-end .back-link {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 13px; font-weight: 600; color: var(--muted);
-  text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 6px;
-  margin-top: 24px;
-  transition: color .2s;
-}}
-.essay-end .back-link:hover {{ color: var(--c3); }}
-.essay-end .back-link .arr {{ transition: transform .2s; display: inline-block; }}
-.essay-end .back-link:hover .arr {{ transform: translateX(-4px); }}
-
-.essay-end .prev-link, .essay-end .next-link {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 13px; font-weight: 600; color: var(--muted);
-  text-decoration: none; display: flex; flex-direction: column;
-  gap: 4px; transition: color .2s;
-}}
-.essay-end .prev-link {{ align-items: flex-start; }}
-.essay-end .next-link {{ align-items: flex-end; }}
-.essay-end .prev-link:hover, .essay-end .next-link:hover {{ color: var(--fg); }}
-.essay-end .prev-label, .essay-end .next-label {{
-  font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: #ccc;
-}}
-.essay-end .prev-title, .essay-end .next-title {{
-  display: flex; align-items: center; gap: 6px;
-}}
-.essay-end .prev-arr, .essay-end .next-arr {{ transition: transform .2s; display: inline-block; }}
-.essay-end .prev-link:hover .prev-arr {{ transform: translateX(-4px); }}
-.essay-end .next-link:hover .next-arr {{ transform: translateX(4px); }}
-
-footer {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
-  letter-spacing: .04em; border-top: 1px solid var(--line);
-}}
-.friends {{ margin-bottom: 20px; }}
-.friends-label {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: #ccc; margin-bottom: 8px;
-}}
-.friends a {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 11px; color: #bbb; text-decoration: none;
-  letter-spacing: .04em; transition: color .2s;
-}}
-.friends a:hover {{ color: var(--fg); }}
-.friends .sep {{ color: var(--muted); margin: 0 8px; }}
-
-@media (max-width: 768px) {{
-  nav {{ padding: 0 16px; }}
-  .reading {{ padding: 100px 24px 80px; }}
-}}
-
-</style>
-<script>
-  if (localStorage.getItem('theme') === 'dark') {{
-    document.documentElement.classList.add('dark');
-  }}
-</script>
-</head>
-<body>
-
-<div class="progress"></div>
-
-<nav>
-  <div class="inner">
-    <a href="/" class="logo">Chami</a>
-    <a href="/index.html#essays" class="back">
-      <span class="arr">←</span>
-      <span>Essays</span>
-    </a>
-    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
-  </div>
-</nav>
-
-<main class="reading">
-
-  <div class="section-tag">ESSAYS</div>
-
-  <h1 class="essay-title">{title}</h1>
-
-  <p class="essay-epigraph">{epigraph}</p>
-
-  <div class="essay-meta">
-    <span class="essay-meta-tag">{tag}</span>
-    <span class="dot">·</span>
-    <span class="essay-meta-date">{date_display}</span>
-    <span class="dot">·</span>
-    <span class="essay-meta-read">{read_time} min read</span>
-  </div>
-
-  <hr class="essay-divider">
-
-<!-- CONTENT_START -->
-
-  <div class="essay-body">
-
-{body_html}
-
-  </div>
-
-<!-- CONTENT_END -->
-
-  <div class="essay-end">
-    <div class="essay-end-row">
-      {prev_nav}
-      {next_nav}
-    </div>
-    <a href="/" class="back-link">
-      <span class="arr">←</span>
-      <span>返回主页</span>
-    </a>
-  </div>
-
-</main>
-
-<footer>
-  <div class="friends" id="friends-container">
-    <div class="friends-label">FRIEND</div>
-  </div>
-  &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
-</footer>
-
-<script>
-const bar = document.querySelector('.progress');
-var pageHeight = document.documentElement.scrollHeight - innerHeight;
-
-window.addEventListener('resize', () => {{
-  pageHeight = document.documentElement.scrollHeight - innerHeight;
-}});
-
-addEventListener('scroll', () => {{
-  if (pageHeight > 0) bar.style.width = (scrollY / pageHeight * 100) + '%';
-}});
-
-// Render friends
-(async () => {{
-  try {{
-    const friends = await fetch('/data/friends.json?v=' + Date.now()).then(r => r.json());
-    const container = document.getElementById('friends-container');
-    let html = '<div class="friends-label">FRIEND</div>';
-    friends.forEach((f, i) => {{
-      html += '<a href="' + f.url.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '">' + f.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</a>';
-      if (i < friends.length - 1) html += '<span class="sep">·</span>';
-    }});
-    container.innerHTML = html;
-    pageHeight = document.documentElement.scrollHeight - innerHeight;
-  }} catch(e) {{}}
-}})();
-
-// Lightbox
-var lbImgs = [];
-var lbIdx = 0;
-var essayBody = document.querySelector('.essay-body');
-if (essayBody) essayBody.addEventListener('click', function(e) {{
-  if (e.target.tagName !== 'IMG') return;
-  lbImgs = Array.from(document.querySelectorAll('.essay-body img'));
-  lbIdx = lbImgs.indexOf(e.target);
-  document.getElementById('lb').classList.add('show');
-  document.getElementById('lb-img').src = e.target.src;
-  document.getElementById('lb-counter').textContent = (lbIdx + 1) + ' / ' + lbImgs.length;
-  document.body.style.overflow = 'hidden';
-}});
-function lbClose() {{
-  document.getElementById('lb').classList.remove('show');
-  document.body.style.overflow = '';
-}}
-function lbNav(d) {{
-  lbIdx = (lbIdx + d + lbImgs.length) % lbImgs.length;
-  document.getElementById('lb-img').src = lbImgs[lbIdx].src;
-  document.getElementById('lb-counter').textContent = (lbIdx + 1) + ' / ' + lbImgs.length;
-}}
-document.addEventListener('keydown', function(e) {{
-  if (!document.getElementById('lb').classList.contains('show')) return;
-  if (e.key === 'Escape') lbClose();
-  if (e.key === 'ArrowLeft') lbNav(-1);
-  if (e.key === 'ArrowRight') lbNav(1);
-}});
-
-(function initThemeBtn() {{
-  if (localStorage.getItem('theme') === 'dark') {{
-    document.getElementById('theme-btn').textContent = '☀';
-  }}
-}})();
-function toggleTheme() {{
-  var html = document.documentElement;
-  var btn = document.getElementById('theme-btn');
-  if (html.classList.toggle('dark')) {{
-    localStorage.setItem('theme', 'dark');
-    btn.textContent = '☀';
-  }} else {{
-    localStorage.removeItem('theme');
-    btn.textContent = '🌙';
-  }}
-}}
-</script>
-
-<div id="lb" class="lb-overlay" onclick="lbClose()">
-  <button class="lb-close" onclick="lbClose()" aria-label="关闭">×</button>
-  <button class="lb-prev" onclick="lbNav(-1);event.stopPropagation()" aria-label="上一张">‹</button>
-  <button class="lb-next" onclick="lbNav(1);event.stopPropagation()" aria-label="下一张">›</button>
-  <img id="lb-img" src="" alt="">
-  <div class="lb-counter" id="lb-counter"></div>
-</div>
-
-</body>
-</html>'''
+ESSAY_TEMPLATE = open(os.path.join(BASE_DIR, 'essay_template.html'), encoding='utf-8').read()
 
 
 def _fe(s):
@@ -590,6 +136,318 @@ def _parse_date(date_str):
         return result or date_str
     except (ValueError, IndexError):
         return date_str
+
+
+def _extract_first_image(md_text):
+    """Extract first image URL from Markdown for Open Graph og:image."""
+    if not md_text:
+        return 'https://chami537.github.io/images/avatar.jpg'
+    m = re.search(r'!\[.*?\]\((.*?)\)', md_text)
+    if m:
+        url = m.group(1)
+        if url.startswith('http'):
+            return url
+        return 'https://chami537.github.io/' + url.lstrip('/')
+    return 'https://chami537.github.io/images/avatar.jpg'
+
+
+def _generate_rss():
+    """Generate rss.xml from essays.json."""
+    essays = load_json('essays.json')
+    items = []
+    for e in essays[:20]:
+        slug = html_mod.escape(e.get('slug', ''), quote=False)
+        title = html_mod.escape(e.get('title', ''), quote=False)
+        excerpt = html_mod.escape(e.get('excerpt', ''), quote=False)
+        date_str = e.get('date', '')
+        pub_date = ''
+        try:
+            dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M')
+            pub_date = dt.strftime('%a, %d %b %Y %H:%M:%S +0800')
+        except ValueError:
+            pass
+        items.append(f'''    <item>
+      <title>{title}</title>
+      <link>https://chami537.github.io/essays/{slug}.html</link>
+      <description>{excerpt}</description>
+      <pubDate>{pub_date}</pubDate>
+      <guid>https://chami537.github.io/essays/{slug}.html</guid>
+    </item>''')
+    last_build = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0800')
+    rss = f'''<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Chami</title>
+    <link>https://chami537.github.io</link>
+    <description>Chami 的个人博客 — CS Student &amp; Photographer</description>
+    <language>zh-CN</language>
+    <lastBuildDate>{last_build}</lastBuildDate>
+{chr(10).join(items)}
+  </channel>
+</rss>'''
+    with open(os.path.join(BASE_DIR, 'rss.xml'), 'w', encoding='utf-8') as f:
+        f.write(rss)
+
+
+def _generate_sitemap():
+    """Generate sitemap.xml."""
+    essays = load_json('essays.json')
+    urls = []
+    urls.append('''  <url>
+    <loc>https://chami537.github.io/</loc>
+    <priority>1.0</priority>
+  </url>''')
+    urls.append('''  <url>
+    <loc>https://chami537.github.io/archive.html</loc>
+    <priority>0.8</priority>
+  </url>''')
+    for e in essays:
+        slug = html_mod.escape(e.get('slug', ''), quote=False)
+        date_str = e.get('date', '')
+        lastmod = ''
+        try:
+            dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M')
+            lastmod = dt.strftime('%Y-%m-%d')
+        except ValueError:
+            pass
+        urls.append(f'''  <url>
+    <loc>https://chami537.github.io/essays/{slug}.html</loc>
+    <lastmod>{lastmod}</lastmod>
+    <priority>0.7</priority>
+  </url>''')
+    sitemap = f'''<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+{chr(10).join(urls)}
+</urlset>'''
+    with open(os.path.join(BASE_DIR, 'sitemap.xml'), 'w', encoding='utf-8') as f:
+        f.write(sitemap)
+
+
+def _generate_archive():
+    """Generate archive.html — timeline grouped by year."""
+    essays = load_json('essays.json')
+    essays_sorted = sorted(essays, key=lambda e: e.get('date', ''), reverse=True)
+
+    from collections import OrderedDict
+    years = OrderedDict()
+    for e in essays_sorted:
+        date_str = e.get('date', '')
+        year = date_str[:4] if len(date_str) >= 4 else 'Unknown'
+        if year not in years:
+            years[year] = []
+        years[year].append(e)
+
+    entries_html = ''
+    for year, items in years.items():
+        entries_html += f'<div class="archive-year"><h2 class="archive-year-heading">{year}</h2>'
+        for e in items:
+            slug = html_mod.escape(e['slug'])
+            title = html_mod.escape(e['title'])
+            tag = html_mod.escape((e.get('tag', '') or '').replace(', ', ' · ').replace(',', ' · '))
+            date_str = e.get('date', '')
+            month_day = ''
+            try:
+                dp = date_str.split(' ')[0].split('-') if ' ' in date_str else date_str.split('-')
+                if len(dp) >= 3 and dp[2]:
+                    M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+                    month_day = f'{M[int(dp[1])-1]} {int(dp[2])}'
+            except (ValueError, IndexError):
+                pass
+            entries_html += f'''<a href="essays/{slug}.html" class="archive-row">
+              <span class="archive-date">{month_day}</span>
+              <span class="archive-title">{title}</span>
+              <span class="archive-tag">{tag}</span>
+            </a>'''
+        entries_html += '</div>'
+
+    total = len(essays)
+    archive = f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — Chami</title>
+<meta name="description" content="Chami 的随笔归档 · 共 {total} 篇">
+<meta property="og:title" content="Archive — Chami">
+<meta property="og:description" content="Chami 的随笔归档 · 共 {total} 篇">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">
+<meta property="og:site_name" content="Chami">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="images/avatar.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+:root {{
+  --bg: #fafaf8; --fg: #111; --c3: #ffb800; --line: #e0dcd5; --muted: #999;
+}}
+html.dark {{ --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }}
+html.dark nav {{ background: rgba(26,26,28,0.88); }}
+
+body {{
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  background: var(--bg); color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}}
+
+nav {{
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 48px;
+  background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--fg);
+}}
+nav .inner {{
+  max-width: 1200px; margin: 0 auto; display: flex;
+  align-items: center; justify-content: space-between; height: 56px;
+}}
+nav .logo {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
+  text-decoration: none; color: var(--fg);
+}}
+nav .back {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 12px; font-weight: 600; letter-spacing: .08em;
+  color: var(--muted); text-decoration: none;
+  display: flex; align-items: center; gap: 6px; transition: color .2s;
+}}
+nav .back:hover {{ color: var(--c3); }}
+nav .theme-btn {{
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--line); background: none;
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .2s, border-color .2s;
+  padding: 0; line-height: 1; color: inherit;
+  flex-shrink: 0;
+}}
+nav .theme-btn:hover {{ background: var(--line); }}
+html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
+
+.archive-wrap {{
+  max-width: 680px; margin: 0 auto; padding: 120px 48px 100px;
+}}
+.archive-header {{
+  margin-bottom: 48px;
+}}
+.archive-header h1 {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 900; line-height: 1.0;
+  letter-spacing: -0.025em; margin-bottom: 12px;
+}}
+.archive-header .sub {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 15px; color: var(--muted);
+}}
+.archive-year {{ margin-bottom: 40px; }}
+.archive-year-heading {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 28px; font-weight: 800; color: var(--c3);
+  border-left: 3px solid var(--c3); padding-left: 14px;
+  margin-bottom: 20px;
+}}
+.archive-row {{
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 14px 0; border-bottom: 1px solid var(--line);
+  text-decoration: none; color: var(--fg);
+  transition: padding-left .3s, background .3s;
+}}
+.archive-row:hover {{
+  padding-left: 24px; background: rgba(255,184,0,0.05);
+}}
+.archive-date {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 12px; color: var(--muted); min-width: 72px;
+}}
+.archive-title {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 17px; font-weight: 600; flex: 1;
+}}
+.archive-tag {{
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--c3);
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+}}
+
+footer {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+  letter-spacing: .04em; border-top: 1px solid var(--line);
+  max-width: 680px; margin: 0 auto;
+}}
+
+@media (max-width: 768px) {{
+  nav {{ padding: 0 16px; }}
+  .archive-wrap {{ padding: 100px 24px 80px; }}
+  .archive-row {{ gap: 10px; }}
+  .archive-date {{ min-width: 56px; font-size: 11px; }}
+  .archive-tag {{ display: none; }}
+}}
+</style>
+<script>
+  if (localStorage.getItem('theme') === 'dark') {{
+    document.documentElement.classList.add('dark');
+  }}
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="/" class="logo">Chami</a>
+    <a href="/index.html#essays" class="back">
+      <span>←</span>
+      <span>Essays</span>
+    </a>
+    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+<main class="archive-wrap">
+  <div class="archive-header">
+    <h1>Archive</h1>
+    <p class="sub">共 {total} 篇随笔</p>
+  </div>
+{entries_html}
+</main>
+
+<footer>
+  &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
+</footer>
+
+<script>
+(function initThemeBtn() {{
+  if (localStorage.getItem('theme') === 'dark') {{
+    document.getElementById('theme-btn').textContent = '☀';
+  }}
+}})();
+function toggleTheme() {{
+  var html = document.documentElement;
+  var btn = document.getElementById('theme-btn');
+  if (html.classList.toggle('dark')) {{
+    localStorage.setItem('theme', 'dark');
+    btn.textContent = '☀';
+  }} else {{
+    localStorage.removeItem('theme');
+    btn.textContent = '🌙';
+  }}
+}}
+</script>
+
+</body>
+</html>'''
+    with open(os.path.join(BASE_DIR, 'archive.html'), 'w', encoding='utf-8') as f:
+        f.write(archive)
+
+
+def _generate_feeds():
+    """Regenerate all auto-generated files: RSS, sitemap, archive."""
+    _generate_rss()
+    _generate_sitemap()
+    _generate_archive()
 
 
 def _html_to_md(html):
@@ -671,6 +529,7 @@ def create_essay():
     prev_nav, next_nav = _build_nav(essays, slug)
     tag_raw = item.get('tag', '')
     tag_display = tag_raw.replace(', ', ' · ').replace(',', ' · ')
+    og_image = _extract_first_image(item.get('body', '') or item.get('content', ''))
     be = lambda s: s.replace('{', '{{').replace('}', '}}')
     html = ESSAY_TEMPLATE.format(
         title=_fe(item.get('title', '')),
@@ -682,14 +541,17 @@ def create_essay():
         body_html='',
         prev_nav=be(prev_nav),
         next_nav=be(next_nav),
+        slug=slug,
+        og_image=_fe(og_image),
     )
     os.makedirs(ESSAYS_DIR, exist_ok=True)
     with open(os.path.join(ESSAYS_DIR, f"{slug}.html"), 'w', encoding='utf-8') as f:
         f.write(html)
 
-    # Re-sync all existing essays' nav links
+    # Re-sync all existing essays' nav links + regenerate feeds
     for e in essays[:-1]:  # exclude the just-created one
         _sync_essay_html(e)
+    _generate_feeds()
 
     return jsonify(item), 201
 
@@ -704,6 +566,7 @@ def update_essay_meta(slug):
             essays[i]['slug'] = slug
             atomic_write_json('essays.json', essays)
             _sync_essay_html(essays[i])
+            _generate_feeds()
             return jsonify(essays[i])
     return jsonify({"error": "Not found"}), 404
 
@@ -751,6 +614,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
     date_display = _fe(_parse_date(essay.get('date', '')))
 
     # 4. 全量重新渲染 HTML
+    og_image = _extract_first_image(raw_md)
     be = lambda s: s.replace('{', '{{').replace('}', '}}')
     html = ESSAY_TEMPLATE.format(
         title=_fe(essay.get('title', '')),
@@ -762,6 +626,8 @@ def _sync_essay_html(essay, raw_md_memory=None):
         body_html=be(body_html),
         prev_nav=be(prev_nav),
         next_nav=be(next_nav),
+        slug=slug,
+        og_image=_fe(og_image),
     )
 
     # 5. 覆盖写入
@@ -780,7 +646,30 @@ def delete_essay(slug):
     # Re-sync all remaining essays' nav links
     for e in essays:
         _sync_essay_html(e)
+    _generate_feeds()
     return jsonify({"status": "deleted"})
+
+@app.route('/api/essays/<slug>/pin', methods=['POST'])
+def toggle_pin(slug):
+    essays = load_json('essays.json')
+    for e in essays:
+        e.setdefault('pinned', False)
+
+    target = next((e for e in essays if e['slug'] == slug), None)
+    if not target:
+        return jsonify({"error": "Not found"}), 404
+
+    if not target.get('pinned'):
+        pinned_count = sum(1 for e in essays if e.get('pinned'))
+        if pinned_count >= 5:
+            return jsonify({"error": "最多置顶 5 篇文章"}), 400
+        target['pinned'] = True
+    else:
+        target['pinned'] = False
+
+    atomic_write_json('essays.json', essays)
+    pinned_count = sum(1 for e in essays if e.get('pinned'))
+    return jsonify({"pinned": target['pinned'], "count": pinned_count})
 
 @app.route('/api/essays/<slug>/content', methods=['GET'])
 def get_essay_content(slug):
@@ -828,6 +717,7 @@ def update_essay_content(slug):
 
     # 3. 直接调用渲染函数，把最新的 Markdown 传过去
     _sync_essay_html(target_essay, raw_md_memory=md_content)
+    _generate_feeds()
 
     return jsonify({"status": "success", "message": f"{slug}.html updated"})
 
@@ -1218,6 +1108,18 @@ def serve_essay(filename):
 @app.route('/music/<path:filename>')
 def serve_music(filename):
     return send_from_directory(os.path.join(BASE_DIR, 'music'), filename)
+
+@app.route('/rss.xml')
+def serve_rss():
+    return send_from_directory(BASE_DIR, 'rss.xml')
+
+@app.route('/sitemap.xml')
+def serve_sitemap():
+    return send_from_directory(BASE_DIR, 'sitemap.xml')
+
+@app.route('/archive.html')
+def serve_archive():
+    return send_from_directory(BASE_DIR, 'archive.html')
 
 
 if __name__ == '__main__':

@@ -324,7 +324,11 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
         <button class="btn btn-primary" onclick="showEssayForm()">+ 新建文章</button>
       </div>
     </div>
-    <div id="essay-tag-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); overflow-x: auto; padding-bottom: 12px; scrollbar-width: none;"></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+      <div id="essay-tag-tabs" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; flex:1;"></div>
+      <span id="pin-count" style="font-size:12px;color:var(--muted);white-space:nowrap;padding-bottom:12px;padding-left:16px;"></span>
+    </div>
+    <div style="border-bottom:1px solid var(--border);margin-bottom:20px;"></div>
     <div id="essay-list"></div>
     <div id="essay-form" style="display:none;" class="card">
       <h3 id="essay-form-title">新建随笔</h3>
@@ -372,6 +376,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
           <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">&gt; 文字</code> → <span style="border-left:2px solid #ffb800;padding-left:6px;background:rgba(255,184,0,0.10);">引用块</span><br>
           <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">**文字**</code> → <strong>加粗</strong> &nbsp; <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">*文字*</code> → <em>斜体</em><br>
           <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">![](/images/essays/xxx.png)</code> → 插入图片<br>
+          <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">[文字](url)</code> → 超链接<br>
           空行分段 · 不需要手打任何 HTML 标签
         </div>
       </div>
@@ -703,6 +708,7 @@ async function deleteWork(id) {  const confirmed = await confirmDialog('确定�
 async function loadEssays() {
   try {
     const data = await api('GET', '/api/essays');
+    _essayAllData = data;
     let tags = getTags();
 
     data.forEach(e => {
@@ -745,10 +751,13 @@ async function loadEssays() {
     document.getElementById('essay-list').innerHTML = filteredData.map(e => `
     <div class="card">
       <div class="card-header">
-        <div>
-          <div class="card-title">${esc(e.title)}</div>
-          <div class="card-meta">${esc(e.date)} · ${e.readTime} min · slug: ${esc(e.slug)}</div>
-          <div class="card-meta" style="font-style:italic;">${esc(e.epigraph||'')}</div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          ${pinBtn(e)}
+          <div>
+            <div class="card-title">${esc(e.title)}</div>
+            <div class="card-meta">${esc(e.date)} · ${e.readTime} min · slug: ${esc(e.slug)}</div>
+            <div class="card-meta" style="font-style:italic;">${esc(e.epigraph||'')}</div>
+          </div>
         </div>
         <div class="card-actions">
           <button class="btn btn-sm" onclick="editEssayMeta('${esc(e.slug)}')">元数据</button>
@@ -756,8 +765,10 @@ async function loadEssays() {
           <button class="btn btn-sm btn-danger" onclick="deleteEssay('${esc(e.slug)}')">删除</button>
         </div>
       </div>
+      <div class="card-meta" style="margin-top:4px;"><a href="https://github.com/Chami537/chami537.github.io/discussions?discussions_q=${esc(e.slug)}" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:none;font-size:11px;">💬 查看讨论 →</a></div>
     </div>
   `).join('');
+  updatePinCount(data);
   } catch(e) { toast(e.message, true); }
 }
 
@@ -792,6 +803,38 @@ function promptNewTag() {
     }
     switchEssayTag(newTag.trim());
   }
+}
+
+// ═══ Pin system ═══
+function pinBtn(e) {
+  var pinned = e.pinned || false;
+  var totalPinned = (_essayAllData || []).filter(function(x) { return x.pinned; }).length;
+  var atLimit = totalPinned >= 5;
+  if (pinned) {
+    return '<button class="pin-toggle pinned" onclick="togglePin(\'' + esc(e.slug) + '\')" title="取消置顶" style="width:32px;height:32px;border:1px solid #ffb800;background:#fff8e0;border-radius:6px;cursor:pointer;font-size:16px;line-height:1;color:#ffb800;flex-shrink:0;">📍</button>';
+  }
+  if (atLimit) {
+    return '<button disabled style="width:32px;height:32px;border:1px solid #eee;background:#f5f5f5;border-radius:6px;font-size:16px;line-height:1;color:#ccc;flex-shrink:0;cursor:not-allowed;" title="已满5篇">📌</button>';
+  }
+  return '<button class="pin-toggle" onclick="togglePin(\'' + esc(e.slug) + '\')" title="置顶" style="width:32px;height:32px;border:1px solid var(--border);background:var(--card-bg);border-radius:6px;cursor:pointer;font-size:16px;line-height:1;color:var(--muted);flex-shrink:0;transition:all .15s;" onmouseover="this.style.borderColor=\'#ffb800\';this.style.color=\'#ffb800\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.color=\'var(--muted)\'">📌</button>';
+}
+
+var _essayAllData = [];
+async function togglePin(slug) {
+  try {
+    var r = await api('POST', '/api/essays/' + slug + '/pin');
+    toast(r.pinned ? '已置顶 (' + r.count + '/5)' : '已取消置顶 (' + r.count + '/5)');
+    // Update local state
+    var e = _essayAllData.find(function(x) { return x.slug === slug; });
+    if (e) e.pinned = r.pinned;
+    loadEssays();
+  } catch(e) { toast(e.message, true); }
+}
+
+function updatePinCount(data) {
+  _essayAllData = data || [];
+  var c = data.filter(function(e) { return e.pinned; }).length;
+  document.getElementById('pin-count').textContent = c > 0 ? '\u{1F4CC} \u5DF2\u7F6E\u9876 ' + c + '/5' : '';
 }
 
 function renderTagChips(selected) {

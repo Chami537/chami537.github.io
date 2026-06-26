@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — Chami</title>
+<meta name="description" content="Chami 的随笔归档 · 共 2 篇">
+<meta property="og:title" content="Archive — Chami">
+<meta property="og:description" content="Chami 的随笔归档 · 共 2 篇">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">
+<meta property="og:site_name" content="Chami">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="images/avatar.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #fafaf8; --fg: #111; --c3: #ffb800; --line: #e0dcd5; --muted: #999;
+}
+html.dark { --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }
+html.dark nav { background: rgba(26,26,28,0.88); }
+
+body {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  background: var(--bg); color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 48px;
+  background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--fg);
+}
+nav .inner {
+  max-width: 1200px; margin: 0 auto; display: flex;
+  align-items: center; justify-content: space-between; height: 56px;
+}
+nav .logo {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
+  text-decoration: none; color: var(--fg);
+}
+nav .back {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 12px; font-weight: 600; letter-spacing: .08em;
+  color: var(--muted); text-decoration: none;
+  display: flex; align-items: center; gap: 6px; transition: color .2s;
+}
+nav .back:hover { color: var(--c3); }
+nav .theme-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--line); background: none;
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .2s, border-color .2s;
+  padding: 0; line-height: 1; color: inherit;
+  flex-shrink: 0;
+}
+nav .theme-btn:hover { background: var(--line); }
+html.dark nav .theme-btn { border-color: #666; color: #ffd43b; }
+
+.archive-wrap {
+  max-width: 680px; margin: 0 auto; padding: 120px 48px 100px;
+}
+.archive-header {
+  margin-bottom: 48px;
+}
+.archive-header h1 {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 900; line-height: 1.0;
+  letter-spacing: -0.025em; margin-bottom: 12px;
+}
+.archive-header .sub {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 15px; color: var(--muted);
+}
+.archive-year { margin-bottom: 40px; }
+.archive-year-heading {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 28px; font-weight: 800; color: var(--c3);
+  border-left: 3px solid var(--c3); padding-left: 14px;
+  margin-bottom: 20px;
+}
+.archive-row {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 14px 0; border-bottom: 1px solid var(--line);
+  text-decoration: none; color: var(--fg);
+  transition: padding-left .3s, background .3s;
+}
+.archive-row:hover {
+  padding-left: 24px; background: rgba(255,184,0,0.05);
+}
+.archive-date {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 12px; color: var(--muted); min-width: 72px;
+}
+.archive-title {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 17px; font-weight: 600; flex: 1;
+}
+.archive-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--c3);
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+}
+
+footer {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+  letter-spacing: .04em; border-top: 1px solid var(--line);
+  max-width: 680px; margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  nav { padding: 0 16px; }
+  .archive-wrap { padding: 100px 24px 80px; }
+  .archive-row { gap: 10px; }
+  .archive-date { min-width: 56px; font-size: 11px; }
+  .archive-tag { display: none; }
+}
+</style>
+<script>
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+  }
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="/" class="logo">Chami</a>
+    <a href="/index.html#essays" class="back">
+      <span>←</span>
+      <span>Essays</span>
+    </a>
+    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+<main class="archive-wrap">
+  <div class="archive-header">
+    <h1>Archive</h1>
+    <p class="sub">共 2 篇随笔</p>
+  </div>
+<div class="archive-year"><h2 class="archive-year-heading">2026</h2><a href="essays/essay-0f8baeda.html" class="archive-row">
+              <span class="archive-date">Jun 26</span>
+              <span class="archive-title">活着是更难的勇气</span>
+              <span class="archive-tag">读后感</span>
+            </a><a href="essays/essay-9292594d.html" class="archive-row">
+              <span class="archive-date">Jun 25</span>
+              <span class="archive-title">残夏</span>
+              <span class="archive-tag">随笔</span>
+            </a></div>
+</main>
+
+<footer>
+  &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
+</footer>
+
+<script>
+(function initThemeBtn() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.getElementById('theme-btn').textContent = '☀';
+  }
+})();
+function toggleTheme() {
+  var html = document.documentElement;
+  var btn = document.getElementById('theme-btn');
+  if (html.classList.toggle('dark')) {
+    localStorage.setItem('theme', 'dark');
+    btn.textContent = '☀';
+  } else {
+    localStorage.removeItem('theme');
+    btn.textContent = '🌙';
+  }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Chami</title>
+    <link>https://chami537.github.io</link>
+    <description>Chami 的个人博客 — CS Student &amp; Photographer</description>
+    <language>zh-CN</language>
+    <lastBuildDate>Fri, 26 Jun 2026 16:39:55 +0800</lastBuildDate>
+    <item>
+      <title>残夏</title>
+      <link>https://chami537.github.io/essays/essay-9292594d.html</link>
+      <description>我们到底会在哪一个瞬间意识到，一段日子真的过去了。</description>
+      <pubDate>Thu, 25 Jun 2026 22:11:00 +0800</pubDate>
+      <guid>https://chami537.github.io/essays/essay-9292594d.html</guid>
+    </item>
+    <item>
+      <title>活着是更难的勇气</title>
+      <link>https://chami537.github.io/essays/essay-0f8baeda.html</link>
+      <description>读《挪威的森林》有感</description>
+      <pubDate>Fri, 26 Jun 2026 11:17:00 +0800</pubDate>
+      <guid>https://chami537.github.io/essays/essay-0f8baeda.html</guid>
+    </item>
+  </channel>
+</rss>
