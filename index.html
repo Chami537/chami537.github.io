@@ -334,17 +334,19 @@
     padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
     letter-spacing: 0.04em; border-top: 1px solid var(--line);
   }
-  .friends { margin-bottom: 20px; }
+  .friends { margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: baseline; }
   .friends-label {
     font-size: 10px; font-weight: 700; letter-spacing: .12em;
     text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
+    width: 100%;
   }
   .friends a {
     font-size: 11px; color: var(--muted); text-decoration: none;
     letter-spacing: 0.04em; transition: color .2s;
+    line-height: 2;
   }
   .friends a:hover { color: var(--fg); }
-  .friends .sep { color: var(--muted); margin: 0 8px; }
+  .friends a + a::before { content: '·'; margin: 0 8px; color: var(--muted); }
 
   /* Skeleton loading */
   .skeleton-loading { opacity: 0.5; pointer-events: none; filter: grayscale(60%); transition: opacity .3s ease, filter .3s ease; }
@@ -851,7 +853,6 @@ function renderFriends(data) {
   var html = '<div class="friends-label">FRIEND</div>';
   data.forEach((f, i) => {
     html += '<a href="' + htmlEncode(f.url) + '">' + htmlEncode(f.name) + '</a>';
-    if (i < data.length - 1) html += '<span class="sep">·</span>';
   });
   return html;
 }
