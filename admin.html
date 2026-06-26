@@ -636,7 +636,7 @@ async function loadWork() {
 }
 
 function pad2(n) { return String(n).padStart(2, '0'); }
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML.replace(/'/g, '&#39;'); }
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML.replace(/'/g, "\\'"); }
 
 async function editWork(id) {  const form = document.getElementById('work-form');
   if (form.style.display === 'block' && document.getElementById('work-edit-id').value == id) {
@@ -728,7 +728,7 @@ async function loadEssays() {
         ? 'padding: 6px 16px; border: none; background: var(--accent); color: #fff; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;'
         : 'padding: 6px 16px; border: 1px solid var(--border); background: var(--card-bg); color: var(--muted); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap;';
 
-      let hoverAttr = !isActive ? 'onmouseover="this.style.borderColor=\'var(--accent)\'; this.style.color=\'var(--accent)\′" onmouseout="this.style.borderColor=\'var(--border)\'; this.style.color=\'var(--muted)\′"' : '';
+      let hoverAttr = !isActive ? 'onmouseover="this.style.borderColor=\'var(--accent)\'; this.style.color=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'; this.style.color=\'var(--muted)\'"' : '';
 
       if (essayDeleteTagMode) {
         tabsHtml += '<span style="display:inline-flex;align-items:center;gap:4px;' + btnStyle + '">' +
