@@ -40,6 +40,11 @@ def serve_images(subpath):
 def list_photos():
     """列出 raw_photos/ 中所有照片及其 GPS 状态"""
     photos = []
+    # 读取 photos.json（一次性，避免循环内重复打开）
+    photos_json = []
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            photos_json = json.load(f)
     if os.path.exists(RAW_DIR):
         for fn in sorted(os.listdir(RAW_DIR)):
             if not fn.lower().endswith(('.jpg', '.jpeg', '.png')):
@@ -49,8 +54,7 @@ def list_photos():
             try:
                 img = Image.open(path)
                 info['size'] = img.size
-                pd_data = json.load(open(DATA_FILE, 'r', encoding='utf-8')) if os.path.exists(DATA_FILE) else []
-                for pe in pd_data:
+                for pe in photos_json:
                     if pe.get('filename') == fn and pe.get('date'):
                         info['date'] = pe['date']
                         break
