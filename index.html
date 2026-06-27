@@ -188,13 +188,14 @@
   .photo-info .gps-link { pointer-events: auto; }
   .photo-batch { display: contents; }
   .load-more-btn {
-    background: var(--bg); color: var(--c2);
-    border: 1.5px solid var(--c2); border-radius: 20px;
-    padding: 8px 24px; cursor: pointer;
-    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-    font-size: 13px; font-weight: 600; transition: all .2s;
+    font-family: 'Lora', 'Noto Serif SC', serif;
+    font-size: 13px; letter-spacing: 0.1em;
+    color: var(--fg); background: transparent;
+    border: 1px solid var(--fg); border-radius: 4px;
+    padding: 12px 36px; cursor: pointer;
+    transition: all .3s ease;
   }
-  .load-more-btn:hover { background: var(--c2); color: #fff; }
+  .load-more-btn:hover { background: var(--fg); color: var(--bg); }
   .photo-item .photo-date {
   position: absolute; top: 8px; right: 10px;
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
