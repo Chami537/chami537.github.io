@@ -596,7 +596,7 @@ window.addEventListener('message', function(e) {{
 </div>
 
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.querySelector('.essay-body'), {{delimiters: [{{left: '\\[', right: '\\]', display: true}}, {{left: '\\(', right: '\\)', display: false}}]}})"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js" onload="var el=document.querySelector('.essay-body');renderMathInElement(el,{{delimiters:[{{left:'\\\\[',right:'\\\\]',display:true}},{{left:'\\\\(',right:'\\\\)',display:false}}]}});el.querySelectorAll('.arithmatex').forEach(function(s){{var p=s.previousSibling,n=s.nextSibling;if(p&&p.nodeType===3&&p.textContent==='\$')p.textContent='';if(n&&n.nodeType===3&&n.textContent==='\$')n.textContent='';}})"></script>
 
 </body>
 </html>
