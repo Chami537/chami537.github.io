@@ -575,7 +575,7 @@ function syncGiscusTheme() {{
 var _origToggleTheme = toggleTheme;
 toggleTheme = function() {{
   _origToggleTheme();
-  setTimeout(syncGiscusTheme, 200);
+  syncGiscusTheme();
 }};
 // Listen for Giscus load
 window.addEventListener('message', function(e) {{
