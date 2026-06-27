@@ -1785,6 +1785,8 @@ if __name__ == '__main__':
             print(f"Unknown command: {sys.argv[1]}")
             print("Usage: python manage.py [build|process-images|set-gps]")
     else:
+        import webbrowser, threading
         print("  Admin  → http://127.0.0.1:5000")
         print("  网站预览 → http://127.0.0.1:5000/index.html")
+        threading.Timer(0.5, lambda: webbrowser.open('http://127.0.0.1:5000')).start()
         app.run(host='127.0.0.1', port=5000, debug=True)
