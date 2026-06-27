@@ -12,7 +12,7 @@
         "lng": 114.148253
       }
     },
-    "date": "May 30, 2026"
+    "date": "Jul 4, 2026"
   },
   {
     "filename": "15a70814318ed74d5ec2448532f7fab5.jpg",
@@ -101,7 +101,11 @@
       "shutter": "1/33s",
       "aperture": "f/2.6",
       "iso": "500",
-      "focal": "13mm"
+      "focal": "13mm",
+      "gps": {
+        "lat": 22.573361,
+        "lng": 113.644663
+      }
     }
   },
   {
@@ -203,5 +207,9 @@
       "iso": "3200",
       "focal": "13mm"
     }
+  },
+  {
+    "filename": "03f817ac.jpg",
+    "date": "Mar 27, 2026"
   }
 ]
