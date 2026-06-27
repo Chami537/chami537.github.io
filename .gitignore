@@ -1,2 +1,8 @@
 .claude/
 __pycache__/
+/essays/
+archive.html
+map.html
+rss.xml
+sitemap.xml
+raw_photos/
