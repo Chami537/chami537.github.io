@@ -16,9 +16,11 @@ app = Flask(__name__)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
 ESSAYS_DIR = os.path.join(BASE_DIR, 'essays')
+MD_DIR = os.path.join(BASE_DIR, 'md')
 IMAGES_DIR = os.path.join(BASE_DIR, 'images')
 
 os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(MD_DIR, exist_ok=True)
 
 # ═══════════════════════════════════════════
 # 原子写入
@@ -97,7 +99,7 @@ def delete_work(id):
 # Essays CRUD + Markdown
 # ═══════════════════════════════════════════
 
-ESSAY_TEMPLATE = open(os.path.join(BASE_DIR, 'essay_template.html'), encoding='utf-8').read()
+ESSAY_TEMPLATE = open(os.path.join(BASE_DIR, 'templates/essay.html'), encoding='utf-8').read()
 
 
 def _fe(s):
@@ -224,43 +226,12 @@ def _generate_sitemap():
 
 
 def _generate_archive():
-    """Generate archive.html — timeline grouped by year."""
+    """Generate archive.html — timeline grouped by year, with tag filter + search."""
     essays = load_json('essays.json')
     essays_sorted = sorted(essays, key=lambda e: e.get('date', ''), reverse=True)
-
-    from collections import OrderedDict
-    years = OrderedDict()
-    for e in essays_sorted:
-        date_str = e.get('date', '')
-        year = date_str[:4] if len(date_str) >= 4 else 'Unknown'
-        if year not in years:
-            years[year] = []
-        years[year].append(e)
-
-    entries_html = ''
-    for year, items in years.items():
-        entries_html += f'<div class="archive-year"><h2 class="archive-year-heading">{year}</h2>'
-        for e in items:
-            slug = html_mod.escape(e['slug'])
-            title = html_mod.escape(e['title'])
-            tag = html_mod.escape((e.get('tag', '') or '').replace(', ', ' · ').replace(',', ' · '))
-            date_str = e.get('date', '')
-            month_day = ''
-            try:
-                dp = date_str.split(' ')[0].split('-') if ' ' in date_str else date_str.split('-')
-                if len(dp) >= 3 and dp[2]:
-                    M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-                    month_day = f'{M[int(dp[1])-1]} {int(dp[2])}'
-            except (ValueError, IndexError):
-                pass
-            entries_html += f'''<a href="essays/{slug}.html" class="archive-row">
-              <span class="archive-date">{month_day}</span>
-              <span class="archive-title">{title}</span>
-              <span class="archive-tag">{tag}</span>
-            </a>'''
-        entries_html += '</div>'
-
+    essays_json = json.dumps(essays_sorted, ensure_ascii=False).replace('</', '<\\/')
     total = len(essays)
+
     archive = f'''<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -307,13 +278,6 @@ nav .logo {{
   font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
   text-decoration: none; color: var(--fg);
 }}
-nav .back {{
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 12px; font-weight: 600; letter-spacing: .08em;
-  color: var(--muted); text-decoration: none;
-  display: flex; align-items: center; gap: 6px; transition: color .2s;
-}}
-nav .back:hover {{ color: var(--c3); }}
 nav .theme-btn {{
   width: 32px; height: 32px; border-radius: 50%;
   border: 1px solid var(--line); background: none;
@@ -342,6 +306,39 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 15px; color: var(--muted);
 }}
+
+/* Tag filter chips */
+.essay-filter {{ display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }}
+.ef-chip {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  display: inline-block; padding: 3px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--line); color: var(--muted);
+  transition: all .15s; user-select: none;
+}}
+.ef-chip:hover {{ border-color: var(--c3); color: var(--c3); }}
+.ef-chip.active {{ background: var(--c3); color: #fff; border-color: var(--c3); }}
+
+/* Search */
+.essay-search {{
+  margin-bottom: 12px; position: relative;
+}}
+.essay-search input {{
+  width: 100%; padding: 8px 14px 8px 34px;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 13px; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; outline: none;
+  transition: border-color .2s;
+}}
+.essay-search input:focus {{ border-color: var(--c3); }}
+.essay-search input::placeholder {{ color: #bbb; }}
+.essay-search::before {{
+  content: "🔍"; position: absolute;
+  left: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 13px; pointer-events: none;
+}}
+
 .archive-year {{ margin-bottom: 40px; }}
 .archive-year-heading {{
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
@@ -372,6 +369,47 @@ html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
 }}
 
+/* Back link */
+.back-link {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  text-decoration: none; display: flex; align-items: center; justify-content: center;
+  gap: 6px; margin-top: 48px; transition: color .2s;
+}}
+.back-link:hover {{ color: var(--c3); }}
+.back-link .arr {{ transition: transform .2s; display: inline-block; }}
+.back-link:hover .arr {{ transform: translateX(-4px); }}
+
+/* Friends */
+.friends {{ margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; }}
+.friends-label {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: #ccc; margin-bottom: 8px;
+  width: 100%;
+}}
+.friends a {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 11px; color: #bbb; text-decoration: none;
+  letter-spacing: .04em; transition: color .2s;
+  line-height: 2;
+}}
+.friends a:hover {{ color: var(--fg); }}
+.friends a + a::before {{ content: '·'; margin: 0 8px; color: var(--muted); }}
+
+.map-header {{ text-align: center; }}
+
+.custom-marker {{ background: none !important; border: none !important; }}
+.custom-marker .marker-dot {{
+  width: 12px; height: 12px;
+  background-color: #0066ff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+}}
+.custom-marker:hover .marker-dot {{ transform: scale(1.5); }}
+
 footer {{
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
@@ -385,6 +423,7 @@ footer {{
   .archive-row {{ gap: 10px; }}
   .archive-date {{ min-width: 56px; font-size: 11px; }}
   .archive-tag {{ display: none; }}
+  .ef-chip {{ font-size: 10px; padding: 2px 10px; }}
 }}
 </style>
 <script>
@@ -398,10 +437,6 @@ footer {{
 <nav>
   <div class="inner">
     <a href="/index.html" class="logo">Chami</a>
-    <a href="/index.html#essays" class="back">
-      <span>←</span>
-      <span>Essays</span>
-    </a>
     <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
   </div>
 </nav>
@@ -411,14 +446,405 @@ footer {{
     <h1>Archive</h1>
     <p class="sub">共 {total} 篇随笔</p>
   </div>
-{entries_html}
+
+  <div class="essay-search"><input type="text" id="archive-search" placeholder="搜索随笔..." oninput="onArchiveSearch(this.value)"></div>
+  <div id="archive-tag-filter" class="essay-filter"></div>
+  <div id="archive-entries"></div>
+
+  <a href="/index.html" class="back-link">
+    <span class="arr">←</span>
+    <span>返回主页</span>
+  </a>
 </main>
+
+<footer>
+  <div class="friends" id="friends-container">
+    <div class="friends-label">FRIEND</div>
+  </div>
+  &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
+</footer>
+
+<script>
+var _archiveEssays = {essays_json};
+var _archiveFilter = '';
+var _archiveSearchTimer = null;
+
+// Theme init
+(function initThemeBtn() {{
+  if (localStorage.getItem('theme') === 'dark') {{
+    document.getElementById('theme-btn').textContent = '☀';
+  }}
+}})();
+function toggleTheme() {{
+  var html = document.documentElement;
+  var btn = document.getElementById('theme-btn');
+  if (html.classList.toggle('dark')) {{
+    localStorage.setItem('theme', 'dark');
+    btn.textContent = '☀';
+  }} else {{
+    localStorage.removeItem('theme');
+    btn.textContent = '🌙';
+  }}
+}}
+
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function monthDay(dateStr) {{
+  try {{
+    var dp = (dateStr.indexOf(' ') !== -1 ? dateStr.split(' ')[0] : dateStr).split('-');
+    if (dp.length >= 3 && dp[2]) {{
+      var mi = +dp[1] - 1;
+      if (mi >= 0 && mi < 12) return MONTHS[mi] + ' ' + (+dp[2]);
+    }}
+  }} catch(e) {{}}
+  return '';
+}}
+
+function renderArchiveEntries(data) {{
+  // Group by year
+  var years = {{}};
+  data.forEach(function(e) {{
+    var dateStr = e.date || '';
+    var year = dateStr.length >= 4 ? dateStr.slice(0, 4) : 'Unknown';
+    if (!years[year]) years[year] = [];
+    years[year].push(e);
+  }});
+
+  var yearKeys = Object.keys(years).sort().reverse();
+  var html = '';
+  yearKeys.forEach(function(year) {{
+    html += '<div class="archive-year"><h2 class="archive-year-heading">' + year + '</h2>';
+    years[year].forEach(function(e) {{
+      var slug = e.slug.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var title = e.title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var tag = (e.tag || '').replace(/, ?/g, ' · ').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var md = monthDay(e.date);
+      html += '<a href="essays/' + slug + '.html" class="archive-row">' +
+        '<span class="archive-date">' + md + '</span>' +
+        '<span class="archive-title">' + title + '</span>' +
+        '<span class="archive-tag">' + tag + '</span>' +
+        '</a>';
+    }});
+    html += '</div>';
+  }});
+
+  var container = document.getElementById('archive-entries');
+  if (html) {{
+    container.innerHTML = html;
+  }} else {{
+    container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:60px 0;">没有匹配的随笔</p>';
+  }}
+}}
+
+function buildTagFilter() {{
+  var tags = new Set();
+  _archiveEssays.forEach(function(e) {{
+    (e.tag || '').split(/[,，]/).forEach(function(t) {{ t = t.trim(); if (t) tags.add(t); }});
+  }});
+  var html = '<span class="ef-chip' + (!_archiveFilter ? ' active' : '') + '" onclick="filterArchiveByTag(\\'\\')">全部</span>';
+  tags.forEach(function(t) {{
+    html += '<span class="ef-chip' + (_archiveFilter === t ? ' active' : '') + '" data-tag="' + t.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '" onclick="filterArchiveByTag(this.getAttribute(\\'data-tag\\'))">' + t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+  }});
+  document.getElementById('archive-tag-filter').innerHTML = html;
+}}
+
+function filterArchiveByTag(tag) {{
+  _archiveFilter = tag;
+  buildTagFilter();
+  applyFilters();
+}}
+
+function onArchiveSearch(query) {{
+  clearTimeout(_archiveSearchTimer);
+  _archiveSearchTimer = setTimeout(function() {{
+    applyFilters(query.toLowerCase().trim());
+  }}, 100);
+}}
+
+function applyFilters(searchQuery) {{
+  var filtered = _archiveEssays;
+  if (_archiveFilter) {{
+    filtered = filtered.filter(function(e) {{
+      return (e.tag || '').split(/[,，]/).some(function(t) {{ return t.trim() === _archiveFilter; }});
+    }});
+  }}
+  if (searchQuery) {{
+    filtered = filtered.filter(function(e) {{
+      return (e.title || '').toLowerCase().indexOf(searchQuery) !== -1 ||
+             (e.excerpt || '').toLowerCase().indexOf(searchQuery) !== -1;
+    }});
+  }}
+  renderArchiveEntries(filtered);
+}}
+
+// Initial render
+buildTagFilter();
+renderArchiveEntries(_archiveEssays);
+
+// Render friends
+(function() {{
+  try {{
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/data/friends.json?v=' + Date.now(), true);
+    xhr.onload = function() {{
+      if (xhr.status < 200 || xhr.status >= 300) return;
+      var friends = JSON.parse(xhr.responseText);
+      var container = document.getElementById('friends-container');
+      var html = '<div class="friends-label">FRIEND</div>';
+      friends.forEach(function(f) {{
+        var escUrl = f.url.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var escName = f.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        if (/^https?:\\/\\//i.test(f.url)) {{
+          html += '<a href="' + escUrl + '">' + escName + '</a>';
+        }} else {{
+          html += '<span>' + escName + '</span>';
+        }}
+      }});
+      container.innerHTML = html;
+    }};
+    xhr.send();
+  }} catch(e) {{}}
+}})();
+</script>
+
+</body>
+</html>'''
+    with open(os.path.join(BASE_DIR, 'archive.html'), 'w', encoding='utf-8') as f:
+        f.write(archive)
+
+
+def _generate_map():
+    """Generate map.html — Leaflet map with GPS-tagged photos."""
+    photos = load_json('photos.json')
+    gps_photos = [p for p in photos if p.get('exif', {}).get('gps')]
+    photos_json = json.dumps(gps_photos, ensure_ascii=False).replace('</', '<\\/')
+    total = len(gps_photos)
+    center_lat, center_lng = 22.5431, 113.9579  # default: Shenzhen
+    if gps_photos:
+        lats = [p['exif']['gps']['lat'] for p in gps_photos]
+        lngs = [p['exif']['gps']['lng'] for p in gps_photos]
+        center_lat = sum(lats) / len(lats)
+        center_lng = sum(lngs) / len(lngs)
+
+    map_html = f'''<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map — Chami</title>
+<meta name="description" content="Chami 的摄影足迹 · {total} 个地点">
+<meta property="og:title" content="Map — Chami">
+<meta property="og:description" content="Chami 的摄影足迹 · {total} 个地点">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">
+<meta property="og:site_name" content="Chami">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="images/avatar.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+* {{ margin: 0; padding: 0; box-sizing: border-box; }}
+:root {{
+  --bg: #fafaf8; --fg: #111; --c4: #00c853; --line: #e0dcd5; --muted: #999;
+}}
+html.dark {{ --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }}
+html.dark nav {{ background: rgba(26,26,28,0.88); }}
+
+body {{
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  background: var(--bg); color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}}
+
+nav {{
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  padding: 0 48px;
+  background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--fg);
+}}
+nav .inner {{
+  max-width: 1200px; margin: 0 auto; display: flex;
+  align-items: center; justify-content: space-between; height: 56px;
+}}
+nav .logo {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
+  text-decoration: none; color: var(--fg);
+}}
+nav .theme-btn {{
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--line); background: none;
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .2s, border-color .2s;
+  padding: 0; line-height: 1; color: inherit;
+  flex-shrink: 0;
+}}
+nav .theme-btn:hover {{ background: var(--line); }}
+html.dark nav .theme-btn {{ border-color: #666; color: #ffd43b; }}
+
+.map-header {{
+  max-width: 1200px; margin: 0 auto; padding: 120px 48px 40px;
+}}
+.map-header h1 {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 900; line-height: 1.0;
+  letter-spacing: -0.025em; margin-bottom: 12px;
+}}
+.map-header .sub {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 15px; color: var(--muted);
+}}
+
+#map {{
+  width: 100%; max-width: 1000px; height: 65vh;
+  margin: 40px auto; border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  z-index: 1;
+}}
+.map-wrap {{
+  padding: 0 48px 60px;
+}}
+
+/* Dark mode tile inversion */
+html.dark .leaflet-layer,
+html.dark .leaflet-control-zoom-in,
+html.dark .leaflet-control-zoom-out,
+html.dark .leaflet-control-attribution {{
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}}
+html.dark .leaflet-marker-icon,
+html.dark .leaflet-marker-shadow,
+html.dark .leaflet-popup {{
+  filter: none;
+}}
+
+.leaflet-popup-content {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 12px; line-height: 1.6;
+}}
+.leaflet-popup-content img {{
+  width: 100%; max-height: 180px; object-fit: cover;
+  border-radius: 2px; margin-bottom: 6px;
+}}
+.leaflet-popup-content .popup-exif {{
+  color: #888; font-size: 10px;
+}}
+
+.map-header {{ text-align: center; }}
+
+.custom-marker {{ background: none !important; border: none !important; }}
+.custom-marker .marker-dot {{
+  width: 12px; height: 12px;
+  background-color: #0066ff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+}}
+.custom-marker:hover .marker-dot {{ transform: scale(1.5); }}
+
+footer {{
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+  letter-spacing: .04em; border-top: 1px solid var(--line);
+}}
+
+@media (max-width: 768px) {{
+  nav {{ padding: 0 16px; }}
+  .map-header {{ padding: 100px 24px 24px; }}
+  .map-wrap {{ padding: 0 16px 40px; }}
+  #map {{ height: 55vh; }}
+}}
+</style>
+<script>
+  if (localStorage.getItem('theme') === 'dark') {{
+    document.documentElement.classList.add('dark');
+  }}
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="/index.html" class="logo">Chami</a>
+    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+<div class="map-header">
+  <h1>Footprints</h1>
+  <p class="sub">Places I've been, routes I've ridden, and moments captured. ({total} locations)</p>
+</div>
+
+<div class="map-wrap">
+  <div id="map"></div>
+</div>
 
 <footer>
   &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
+var photos = {photos_json};
+
+var map = L.map('map').setView([{center_lat}, {center_lng}], 13);
+L.tileLayer('https://{{s}}.basemaps.cartocdn.com/light_all/{{z}}/{{x}}/{{y}}{{r}}.png', {{
+  maxZoom: 19, subdomains: 'abcd',
+  attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> &copy; CARTO'
+}}).addTo(map);
+
+// Add photo markers
+photos.forEach(function(p) {{
+  var gps = p.exif.gps;
+  var ex = p.exif;
+  var popupHtml = '<img src="images/md/' + p.filename.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '">' +
+    '<b>' + (ex.model || ex.camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</b>';
+  var parts = [];
+  if (ex.focal) parts.push(ex.focal.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+  if (ex.aperture) parts.push(ex.aperture.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+  if (ex.shutter) parts.push(ex.shutter.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+  if (ex.iso) parts.push('ISO ' + String(ex.iso).replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+  if (parts.length) popupHtml += '<br><span class="popup-exif">' + parts.join(' · ') + '</span>';
+  popupHtml += '<br><span class="popup-exif">×' + Math.abs(gps.lat).toFixed(4) + '°' + (gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(gps.lng).toFixed(4) + '°' + (gps.lng >= 0 ? 'E' : 'W') + '</span>';
+
+  var icon = L.divIcon({{className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]}});
+  L.marker([gps.lat, gps.lng], {{icon: icon}}).addTo(map).bindPopup(popupHtml);
+}});
+
+// Fit bounds if multiple markers
+if (photos.length > 1) {{
+  var bounds = photos.map(function(p) {{ return [p.exif.gps.lat, p.exif.gps.lng]; }});
+  map.fitBounds(bounds, {{ padding: [40, 40] }});
+  }}
+
+  // Load GPX tracks
+  (function() {{
+    var colors = ['#0066ff', '#ff4d4d', '#00c853', '#ffb800', '#9c27b0'];
+    var ci = 0;
+    fetch('/data/tracks.json?v=' + Date.now()).then(function(r) {{ return r.ok ? r.json() : []; }}).then(function(tracks) {{
+      tracks.forEach(function(t) {{
+        fetch('/tracks/' + t.file).then(function(r) {{ return r.text(); }}).then(function(xml) {{
+          var doc = new DOMParser().parseFromString(xml, 'text/xml');
+          var pts = [];
+          doc.querySelectorAll('trkpt').forEach(function(pt) {{
+            pts.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]);
+          }});
+          if (pts.length > 1) {{
+            L.polyline(pts, {{color: colors[ci % colors.length], weight: 3, opacity: 0.7, smoothFactor: 1}}).addTo(map);
+            ci++;
+          }}
+        }}).catch(function() {{}});
+      }});
+    }}).catch(function() {{}});
+  }})();
+}}
+
+// Theme toggle
 (function initThemeBtn() {{
   if (localStorage.getItem('theme') === 'dark') {{
     document.getElementById('theme-btn').textContent = '☀';
@@ -439,15 +865,16 @@ function toggleTheme() {{
 
 </body>
 </html>'''
-    with open(os.path.join(BASE_DIR, 'archive.html'), 'w', encoding='utf-8') as f:
-        f.write(archive)
+    with open(os.path.join(BASE_DIR, 'map.html'), 'w', encoding='utf-8') as f:
+        f.write(map_html)
 
 
 def _generate_feeds():
-    """Regenerate all auto-generated files: RSS, sitemap, archive."""
+    """Regenerate all auto-generated files: RSS, sitemap, archive, map."""
     _generate_rss()
     _generate_sitemap()
     _generate_archive()
+    _generate_map()
 
 
 def _html_to_md(html):
@@ -644,10 +1071,14 @@ def _sync_essay_html(essay, raw_md_memory=None):
     slug = essay['slug']
     html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
 
-    # 1. 提取现有的正文 Markdown
+    # 1. 提取正文 Markdown（优先 .md 文件，其次内存传入，最后回退 HTML 注释）
     raw_md = ""
+    md_file = os.path.join(MD_DIR, f"{slug}.md")
     if raw_md_memory is not None:
         raw_md = raw_md_memory
+    elif os.path.exists(md_file):
+        with open(md_file, 'r', encoding='utf-8') as f:
+            raw_md = f.read()
     elif os.path.exists(html_file):
         with open(html_file, 'r', encoding='utf-8') as f:
             full_html = f.read()
@@ -667,7 +1098,12 @@ def _sync_essay_html(essay, raw_md_memory=None):
     time_part = date_str.split(' ')[1].split(':') if ' ' in date_str and len(date_str.split(' ')) > 1 else None
     if time_part and len(time_part) >= 2:
         last_edited = f"{time_part[0]}:{time_part[1]}, {last_edited}"
-    body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>\n<!-- RAW_MD\n{raw_md}\nRAW_MD -->"
+    body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
+
+    # 2.5 写独立 .md 文件（正源）
+    if raw_md:
+        with open(md_file, 'w', encoding='utf-8') as f:
+            f.write(raw_md)
 
     # 3. 准备渲染模板所需的数据
     essays = load_json('essays.json')
@@ -703,11 +1139,21 @@ def _sync_essay_html(essay, raw_md_memory=None):
 @app.route('/api/essays/<slug>', methods=['DELETE'])
 def delete_essay(slug):
     essays = load_json('essays.json')
+    target = next((e for e in essays if e['slug'] == slug), None)
+    title_folder = target.get('title', slug) if target else slug
+    title_folder = title_folder.replace('/', '_').replace('\\', '_')
     essays = [e for e in essays if e['slug'] != slug]
     atomic_write_json('essays.json', essays)
     html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
     if os.path.exists(html_file):
         os.remove(html_file)
+    md_file = os.path.join(MD_DIR, f"{slug}.md")
+    if os.path.exists(md_file):
+        os.remove(md_file)
+    img_dir = os.path.join(IMAGES_DIR, 'essays', title_folder)
+    if os.path.exists(img_dir):
+        import shutil
+        shutil.rmtree(img_dir)
     # Re-sync all remaining essays' nav links
     for e in essays:
         _sync_essay_html(e)
@@ -738,12 +1184,18 @@ def toggle_pin(slug):
 
 @app.route('/api/essays/<slug>/content', methods=['GET'])
 def get_essay_content(slug):
+    # 优先读 .md 文件
+    md_file = os.path.join(MD_DIR, f"{slug}.md")
+    if os.path.exists(md_file):
+        with open(md_file, 'r', encoding='utf-8') as f:
+            return jsonify({"content": f.read(), "format": "markdown"})
+
+    # Fallback: 从 HTML 注释提取（兼容旧格式）
     html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
     if not os.path.exists(html_file):
         return jsonify({"error": "Not found"}), 404
     with open(html_file, 'r', encoding='utf-8') as f:
         full_html = f.read()
-    # Extract Markdown source from comment if stored
     md_match = re.search(r'<!-- RAW_MD\n(.*)\nRAW_MD -->', full_html, flags=re.DOTALL)
     if md_match:
         return jsonify({"content": md_match.group(1), "format": "markdown"})
@@ -797,10 +1249,20 @@ def upload_essay_image():
     if ext not in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
         return jsonify({"error": f"不支持的文件类型: .{ext}"}), 400
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
-    img_dir = os.path.join(BASE_DIR, 'images', 'essays')
+    slug = request.form.get('slug', '') or request.args.get('slug', '')
+    if slug:
+        essays = load_json('essays.json')
+        essay = next((e for e in essays if e.get('slug') == slug), None)
+        folder = essay.get('title', slug) if essay else slug
+        folder = folder.replace('/', '_').replace('\\', '_')
+        img_dir = os.path.join(BASE_DIR, 'images', 'essays', folder)
+        url = f"/images/essays/{folder}/{filename}"
+    else:
+        img_dir = os.path.join(BASE_DIR, 'images', 'essays')
+        url = f"/images/essays/{filename}"
     os.makedirs(img_dir, exist_ok=True)
     file.save(os.path.join(img_dir, filename))
-    return jsonify({"url": "/images/essays/" + filename, "status": "uploaded"}), 201
+    return jsonify({"url": url, "status": "uploaded"}), 201
 
 @app.route('/api/essays/<slug>/html', methods=['GET', 'POST'])
 def preview_essay_html(slug):
@@ -839,7 +1301,95 @@ def delete_photo(filename):
         path = os.path.join(IMAGES_DIR, subdir, safe_name)
         if os.path.exists(path):
             os.remove(path)
+    raw_path = os.path.join(BASE_DIR, 'raw_photos', safe_name)
+    if os.path.exists(raw_path):
+        os.remove(raw_path)
     return jsonify({"status": "deleted"})
+
+def _fmt_shutter(val):
+    try:
+        v = float(val)
+        if 0 < v < 1:
+            return f"1/{int(round(1/v))}s"
+        return f"{int(v)}s" if v == int(v) else f"{v}s"
+    except (ValueError, TypeError):
+        return str(val)
+
+def _fmt_aperture(val):
+    try:
+        return f"f/{float(val):g}"
+    except (ValueError, TypeError):
+        return str(val)
+
+def _fmt_focal(val):
+    try:
+        return f"{int(float(val))}mm"
+    except (ValueError, TypeError):
+        return str(val)
+
+
+def _extract_gps(exif_dict):
+    """从 _getexif() 原始字典中安全提取 GPS 经纬度"""
+    if not exif_dict or 34853 not in exif_dict:
+        return None
+    gps_info = exif_dict[34853]
+    try:
+        def dms_to_decimal(value):
+            return float(value[0]) + (float(value[1]) / 60.0) + (float(value[2]) / 3600.0)
+
+        lat = dms_to_decimal(gps_info[2])
+        if gps_info.get(1, 'N') == 'S':
+            lat = -lat
+
+        lng = dms_to_decimal(gps_info[4])
+        if gps_info.get(3, 'E') == 'W':
+            lng = -lng
+
+        return {"lat": round(lat, 6), "lng": round(lng, 6)}
+    except Exception:
+        return None
+
+
+def _set_gps(filename, lat, lng):
+    """给 raw_photos/ 中的照片写入 GPS 坐标，保留其他 EXIF"""
+    path = os.path.join(BASE_DIR, 'raw_photos', filename)
+    if not os.path.exists(path):
+        print(f"文件不存在: {path}")
+        return
+
+    img = Image.open(path)
+    exif = img.getexif()
+
+    # 十进制 → 度分秒
+    def decimal_to_dms(d):
+        sign = 1 if d >= 0 else -1
+        d = abs(d)
+        deg = int(d)
+        m = (d - deg) * 60
+        min_val = int(m)
+        sec = (m - min_val) * 60
+        return (sign * deg, min_val, sec)
+
+    lat_dms = decimal_to_dms(lat)
+    lng_dms = decimal_to_dms(lng)
+
+    gps_ifd = {
+        1: 'N' if lat >= 0 else 'S',
+        2: lat_dms,
+        3: 'E' if lng >= 0 else 'W',
+        4: lng_dms,
+    }
+    exif[34853] = gps_ifd
+
+    img.save(path, 'JPEG', quality=95, exif=exif.tobytes())
+    img.close()
+
+    print(f"GPS 已写入: {filename}")
+    print(f"  纬度: {lat} ({'N' if lat >= 0 else 'S'})")
+    print(f"  经度: {lng} ({'E' if lng >= 0 else 'W'})")
+    print()
+    print("接下来运行: python manage.py process-images")
+
 
 @app.route('/api/photos/upload', methods=['POST'])
 def upload_photo():
@@ -861,16 +1411,27 @@ def upload_photo():
     except Exception:
         return jsonify({"error": "Invalid or corrupted image file"}), 400
 
-    # Extract EXIF
+    # Extract EXIF (use _getexif() to read nested IFD sub-tags for aperture/shutter/ISO)
     exif_data = {}
-    exif = img.getexif()
+    exif = img._getexif()
     if exif:
         exif_tags = {ExifTags.TAGS.get(k, k): str(v) for k, v in exif.items()}
-        for tag in ['Make', 'Model', 'FNumber', 'ExposureTime', 'ISOSpeedRatings']:
-            if tag in exif_tags:
-                key_map = {'Make': 'camera', 'Model': 'model', 'FNumber': 'aperture',
-                           'ExposureTime': 'shutter', 'ISOSpeedRatings': 'iso'}
-                exif_data[key_map[tag]] = exif_tags[tag]
+        if 'Make' in exif_tags:
+            exif_data['camera'] = exif_tags['Make']
+        if 'Model' in exif_tags:
+            exif_data['model'] = exif_tags['Model']
+        if 'ExposureTime' in exif_tags:
+            exif_data['shutter'] = _fmt_shutter(exif_tags['ExposureTime'])
+        if 'FNumber' in exif_tags:
+            exif_data['aperture'] = _fmt_aperture(exif_tags['FNumber'])
+        if 'ISOSpeedRatings' in exif_tags:
+            exif_data['iso'] = exif_tags['ISOSpeedRatings']
+        if 'FocalLength' in exif_tags:
+            exif_data['focal'] = _fmt_focal(exif_tags['FocalLength'])
+
+        gps_data = _extract_gps(exif)
+        if gps_data:
+            exif_data['gps'] = gps_data
 
     # Generate thumbnails
     for size_name, max_w in [('lg', 1920), ('md', 800), ('sm', 400)]:
@@ -880,8 +1441,11 @@ def upload_photo():
         os.makedirs(out_dir, exist_ok=True)
         thumb.save(os.path.join(out_dir, filename))
 
-    # Save original
+    # Save original to images/ and copy to raw_photos/
     img.save(os.path.join(IMAGES_DIR, filename))
+    raw_dir = os.path.join(BASE_DIR, 'raw_photos')
+    os.makedirs(raw_dir, exist_ok=True)
+    img.save(os.path.join(raw_dir, filename))
 
     # Update JSON
     photos = load_json('photos.json')
@@ -1174,6 +1738,11 @@ def serve_essay(filename):
 def serve_music(filename):
     return send_from_directory(os.path.join(BASE_DIR, 'music'), filename)
 
+
+@app.route('/tracks/<path:filename>')
+def serve_tracks(filename):
+    return send_from_directory(os.path.join(BASE_DIR, 'tracks'), filename)
+
 @app.route('/rss.xml')
 def serve_rss():
     return send_from_directory(BASE_DIR, 'rss.xml')
@@ -1187,7 +1756,35 @@ def serve_archive():
     return send_from_directory(BASE_DIR, 'archive.html')
 
 
+@app.route('/map.html')
+def serve_map():
+    return send_from_directory(BASE_DIR, 'map.html')
+
+
 if __name__ == '__main__':
-    print("  Admin  → http://127.0.0.1:5000")
-    print("  网站预览 → http://127.0.0.1:5000/index.html")
-    app.run(host='127.0.0.1', port=5000, debug=True)
+    import sys
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'build':
+            print("Building static site...")
+            essays = load_json('essays.json')
+            for e in essays:
+                _sync_essay_html(e)
+                print(f"  ✓ essays/{e['slug']}.html")
+            _generate_feeds()
+            print()
+            print(f"Done: {len(essays)} essays + archive + map + RSS + sitemap generated.")
+        elif sys.argv[1] == 'process-images':
+            import sys; sys.path.insert(0, 'tools'); import process_images
+            process_images.process_all_images()
+        elif sys.argv[1] == 'set-gps':
+            if len(sys.argv) < 5:
+                print("Usage: python manage.py set-gps <filename> <lat> <lng>")
+            else:
+                _set_gps(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]))
+        else:
+            print(f"Unknown command: {sys.argv[1]}")
+            print("Usage: python manage.py [build|process-images|set-gps]")
+    else:
+        print("  Admin  → http://127.0.0.1:5000")
+        print("  网站预览 → http://127.0.0.1:5000/index.html")
+        app.run(host='127.0.0.1', port=5000, debug=True)
