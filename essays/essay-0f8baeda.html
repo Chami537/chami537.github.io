@@ -458,7 +458,7 @@ footer {
       <div></div>
       <div></div>
     </div>
-<script id="tag-nav-data" type="application/json">{"置顶": {"prev": null, "next": null}, "读后感": {"prev": null, "next": null}}</script>
+<script id="tag-nav-data" type="application/json">{"读后感": {"prev": null, "next": null}, "置顶": {"prev": null, "next": null}}</script>
     <a href="/index.html" class="back-link">
       <span class="arr">←</span>
       <span>返回主页</span>
@@ -479,7 +479,7 @@ footer {
       gs.setAttribute('data-reactions-enabled', '1');
       gs.setAttribute('data-emit-metadata', '0');
       gs.setAttribute('data-input-position', 'top');
-      gs.setAttribute('data-theme', 'light');
+      gs.setAttribute('data-theme', 'https://chami537.github.io/data/giscus.css');
       gs.setAttribute('data-lang', 'zh-CN');
       gs.crossOrigin = 'anonymous';
       gs.async = true;
@@ -626,7 +626,7 @@ function toggleTheme() {
 // Sync Giscus theme with dark mode
 function syncGiscusTheme() {
   var isDark = document.documentElement.classList.contains('dark');
-  var theme = isDark ? 'https://chami537.github.io/data/giscus-dark.css' : 'light';
+  var theme = isDark ? 'https://chami537.github.io/data/giscus-dark.css' : 'https://chami537.github.io/data/giscus.css';
   var frame = document.querySelector('.giscus-frame');
   if (frame) {
     frame.contentWindow.postMessage(
