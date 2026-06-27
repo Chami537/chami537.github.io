@@ -476,8 +476,8 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       <div id="track-drop-zone" style="border:2px solid var(--c4);border-radius:8px;padding:24px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .2s,background .2s;"
         ondragover="event.preventDefault();this.style.borderColor='#009a3e';this.style.background='rgba(0,200,83,0.05)'"
         ondragleave="this.style.borderColor='var(--c4)';this.style.background=''"
-        ondrop="event.preventDefault();this.style.borderColor='var(--c4)';this.style.background='';handleTrackDrop(event)"
-        onclick="document.getElementById('track-file-input').click()">
+        ondrop="event.preventDefault();this.style.borderColor='var(--c4)';this.style.background='';_photoDropJustHandled=true;handleTrackDrop(event);setTimeout(function(){_photoDropJustHandled=false},300)"
+        onclick="if(!_photoDropJustHandled)document.getElementById('track-file-input').click()">
         <span style="font-size:24px;">⤴</span><br>
         拖拽 .gpx 文件到此处<br>或点击选择文件
       </div>
