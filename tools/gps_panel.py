@@ -302,16 +302,24 @@ function saveDate() {
   var val = document.getElementById('date-input').value;
   var fn = modal._fn;
   modal.classList.remove('show');
-  if (!val) return;
+  console.log('[saveDate] fn=', fn, '| val=', val);
+  if (!val) { console.log('[saveDate] val empty, exit'); return; }
   var parts = val.split('-');
   var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
   var display = MONTHS_ED[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
+  console.log('[saveDate] display=', display);
   fetch('/api/gps/set-date', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({filename: fn, date: display})
   }).then(function(r) {
-    if (r.ok) loadPhotos();
+    console.log('[saveDate] fetch status=', r.status, 'ok=', r.ok);
+    if (r.ok) {
+      console.log('[saveDate] calling loadPhotos');
+      loadPhotos();
+    }
+  }).catch(function(e) {
+    console.error('[saveDate] fetch error:', e);
   });
 }
 
