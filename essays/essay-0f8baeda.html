@@ -459,7 +459,7 @@ footer {
       <div></div>
       <div></div>
     </div>
-<script id="tag-nav-data" type="application/json">{"阅读": {"prev": null, "next": null}, "置顶": {"prev": null, "next": null}}</script>
+<script id="tag-nav-data" type="application/json">{"置顶": {"prev": null, "next": null}, "阅读": {"prev": null, "next": null}}</script>
     <a href="/index.html" class="back-link">
       <span class="arr">←</span>
       <span>返回主页</span>
@@ -660,20 +660,21 @@ window.addEventListener('message', function(e) {
 </div>
 
 <script defer src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
-<script defer src="https://cdn.staticfile.net/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
-  renderMathInElement(document.body, {
-    delimiters: [
-      {left: "\[", right: "\]", display: true},
-      {left: "\(", right: "\)", display: false}
-    ],
-    ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
-    throwOnError: false
+  var els = document.querySelectorAll('.arithmatex');
+  els.forEach(function(el) {
+    var t = el.textContent || el.innerText;
+    var isDisplay = t.startsWith('\[') || t.startsWith('\$\$');
+    var clean = t.replace(/^\\(/, '').replace(/\\)\$/, '')
+                .replace(/^\\[/, '').replace(/\\]\$/, '')
+                .replace(/^\$\$/, '').replace(/\$\$\$/, '')
+                .replace(/^\$/, '').replace(/\$\$/, '')
+                .trim();
+    try {
+      katex.render(clean, el, {displayMode: isDisplay, throwOnError: false});
+    } catch(e) { console.error('KaTeX:', e); }
   });
 });
 </script>
 
-
-</body>
-</html>
