@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map — Chami</title>
+<meta name="description" content="Chami 的摄影足迹 · 5 个地点">
+<meta property="og:title" content="Map — Chami">
+<meta property="og:description" content="Chami 的摄影足迹 · 5 个地点">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">
+<meta property="og:site_name" content="Chami">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="images/avatar.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #fafaf8; --fg: #111; --c4: #00c853; --line: #e0dcd5; --muted: #999;
+}
+html.dark { --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }
+html.dark nav { background: rgba(26,26,28,0.88); }
+
+body {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  background: var(--bg); color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+  padding: 0 48px;
+  background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--fg);
+}
+nav .inner {
+  max-width: 1200px; margin: 0 auto; display: flex;
+  align-items: center; justify-content: space-between; height: 56px;
+}
+nav .logo {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
+  text-decoration: none; color: var(--fg);
+}
+nav .theme-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--line); background: none;
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .2s, border-color .2s;
+  padding: 0; line-height: 1; color: inherit;
+  flex-shrink: 0;
+}
+nav .theme-btn:hover { background: var(--line); }
+html.dark nav .theme-btn { border-color: #666; color: #ffd43b; }
+
+.map-header {
+  max-width: 1200px; margin: 0 auto; padding: 120px 48px 40px;
+}
+.map-header h1 {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 900; line-height: 1.0;
+  letter-spacing: -0.025em; margin-bottom: 12px;
+}
+.map-header .sub {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 15px; color: var(--muted);
+}
+
+#map {
+  width: 100%; max-width: 1000px; height: 65vh;
+  margin: 40px auto; border-radius: 12px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  z-index: 1;
+}
+.map-wrap {
+  padding: 0 48px 60px;
+}
+
+/* Dark mode tile inversion */
+html.dark .leaflet-layer,
+html.dark .leaflet-control-zoom-in,
+html.dark .leaflet-control-zoom-out,
+html.dark .leaflet-control-attribution {
+  filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+}
+html.dark .leaflet-marker-icon,
+html.dark .leaflet-marker-shadow,
+html.dark .leaflet-popup {
+  filter: none;
+}
+
+.leaflet-popup-content {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 12px; line-height: 1.6;
+}
+.leaflet-popup-content img {
+  width: 100%; max-height: 180px; object-fit: cover;
+  border-radius: 2px; margin-bottom: 6px;
+}
+.leaflet-popup-content .popup-exif {
+  color: #888; font-size: 10px;
+}
+
+.map-header { text-align: center; }
+
+.custom-marker { background: none !important; border: none !important; }
+.custom-marker .marker-dot {
+  width: 12px; height: 12px;
+  background-color: #0066ff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+}
+.custom-marker:hover .marker-dot { transform: scale(1.5); }
+
+footer {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+  letter-spacing: .04em; border-top: 1px solid var(--line);
+}
+
+@media (max-width: 768px) {
+  nav { padding: 0 16px; }
+  .map-header { padding: 100px 24px 24px; }
+  .map-wrap { padding: 0 16px 40px; }
+  #map { height: 55vh; }
+}
+</style>
+<script>
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+  }
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="/index.html" class="logo">Chami</a>
+    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+<div class="map-header">
+  <h1>Footprints</h1>
+  <p class="sub">Places I've been, routes I've ridden, and moments captured. (5 locations)</p>
+</div>
+
+<div class="map-wrap">
+  <div id="map"></div>
+</div>
+
+<footer>
+  &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+var photos = [{"filename": "0bafcdb21b37a78577502401bbf9be97.jpg", "size": "lg", "exif": {"focal": "6mm", "aperture": "f/1.6", "shutter": "1/100s", "iso": "200", "gps": {"lat": 22.284802, "lng": 114.148253}}, "date": "May 30, 2026"}, {"filename": "15a70814318ed74d5ec2448532f7fab5.jpg", "size": "md", "exif": {"shutter": "1/100s", "aperture": "f/2.6", "iso": "200", "focal": "13mm", "gps": {"lat": 22.480478, "lng": 113.951567}}, "date": "May 30, 2026"}, {"filename": "6400b35c75c004c99313eb4d07cb337f.jpg", "size": "sm", "exif": {"focal": "13mm", "aperture": "f/2.6", "shutter": "1/100s", "iso": "400", "gps": {"lat": 31.22425, "lng": 121.441482}}, "date": "May 3, 2026"}, {"filename": "68b93d07a342daef4f8483cdb249c4f7.jpg", "size": "sm", "exif": {"shutter": "1/100s", "aperture": "f/1.6", "iso": "320", "focal": "6mm", "gps": {"lat": 22.587326, "lng": 113.96572}}, "date": "May 27, 2026"}, {"filename": "d799f0dd4097ac45c2680798af20b457.jpg", "size": "sm", "exif": {"shutter": "1/309s", "aperture": "f/1.6", "iso": "50", "focal": "6mm", "gps": {"lat": 22.604025, "lng": 113.825442}}, "date": "Mar 15, 2026"}];
+
+var map = L.map('map').setView([24.2361762, 115.4664928], 13);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  maxZoom: 19, subdomains: 'abcd',
+  attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> &copy; CARTO'
+}).addTo(map);
+
+// Add photo markers
+photos.forEach(function(p) {
+  var gps = p.exif.gps;
+  var ex = p.exif;
+  var popupHtml = '<img src="images/md/' + p.filename.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '">' +
+    '<b>' + (ex.model || ex.camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</b>';
+  var parts = [];
+  if (ex.focal) parts.push(ex.focal.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+  if (ex.aperture) parts.push(ex.aperture.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+  if (ex.shutter) parts.push(ex.shutter.replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+  if (ex.iso) parts.push('ISO ' + String(ex.iso).replace(/&/g,'&amp;').replace(/</g,'&lt;'));
+  if (parts.length) popupHtml += '<br><span class="popup-exif">' + parts.join(' · ') + '</span>';
+  popupHtml += '<br><span class="popup-exif">×' + Math.abs(gps.lat).toFixed(4) + '°' + (gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(gps.lng).toFixed(4) + '°' + (gps.lng >= 0 ? 'E' : 'W') + '</span>';
+
+  var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
+  L.marker([gps.lat, gps.lng], {icon: icon}).addTo(map).bindPopup(popupHtml);
+});
+
+// Fit bounds if multiple markers
+if (photos.length > 1) {
+  var bounds = photos.map(function(p) { return [p.exif.gps.lat, p.exif.gps.lng]; });
+  map.fitBounds(bounds, { padding: [40, 40] });
+  }
+
+  // Load GPX tracks
+  (function() {
+    var colors = ['#0066ff', '#ff4d4d', '#00c853', '#ffb800', '#9c27b0'];
+    var ci = 0;
+    fetch('/data/tracks.json?v=' + Date.now()).then(function(r) { return r.ok ? r.json() : []; }).then(function(tracks) {
+      tracks.forEach(function(t) {
+        fetch('/tracks/' + t.file).then(function(r) { return r.text(); }).then(function(xml) {
+          var doc = new DOMParser().parseFromString(xml, 'text/xml');
+          var pts = [];
+          doc.querySelectorAll('trkpt').forEach(function(pt) {
+            pts.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]);
+          });
+          if (pts.length > 1) {
+            L.polyline(pts, {color: colors[ci % colors.length], weight: 3, opacity: 0.7, smoothFactor: 1}).addTo(map);
+            ci++;
+          }
+        }).catch(function() {});
+      });
+    }).catch(function() {});
+  })();
+}
+
+// Theme toggle
+(function initThemeBtn() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.getElementById('theme-btn').textContent = '☀';
+  }
+})();
+function toggleTheme() {
+  var html = document.documentElement;
+  var btn = document.getElementById('theme-btn');
+  if (html.classList.toggle('dark')) {
+    localStorage.setItem('theme', 'dark');
+    btn.textContent = '☀';
+  } else {
+    localStorage.removeItem('theme');
+    btn.textContent = '🌙';
+  }
+}
+</script>
+
+</body>
+</html>
