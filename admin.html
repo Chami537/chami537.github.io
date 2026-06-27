@@ -16,6 +16,9 @@
   --danger: #d73a49;
   --muted: #999;
   --card-bg: #fff;
+  --c2: #0066ff;
+  --c4: #00c853;
+  --line: #e0dcd5;
 }
 
 body.dark {
@@ -258,6 +261,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
   <button class="tab-btn" onclick="switchTab('contact')">Contact</button>
   <button class="tab-btn" onclick="switchTab('friends')">Friends</button>
   <button class="tab-btn" onclick="switchTab('music')">Music</button>
+  <button class="tab-btn" onclick="switchTab('tracks')">Tracks</button>
   <button class="tab-btn" onclick="switchTab('git')">Git</button>
 </nav>
 
@@ -390,18 +394,17 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 
   <!-- ═══ PHOTOS ═══ -->
   <div id="tab-photos" class="tab-panel">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-      <h2 style="font-size:18px;">Photos 照片</h2>
-      <form id="upload-form" enctype="multipart/form-data" style="display:flex;gap:8px;align-items:center;">
-        <input type="file" name="file" accept="image/*" id="photo-file" style="font-size:12px;">
-        <select name="size" id="photo-size" style="padding:6px 8px;border:1px solid var(--border);border-radius:6px;font-size:12px;">
-          <option value="sm">sm (2列)</option>
-          <option value="md">md (3列)</option>
-          <option value="lg">lg (3列×2行)</option>
-        </select>
-        <button type="button" class="btn btn-primary" onclick="uploadPhoto()">上传</button>
-      </form>
+    <h2 style="font-size:18px;margin-bottom:16px;">Photos 照片</h2>
+    <div id="photo-drop-zone"
+      style="border:2px solid var(--c2);border-radius:8px;padding:24px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:16px;"
+      ondragover="event.preventDefault();this.style.borderColor='#0044cc';this.style.background='rgba(0,102,255,0.05)'"
+      ondragleave="this.style.borderColor='var(--c2)';this.style.background=''"
+      ondrop="event.preventDefault();this.style.borderColor='var(--c2)';this.style.background='';handlePhotoDrop(event)"
+      onclick="document.getElementById('photo-file-input').click()">
+      <span style="font-size:24px;">⤴</span><br>
+      拖拽照片到此处<br>或点击选择文件
     </div>
+    <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none" onchange="handlePhotoFiles(this.files)">
     <div id="photo-grid" class="photo-grid-admin"></div>
   </div>
 
@@ -465,7 +468,25 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
     </div>
   </div>
 
-  <!-- ═══ GIT ═══ -->
+    <!-- ═══ TRACKS ═══ -->
+  <div id="tab-tracks" class="tab-panel">
+    <div class="card">
+      <h2 style="font-size:18px;">Tracks 轨迹</h2>
+      <div id="tracks-list" style="margin:12px 0;"></div>
+      <div id="track-drop-zone" style="border:2px solid var(--c4);border-radius:8px;padding:24px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .2s,background .2s;"
+        ondragover="event.preventDefault();this.style.borderColor='#009a3e';this.style.background='rgba(0,200,83,0.05)'"
+        ondragleave="this.style.borderColor='var(--c4)';this.style.background=''"
+        ondrop="event.preventDefault();this.style.borderColor='var(--c4)';this.style.background='';handleTrackDrop(event)"
+        onclick="document.getElementById('track-file-input').click()">
+        <span style="font-size:24px;">⤴</span><br>
+        拖拽 .gpx 文件到此处<br>或点击选择文件
+      </div>
+      <input type="file" id="track-file-input" accept=".gpx" style="display:none" onchange="handleTrackFile(this.files)">
+      
+    </div>
+  </div>
+
+<!-- ═══ GIT ═══ -->
   <div id="tab-git" class="tab-panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <h2 style="font-size:18px;">Git 状态</h2>
@@ -559,6 +580,72 @@ function markClean() { isDirty = false; }
 // ═══════════════════════════════════
 // Tabs
 // ═══════════════════════════════════
+async function loadTracks() {
+  var data = await api('GET', '/api/tracks');
+  var html = '';
+  data.forEach(function(t, i) {
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">' +
+      '<span>' + esc(t.name) + ' <code style="color:#999">' + esc(t.file) + '</code></span>' +
+      '<button class="btn btn-sm" style="color:#c00" onclick="deleteTrack(' + i + ')">删除</button>' +
+      '</div>';
+  });
+  document.getElementById('tracks-list').innerHTML = html || '<p style="color:#999">暂无轨迹</p>';
+}
+
+var _lastTrackFile = '';
+
+async function uploadTrackFile(f, autoName) {
+  var fd = new FormData(); fd.append('file', f);
+  var r = await api('POST', '/api/tracks/upload', fd);
+  if (r.file) {
+    _lastTrackFile = r.file;
+    if (autoName) document.getElementById('track-name').value = r.file.replace('.gpx','');
+    loadTracks();
+    toast('已上传: ' + r.file);
+  }
+}
+
+async function renameLastTrack(name) {
+  if (!_lastTrackFile || !name.trim()) return;
+  var tracks = await api('GET', '/api/tracks');
+  for (var i = tracks.length - 1; i >= 0; i--) {
+    if (tracks[i].file === _lastTrackFile) {
+      await api('DELETE', '/api/tracks/' + i);
+      await api('POST', '/api/tracks', {name: name.trim(), file: _lastTrackFile});
+      loadTracks();
+      break;
+    }
+  }
+}
+
+async function uploadTrackFile(f, autoName) {
+  var fd = new FormData(); fd.append('file', f);
+  var r = await api('POST', '/api/tracks/upload', fd);
+  if (r.file) {
+    document.getElementById('track-file').value = r.file;
+    if (autoName) document.getElementById('track-name').value = r.file.replace('.gpx','');
+    loadTracks();
+    toast('已上传: ' + r.file);
+  }
+}
+
+function handleTrackDrop(e) {
+  var files = e.dataTransfer.files;
+  if (files.length) handleTrackFile(files);
+}
+
+function handleTrackFile(files) {
+  Array.from(files).forEach(function(f) {
+    if (f.name.toLowerCase().endsWith('.gpx')) uploadTrackFile(f, true);
+  });
+}
+
+async function deleteTrack(i) {
+  if (!confirm('删除此轨迹？')) return;
+  await api('DELETE', '/api/tracks/' + i);
+  loadTracks();
+}
+
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
@@ -571,7 +658,8 @@ function switchTab(name) {
   if (name === 'about') loadAbout();
   if (name === 'contact') loadContact();
   if (name === 'friends') loadFriends();
-  if (name === 'music') loadMusic();
+  if (name === 'tracks') loadTracks();
+    if (name === 'music') loadMusic();
   if (name === 'git') refreshGitStatus();
 }
 
@@ -1202,6 +1290,8 @@ async function uploadEssayImage() {
   var file = document.getElementById('essay-img-input').files[0];
   if (!file) return;
   var fd = new FormData();
+  var slug = document.getElementById('essay-edit-slug').value;
+  if (slug) fd.append('slug', slug);
   fd.append('file', file);    var result = await api('POST', '/api/essays/upload-image', fd);
     var url = result.url || '';
     var md = '![](' + (url.startsWith('/') ? url : '/' + url) + ')';
@@ -1247,7 +1337,7 @@ async function loadPhotos() {
     const data = await api('GET', '/api/photos');
   document.getElementById('photo-grid').innerHTML = data.map((p, i) => `
     <div class="photo-card">
-      <img src="/images/${encodeURIComponent(p.filename)}" alt="${esc(p.filename)}" loading="lazy">
+      <img src="/images/sm/${encodeURIComponent(p.filename)}" alt="${esc(p.filename)}" loading="lazy">
       <button class="del-btn" data-filename="${esc(p.filename)}" onclick="deletePhoto(this.dataset.filename)">×</button>
       <div class="photo-info">
         <div class="fn">${esc(p.filename)}</div>
@@ -1259,21 +1349,19 @@ async function loadPhotos() {
   } catch(e) { toast(e.message, true); }
 }
 
-async function uploadPhoto() {
-  try {
-  const fileInput = document.getElementById('photo-file');
-  const file = fileInput.files[0];
-  if (!file) { toast('请选择文件', true); return; }
-  const formData = new FormData();
-  formData.append('file', file);
-  formData.append('size', document.getElementById('photo-size').value);    const result = await api('POST', '/api/photos/upload', formData);
-    toast('照片已上传');
-    if (result.exif && Object.keys(result.exif).length) {
-      toast('EXIF: ' + JSON.stringify(result.exif));
-    }
-    fileInput.value = '';
-    loadPhotos();
-  } catch(e) { toast(e.message, true); }
+function handlePhotoDrop(e) {
+  handlePhotoFiles(e.dataTransfer.files);
+}
+
+function handlePhotoFiles(files) {
+  Array.from(files).forEach(function(f) {
+    if (!f.type.startsWith('image/')) return;
+    var fd = new FormData(); fd.append('file', f);
+    api('POST', '/api/photos/upload', fd).then(function(r) {
+      toast('已上传: ' + r.filename);
+      loadPhotos();
+    }).catch(function(e) { toast(e.message, true); });
+  });
 }
 
 async function deletePhoto(filename) {  const confirmed = await confirmDialog('确定删除照片 "' + filename + '"？');
@@ -1673,6 +1761,8 @@ document.addEventListener('drop', function(e) {
     Array.from(files).forEach(function(f) {
       if (!f.type.startsWith('image/')) return;
       var fd = new FormData(); fd.append('file', f);
+      var s = document.getElementById('essay-edit-slug').value;
+      if (s) fd.append('slug', s);
       api('POST', '/api/essays/upload-image', fd).then(function(r) {
         var ta = document.getElementById('essay-content-md');
         var s = ta.selectionStart;
