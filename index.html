@@ -188,14 +188,13 @@
   .photo-info .gps-link { pointer-events: auto; }
   .photo-batch { display: contents; }
   .load-more-btn {
-    font-family: 'Lora', 'Noto Serif SC', serif;
-    font-size: 13px; letter-spacing: 0.1em;
-    color: var(--fg); background: transparent;
-    border: 1px solid var(--fg); border-radius: 4px;
-    padding: 12px 36px; cursor: pointer;
-    transition: all .3s ease;
+    background: none !important; border: none !important;
+    font-family: 'Lora', 'Noto Serif SC', serif !important;
+    font-style: italic; font-size: 13px; letter-spacing: 0.1em;
+    color: #999; padding: 12px 0; cursor: pointer;
+    transition: color .3s ease, transform .3s ease;
   }
-  .load-more-btn:hover { background: var(--fg); color: var(--bg); }
+  .load-more-btn:hover { color: var(--fg); transform: translateY(3px); }
   .photo-item .photo-date {
   position: absolute; top: 8px; right: 10px;
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
@@ -1109,7 +1108,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     var lm = document.getElementById('photo-load-more');
     if (hidden > 0) {
       lm.style.display = 'block';
-      lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">加载更多 (' + hidden + ' 张)</button>';
+      lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">Load (' + hidden + ' more)</button>';
     } else { lm.style.display = 'none'; } var gc = results.photos.filter(function(p){return p.exif&&p.exif.gps;}).length; if(gc) document.getElementById('gps-count').textContent = '· ' + gc + ' location' + (gc>1?'s':''); }
   // Contact
   if (results.contact) document.getElementById('contact-list').innerHTML = renderContact(results.contact);
