@@ -251,7 +251,7 @@ var map = null;
 
 // 加载照片列表（不依赖地图）
 function loadPhotos() {
-  fetch('/api/gps/photos').then(function(r) { return r.json(); }).then(function(data) {
+  fetch('/api/gps/photos?v=' + Date.now()).then(function(r) { return r.json(); }).then(function(data) {
     photos = data;
     var html = '';
     data.forEach(function(p) {
@@ -318,7 +318,7 @@ function saveDate() {
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({filename: fn, date: display})
   }).then(function(r) { return r.json(); }).then(function(d) {
-    el.textContent = d.date || display;
+    loadPhotos();
   });
 }
 
