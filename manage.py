@@ -1789,4 +1789,4 @@ if __name__ == '__main__':
         print("  Admin  → http://127.0.0.1:5000")
         print("  网站预览 → http://127.0.0.1:5000/index.html")
         threading.Timer(0.5, lambda: (webbrowser.open('http://127.0.0.1:5000'), webbrowser.open('http://127.0.0.1:5000/index.html'))).start()
-        app.run(host='127.0.0.1', port=5000, debug=True)
+        app.run(host='127.0.0.1', port=5000, debug=False)
