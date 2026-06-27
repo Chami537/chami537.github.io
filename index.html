@@ -166,29 +166,90 @@
   .work-card:nth-child(5n+4) .line-tag::before { background: var(--c4); }
   .work-card:nth-child(5n) .line-tag::before { background: var(--c5); }
 
-  /* Photos */
-  .photo-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
-  .photo-grid .lg {
-    grid-column: span 3; grid-row: span 2; aspect-ratio: 4/3;
-    background: linear-gradient(135deg, #ffe8e8, #ffcccc);
+  /* Photos — column masonry */
+  .photo-masonry { column-count: 3; column-gap: 3px; }
+  .photo-item {
+    break-inside: avoid; margin-bottom: 3px;
     position: relative; cursor: pointer; overflow: hidden;
   }
-  .photo-grid .md {
-    grid-column: span 3; aspect-ratio: 3/2;
-    background: linear-gradient(135deg, #e0ecff, #c8d8ff);
-    position: relative; cursor: pointer; overflow: hidden;
+  .photo-item img { width: 100%; height: auto; display: block; }
+  .photo-item .photo-info {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 12px 14px;
+    background: linear-gradient(transparent, rgba(0,0,0,0.65));
+    color: #fff; font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+    font-size: 11px; letter-spacing: 0.02em;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity .3s ease, transform .3s ease;
+    pointer-events: none;
   }
-  .photo-grid .sm {
-    grid-column: span 2; aspect-ratio: 1;
-    position: relative; cursor: pointer; overflow: hidden;
-  }
-  .photo-grid div::after {
-    content: ''; position: absolute; inset: 0; border: 0px solid var(--fg);
-    transition: border-width .2s ease, border-color .2s ease;
-  }
-  .photo-grid div:hover::after { border-width: 3px; border-color: var(--hover, var(--fg)); }
+  .photo-item:hover .photo-info { opacity: 1; transform: translateY(0); }
+  .photo-item:hover .photo-date { opacity: 1; }
+  .photo-info .gps-link { pointer-events: auto; }
+  .photo-item .photo-date {
+  position: absolute; top: 8px; right: 10px;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 10px; color: #fff;
+  background: rgba(0,0,0,0.45); padding: 2px 8px; border-radius: 3px;
+  letter-spacing: 0.03em; pointer-events: none; z-index: 2;
+  opacity: 0; transition: opacity .3s ease;
+}
 
-  /* Music */
+  /* Grid/Map toggle */
+  .section-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 48px;
+  }
+  .section-header .section-tag { margin-bottom: 0; }
+  .view-toggle {
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
+    cursor: pointer; user-select: none;
+  }
+  .view-toggle span { transition: color .2s; }
+  .view-toggle .active { color: var(--c2); }
+  .view-toggle .inactive { color: #ccc; }
+  html.dark .view-toggle .inactive { color: #555; }
+
+  /* Map container in photography */
+  #photo-map-container {
+    display: none; width: 100%; height: 55vh;
+    border-radius: 12px; overflow: hidden;
+    border: 2px solid var(--c2);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  }
+
+  /* Custom marker (matching map.html) */
+  .custom-marker { background: none !important; border: none !important; }
+  .custom-marker .marker-dot {
+    width: 12px; height: 12px;
+    background-color: #0066ff;
+    border: 2px solid #fff;
+    border-radius: 50%;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    transition: transform 0.2s;
+  }
+  .custom-marker:hover .marker-dot { transform: scale(1.5); }
+
+  /* Dark mode leaflet */
+  html.dark .leaflet-layer,
+  html.dark .leaflet-control-zoom-in,
+  html.dark .leaflet-control-zoom-out,
+  html.dark .leaflet-control-attribution {
+    filter: invert(100%) hue-rotate(180deg) brightness(95%) contrast(90%);
+  }
+  html.dark .leaflet-marker-icon,
+  html.dark .leaflet-marker-shadow,
+  html.dark .leaflet-popup { filter: none; }
+  .leaflet-popup-content {
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+    font-size: 12px; line-height: 1.6;
+  }
+  .leaflet-popup-content img {
+    width: 100%; max-height: 150px; object-fit: cover;
+    border-radius: 2px; margin-bottom: 4px;
+  }
+  .leaflet-popup-content .popup-exif { color: #888; font-size: 10px; }
   .music-list { display: flex; flex-direction: column; }
   .music-row {
     display: grid; grid-template-columns: 50px 1fr auto; gap: 20px; align-items: center;
@@ -310,25 +371,6 @@
   }
   .essay-filter .ef-more:hover { color: var(--fg); }
 
-  .essay-search {
-    margin-bottom: 12px; position: relative;
-  }
-  .essay-search input {
-    width: 100%; padding: 8px 14px 8px 34px;
-    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-    font-size: 13px; color: var(--fg);
-    background: var(--bg); border: 1px solid var(--line);
-    border-radius: 8px; outline: none;
-    transition: border-color .2s;
-  }
-  .essay-search input:focus { border-color: var(--c3); }
-  .essay-search input::placeholder { color: #bbb; }
-  .essay-search::before {
-    content: "🔍"; position: absolute;
-    left: 10px; top: 50%; transform: translateY(-50%);
-    font-size: 13px; pointer-events: none;
-  }
-
   footer {
     font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
@@ -360,6 +402,10 @@
   html.dark .progress { background: rgba(255,255,255,0.3); }
   html.dark .essay-row:hover { background: rgba(255,184,0,0.08); }
   html.dark .music-row:hover { background: rgba(255,255,255,0.03); }
+
+	  @media (prefers-reduced-motion: reduce) {
+	    .photo-item .photo-info { transition: none; }
+	  }
   html.dark .contact-row:hover { background: rgba(156,39,176,0.08); }
   html.dark .hero h1 mark { color: #1a1a1c; }
 
@@ -411,6 +457,9 @@
   @media (max-width: 768px) {
     .container { padding: 0 24px; }
 
+    .photo-masonry { column-count: 2; }
+    .photo-item .photo-info { font-size: 10px; padding: 8px 10px; }
+
     /* 1. 导航栏自适应：改为上下堆叠，Logo 在上，链接在下并自然换行居中 */
     nav { padding: 0 16px; }
     nav .inner {
@@ -453,8 +502,7 @@
     /* 其他模块保持不变 */
     .work-grid { grid-template-columns: 1fr; }
     .work-card { border-right: none; }
-    .photo-grid { grid-template-columns: repeat(2, 1fr); }
-    .photo-grid .lg, .photo-grid .md, .photo-grid .sm { grid-column: span 2; }
+    #photo-map-container { height: 50vh; }
     .music-row { grid-template-columns: 30px 1fr auto; }
     .essay-right { gap: 10px; }
     .essay-tag   { display: none; }
@@ -512,7 +560,6 @@
 
   <section id="essays">
     <div class="section-tag yellow">ESSAYS</div>
-    <div class="essay-search"><input type="text" id="essay-search-input" placeholder="搜索随笔..." oninput="onEssaySearch(this.value)"></div>
     <div id="essay-tag-filter" class="essay-filter" style="margin-bottom:16px;"></div>
     <div class="essays-list skeleton-loading" id="essays-list">
       <a class="essay-row" href="essays/essay-9292594d.html"><div class="essay-left"><span class="essay-title">残夏</span><span class="essay-excerpt">我们到底会在哪一个瞬间意识到，一段日子真的过去了。</span></div><div class="essay-right"><span class="essay-tag">随笔</span><span class="essay-meta">2026.06 · 1 min</span><span class="essay-arr">→</span></div></a>
@@ -520,14 +567,16 @@
   </section>
 
   <section id="photos">
-    <div class="section-tag blue">PHOTOGRAPHY</div>
-    <div class="photo-grid skeleton-loading" id="photo-grid">
-      <div class="lg" style="background:#ffe8e8;--hover:#ff4d4d"><img src="images/0bafcdb21b37a78577502401bbf9be97.jpg" alt="Photo 1" class="cover-img"></div>
-      <div class="md" style="background:#e0ecff;--hover:#0066ff"><img src="images/15a70814318ed74d5ec2448532f7fab5.jpg" alt="Photo 2" class="cover-img"></div>
-      <div class="sm" style="background:#fff4d8;--hover:#ffb800"><img src="images/6400b35c75c004c99313eb4d07cb337f.jpg" alt="Photo 3" class="cover-img"></div>
-      <div class="sm" style="background:#dcffe8;--hover:#00c853"><img src="images/68b93d07a342daef4f8483cdb249c4f7.jpg" alt="Photo 4" class="cover-img"></div>
-      <div class="sm" style="background:#f4e0ff;--hover:#9c27b0"><img src="images/d799f0dd4097ac45c2680798af20b457.jpg" alt="Photo 5" class="cover-img"></div>
+    <div class="section-header">
+      <div class="section-tag blue">PHOTOGRAPHY</div>
+      <div class="view-toggle">
+        <span id="btn-grid" class="active" onclick="switchView('grid')">Grid</span>
+        <span style="color:#ccc;margin:0 4px;">/</span>
+        <span id="btn-map" class="inactive" onclick="switchView('map')">Map</span><span id="gps-count" style="font-size:10px;color:var(--muted);margin-left:4px;display:none"></span>
+      </div>
     </div>
+    <div class="photo-masonry skeleton-loading" id="photo-masonry"></div>
+    <div id="photo-map-container"></div>
   </section>
 
   <section id="music">
@@ -585,19 +634,10 @@ const bar = document.querySelector('.progress');
 const nlinks = document.querySelectorAll('nav .links a');
 const secs = document.querySelectorAll('section[id]:not(#about)');
 
-// Cached layout values — avoid forced reflow on every scroll tick
-var sectionTops = [];
-var pageHeight = 0;
-
-function updateLayoutCache() {
-  sectionTops = Array.from(secs).map(function(s) { return { id: s.id, top: s.offsetTop - 200 }; });
-  pageHeight = document.documentElement.scrollHeight - innerHeight;
-}
-
-function progressColor(t) {
+function progressColor(t, h) {
   var colors = ['#ff4d4d', '#ffb800', '#0066ff', '#00c853', '#9c27b0'];
-  if (pageHeight <= 0 || sectionTops.length < 2) return colors[0];
-  var stops = sectionTops.map(function(s) { return s.top / pageHeight; });
+  if (h <= 0 || secs.length < 2) return colors[0];
+  var stops = Array.from(secs).map(function(s) { return (s.offsetTop - 200) / h; });
   if (t < stops[0]) return colors[0];
   for (var i = 0; i < stops.length - 1; i++) {
     if (t >= stops[i] && t < stops[i+1]) {
@@ -615,26 +655,23 @@ function lerpColor(a, b, t) {
   return 'rgb(' + Math.round(ar + (br - ar) * t) + ',' + Math.round(ag + (bg - ag) * t) + ',' + Math.round(ab + (bb - ab) * t) + ')';
 }
 
-updateLayoutCache();
-addEventListener('resize', updateLayoutCache);
-window.addEventListener('load', updateLayoutCache);
 
 // Single merged scroll handler — reads only cached values, no offsetTop / scrollHeight reflow
 addEventListener('scroll', function() {
-  if (pageHeight > 0) {
-    var t = scrollY / pageHeight;
+  var h = document.documentElement.scrollHeight - innerHeight; if (h > 0) {
+    var t = scrollY / h;
     bar.style.width = (t * 100) + '%';
-    bar.style.background = progressColor(t);
+    bar.style.background = progressColor(t, h);
   } else {
     bar.style.width = '0';
   }
 
   var cur = '';
-  for (var i = 0; i < sectionTops.length; i++) {
-    if (scrollY >= sectionTops[i].top) cur = sectionTops[i].id;
+  for (var i = 0; i < secs.length; i++) {
+    if (scrollY >= secs[i].offsetTop - 200) cur = secs[i].id;
   }
-  if (scrollY + innerHeight >= pageHeight + innerHeight - 2) {
-    cur = sectionTops[sectionTops.length - 1].id;
+  if (scrollY + innerHeight >= document.documentElement.scrollHeight - 2) {
+    cur = secs[secs.length - 1].id;
   }
   for (var i = 0; i < nlinks.length; i++) {
     nlinks[i].classList.toggle('active', nlinks[i].getAttribute('href') === '#' + cur);
@@ -720,8 +757,6 @@ function renderWork(data) {
 
 var _essayData = [];
 var _essayFilter = '';
-var _essaySearchQuery = '';
-var _essaySearchTimer = null;
 
 function buildEssayFilter() {
   var tags = new Set();
@@ -741,14 +776,6 @@ function filterEssays(tag) {
   renderEssayList();
 }
 
-function onEssaySearch(query) {
-  clearTimeout(_essaySearchTimer);
-  _essaySearchTimer = setTimeout(function() {
-    _essaySearchQuery = query.toLowerCase().trim();
-    renderEssayList();
-  }, 100);
-}
-
 function renderEssayList() {
   var filtered = _essayData;
   if (_essayFilter) {
@@ -759,12 +786,6 @@ function renderEssayList() {
     // Show pinned articles (default "置顶" view)
     filtered = _essayData.filter(function(e) {
       return e.pinned === true;
-    });
-  }
-  if (_essaySearchQuery) {
-    filtered = filtered.filter(function(e) {
-      return (e.title || '').toLowerCase().indexOf(_essaySearchQuery) !== -1 ||
-             (e.excerpt || '').toLowerCase().indexOf(_essaySearchQuery) !== -1;
     });
   }
   var MAX = 5;
@@ -797,34 +818,170 @@ function renderEssayList() {
 }
 
 function renderPhotos(data) {
-  const bgColors = [
-    '#ffe8e8', '#e0ecff', '#fff4d8', '#dcffe8', '#f4e0ff',
-  ];
-  const hoverColors = ['#ff4d4d','#0066ff','#ffb800','#00c853','#9c27b0'];
-
-  // Auto-size for beautiful grid:
-  //   N=1: [lg]
-  //   N=2: [lg, md]
-  //   N>=3: [lg, md, md, sm, sm, sm, ...]
-  //   Grid: lg spans 2 rows left, md×2 fill right column, sm×3 fill bottom rows
-  function assignSize(i, total) {
-    if (total === 1) return 'lg';
-    if (i === 0) return 'lg';
-    if (i <= 2) return 'md';
-    return 'sm';
-  }
-
-  return data.map((p, i) => {
-    const bg = bgColors[i % bgColors.length];
-    const hover = hoverColors[i % hoverColors.length];
-    const size = assignSize(i, data.length);
+  return data.map(function(p) {
     var fn = encodeURIComponent(p.filename);
     var srcset = 'images/sm/' + fn + ' 400w, images/md/' + fn + ' 800w, images/lg/' + fn + ' 1920w';
-    var exifStr = (p.exif && p.exif.camera) ? p.exif.camera + (p.exif.aperture ? ' · ' + p.exif.aperture : '') + (p.exif.shutter ? ' · ' + p.exif.shutter : '') + (p.exif.iso ? ' · ISO' + p.exif.iso : '') : '';
-    return '<div class="' + size + '" style="background:' + bg + ';--hover:' + hover + '">' +
-      '<img src="images/sm/' + fn + '" srcset="' + srcset + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo ' + htmlEncode(p.filename) + '" class="cover-img" loading="lazy" data-exif="' + htmlEncode(exifStr) + '">' +
+    var ex = p.exif || {};
+    var exifStr = ex.model || ex.camera || '';
+    if (ex.focal) exifStr += (exifStr ? ' · ' : '') + ex.focal;
+    if (ex.aperture) exifStr += (exifStr ? ' · ' : '') + ex.aperture;
+    if (ex.shutter) exifStr += (exifStr ? ' · ' : '') + ex.shutter;
+    if (ex.iso) exifStr += (exifStr ? ' · ' : '') + 'ISO ' + ex.iso;
+    var gpsText2 = '', gpsText4 = '';
+    if (ex.gps) {
+      gpsText2 = Math.abs(ex.gps.lat).toFixed(2) + '°' + (ex.gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(ex.gps.lng).toFixed(2) + '°' + (ex.gps.lng >= 0 ? 'E' : 'W');
+      gpsText4 = Math.abs(ex.gps.lat).toFixed(4) + '°' + (ex.gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(ex.gps.lng).toFixed(4) + '°' + (ex.gps.lng >= 0 ? 'E' : 'W');
+    }
+    var gpsHtml = gpsText2 ? ' · <span style="cursor:pointer;text-decoration:underline" class="gps-link" onclick="event.stopPropagation();flyToPhoto(\'' + encodeURIComponent(p.filename) + '\',' + ex.gps.lat + ',' + ex.gps.lng + ')">' + gpsText2 + '</span>' : '';
+    var dateHtml = p.date ? '<span class=\"photo-date\">' + p.date + '</span>' : '';
+    var infoHtml = (exifStr || gpsHtml) ? '<div class="photo-info">' + exifStr + gpsHtml + '</div>' : '';
+    return '<div class="photo-item">' +
+      '<img src="images/sm/' + fn + '" srcset="' + srcset + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo" loading="lazy" data-exif="' + htmlEncode(exifStr + (gpsText4 ? ' · ' + gpsText4 : '') + (p.date ? ' · ' + p.date : '')) + '">' +
+      dateHtml +
+      infoHtml +
       '</div>';
   }).join('');
+}
+
+var _photoMap = null;
+var _photoMapLoaded = false;
+var _photoMapLoading = false;
+var _photoMapCallbacks = [];
+
+function loadLeaflet(cb) {
+  if (_photoMapLoaded) { if (cb) cb(); return; }
+  if (_photoMapLoading) { if (cb) _photoMapCallbacks.push(cb); return; }
+  _photoMapLoading = true;
+  if (cb) _photoMapCallbacks.push(cb);
+
+  var link = document.createElement('link');
+  link.rel = 'stylesheet';
+  link.href = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
+  document.head.appendChild(link);
+
+  var s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+  s.onload = function() {
+    setTimeout(function() {
+      if (!_photoMap) initPhotoMap();
+      _photoMapLoaded = true;
+      _photoMapLoading = false;
+      var cbs = _photoMapCallbacks;
+      _photoMapCallbacks = [];
+      cbs.forEach(function(f) { f(); });
+    }, 100);
+  };
+  s.onerror = function() {
+    _photoMapLoading = false;
+    _photoMapCallbacks = [];
+  };
+  document.head.appendChild(s);
+}
+
+function initPhotoMap() {
+  var container = document.getElementById('photo-map-container');
+  _photoMap = L.map(container).setView([22.5431, 113.9579], 11);
+  var _markerGroup = L.featureGroup().addTo(_photoMap);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19, subdomains: 'abcd',
+    attribution: '&copy; OSM &copy; CARTO'
+  }).addTo(_photoMap);
+
+  // Add markers from photo data
+  if (window._photoData) {
+    window._photoData.forEach(function(p) {
+      var gps = p.exif && p.exif.gps;
+      if (!gps) return;
+      var ex = p.exif || {};
+      var html = '<img src="images/md/' + encodeURIComponent(p.filename) + '">' +
+        '<b>' + (ex.model || ex.camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b>';
+      var parts = [];
+      if (ex.focal) parts.push(String(ex.focal).replace(/&/g,'&amp;'));
+      if (ex.aperture) parts.push(String(ex.aperture).replace(/&/g,'&amp;'));
+      if (ex.shutter) parts.push(String(ex.shutter).replace(/&/g,'&amp;'));
+      if (ex.iso) parts.push('ISO ' + String(ex.iso));
+      if (parts.length) html += '<br><span class="popup-exif">' + parts.join(' · ') + '</span>';
+      html += '<br><span class="popup-exif">' + Math.abs(gps.lat).toFixed(4) + '°' + (gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(gps.lng).toFixed(4) + '°' + (gps.lng >= 0 ? 'E' : 'W') + '</span>';
+      var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
+      L.marker([gps.lat, gps.lng], {icon: icon}).addTo(_markerGroup).bindPopup(html);
+    });
+
+    if (_markerGroup.getLayers().length > 0) {
+      _photoMap.fitBounds(_markerGroup.getBounds(), {padding: [50, 50]});
+  }
+
+  // Load GPX tracks
+  loadGpxTracks();
+    }
+
+  // Sync dark mode
+  if (document.documentElement.classList.contains('dark')) {
+    _photoMap.getContainer().classList.add('dark');
+  }
+}
+
+function loadGpxTracks() {
+  var trackColors = ['#0066ff', '#ff4d4d', '#00c853', '#ffb800', '#9c27b0'];
+  var colorIdx = 0;
+  fetch('/data/tracks.json?v=' + Date.now()).then(function(r) {
+    if (!r.ok) return;
+    return r.json();
+  }).then(function(tracks) {
+    if (!tracks || !tracks.length) return;
+    tracks.forEach(function(t) {
+      fetch('/tracks/' + t.file).then(function(r) { return r.text(); }).then(function(xml) {
+        var parser = new DOMParser();
+        var doc = parser.parseFromString(xml, 'text/xml');
+        var points = [];
+        doc.querySelectorAll('trkpt').forEach(function(pt) {
+          points.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]);
+        });
+        if (points.length > 1) {
+          var color = trackColors[colorIdx % trackColors.length];
+          L.polyline(points, {color: color, weight: 3, opacity: 0.7, smoothFactor: 1}).addTo(_photoMap);
+          colorIdx++;
+        }
+      }).catch(function() {});
+    });
+  }).catch(function() {});
+}
+
+function switchView(view, cb) {
+  var masonry = document.getElementById('photo-masonry');
+  var mapContainer = document.getElementById('photo-map-container');
+  var btnGrid = document.getElementById('btn-grid');
+  var btnMap = document.getElementById('btn-map');
+
+  if (view === 'map') {
+    masonry.style.display = 'none';
+    mapContainer.style.display = 'block';
+    btnGrid.className = 'inactive';
+    btnMap.className = 'active'; document.getElementById('gps-count').style.display = '';
+
+    loadLeaflet(function() {
+      setTimeout(function() { _photoMap.invalidateSize(); }, 50);
+      if (cb) cb();
+    });
+  } else {
+    masonry.style.display = ''; mapContainer.style.display = 'none';
+    btnGrid.className = 'active'; document.getElementById('gps-count').style.display = 'none';
+    btnMap.className = 'inactive';
+    if (cb) cb();
+  }
+}
+
+function flyToPhoto(filename, lat, lng) {
+  switchView('map', function() {
+    if (_photoMap) {
+      _photoMap.flyTo([lat, lng], 15, {animate: true, duration: 1.5});
+      // Open the corresponding marker popup
+      _photoMap.eachLayer(function(layer) {
+        if (layer.getLatLng && layer.getLatLng().lat === lat && layer.getLatLng().lng === lng) {
+          layer.openPopup();
+        }
+      });
+    }
+  });
 }
 
 function renderFriends(data) {
@@ -903,7 +1060,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderEssayList();
   }
   // Photos
-  if (results.photos) document.getElementById('photo-grid').innerHTML = renderPhotos(results.photos);
+  if (results.photos) { window._photoData = results.photos; document.getElementById('photo-masonry').innerHTML = renderPhotos(results.photos); var gc = results.photos.filter(function(p){return p.exif&&p.exif.gps;}).length; if(gc) document.getElementById('gps-count').textContent = '· ' + gc + ' location' + (gc>1?'s':''); }
   // Contact
   if (results.contact) document.getElementById('contact-list').innerHTML = renderContact(results.contact);
   // Friends
@@ -916,7 +1073,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   initMusicPlayer();
   initThemeBtn();
   initLB();
-  updateLayoutCache();
 
 });
 
@@ -936,6 +1092,7 @@ function toggleTheme() {
     localStorage.removeItem('theme');
     btn.textContent = '🌙';
   }
+  if (_photoMap) _photoMap.invalidateSize();
 }
 
 // ═══ Lightbox ═══
@@ -943,10 +1100,10 @@ var lbPhotos = [];
 var lbIndex = 0;
 function initLB() {
   // Collect photos from the grid (re-run after dynamic render)
-  document.querySelector('#photo-grid').addEventListener('click', function(e) {
-    var img = e.target.closest('.photo-grid div')?.querySelector('img');
+  document.querySelector('#photo-masonry').addEventListener('click', function(e) {
+    var img = e.target.closest('.photo-item')?.querySelector('img');
     if (!img) return;
-    lbPhotos = Array.from(document.querySelectorAll('#photo-grid img')).map(function(el) {
+    lbPhotos = Array.from(document.querySelectorAll('#photo-masonry img')).map(function(el) {
       var filename = el.src.split('/').pop().split('?')[0];
       return { src: 'images/lg/' + filename, alt: el.alt, exif: el.dataset.exif || '' };
     });
