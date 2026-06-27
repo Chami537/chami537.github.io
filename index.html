@@ -577,6 +577,7 @@
       </div>
     </div>
     <div class="photo-masonry skeleton-loading" id="photo-masonry"></div>
+    <div id="photo-load-more" style="text-align:center;padding:16px 0;display:none;"></div>
     <div id="photo-map-container"></div>
   </section>
 
@@ -1093,7 +1094,12 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderEssayList();
   }
   // Photos
-  if (results.photos) { window._photoData = results.photos; var total = results.photos.length; var cols = total <= 2 ? 2 : total <= 4 ? 3 : total <= 12 ? 4 : 5; var masonry = document.getElementById('photo-masonry'); masonry.style.columnCount = cols; var PS = _photoPageSize; var shown = results.photos.slice(0, PS); var hidden = total - PS; masonry.innerHTML = renderPhotos(shown) + (hidden > 0 ? '<div id="load-more-photos" style="break-inside:avoid;text-align:center;padding:20px;cursor:pointer" onclick="loadMorePhotos()"><span style="font-family:Lora,serif;font-size:13px;color:var(--c2);border-bottom:1px solid var(--c2);">加载更多 (' + hidden + ' 张)</span></div>' : ''); var gc = results.photos.filter(function(p){return p.exif&&p.exif.gps;}).length; if(gc) document.getElementById('gps-count').textContent = '· ' + gc + ' location' + (gc>1?'s':''); }
+  if (results.photos) { window._photoData = results.photos; var total = results.photos.length; var cols = total <= 2 ? 2 : total <= 4 ? 3 : total <= 12 ? 4 : 5; var masonry = document.getElementById('photo-masonry'); masonry.style.columnCount = cols; var PS = _photoPageSize; var shown = results.photos.slice(0, PS); var hidden = total - PS; masonry.innerHTML = renderPhotos(shown);
+    var lm = document.getElementById('photo-load-more');
+    if (hidden > 0) {
+      lm.style.display = 'block';
+      lm.innerHTML = '<button onclick=\"loadMorePhotos()\" style=\"background:var(--bg);color:var(--c2);border:1.5px solid var(--c2);padding:8px 24px;border-radius:20px;cursor:pointer;font-family:Lora,serif;font-size:13px;font-weight:600;transition:all .2s;\" onmouseenter=\"this.style.background=\\'var(--c2)\\';this.style.color=\\'#fff\\'\" onmouseleave=\"this.style.background=\\'var(--bg)\\';this.style.color=\\'var(--c2)\\'\" ontouchend=\"\">\\u52a0\\u8f7d\\u66f4\\u591a (' + hidden + ' \\u5f20)</button>';
+    } else { lm.style.display = 'none'; } var gc = results.photos.filter(function(p){return p.exif&&p.exif.gps;}).length; if(gc) document.getElementById('gps-count').textContent = '· ' + gc + ' location' + (gc>1?'s':''); }
   // Contact
   if (results.contact) document.getElementById('contact-list').innerHTML = renderContact(results.contact);
   // Friends
