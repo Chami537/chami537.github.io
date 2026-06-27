@@ -990,7 +990,7 @@ function loadMorePhotos() {
     _photoExpanded = false; _photoPage = 0;
     document.querySelectorAll('.photo-batch').forEach(function(el) { el.remove(); });
     var hidden = window._photoData.length - _photoPageSize;
-    lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">\u52a0\u8f7d\u66f4\u591a (' + hidden + ' \u5f20)</button>';
+    lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">\u52a0\u8f7d\u66f4\u591a (' + hidden + ' \more)</button>';
     lm.style.display = 'block';
     return;
   }
@@ -1004,7 +1004,7 @@ function loadMorePhotos() {
   wrapper.innerHTML = renderPhotos(batch);
   masonry.appendChild(wrapper);
   if (more > 0) {
-    lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">\u52a0\u8f7d\u66f4\u591a (' + more + ' \u5f20)</button>';
+    lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">\u52a0\u8f7d\u66f4\u591a (' + more + ' \more)</button>';
     lm.style.display = 'block';
   } else {
     _photoExpanded = true;
