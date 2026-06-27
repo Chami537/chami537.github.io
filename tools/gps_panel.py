@@ -289,42 +289,34 @@ function parseDate(text) {
   return m[3] + '-' + String(mi+1).padStart(2,'0') + '-' + String(m[2]).padStart(2,'0');
 }
 function editDate(fn, el) {
-  var cur = el.textContent;
-  var iso = parseDate(cur);
   var modal = document.getElementById('date-modal');
-  var input = document.getElementById('date-input');
-  input.value = iso;
-  modal.classList.add('show');
-  input.focus();
   modal._fn = fn;
-  modal._el = el;
-  modal._cur = cur;
+  modal._cur = el.textContent;
+  var iso = parseDate(el.textContent);
+  document.getElementById('date-input').value = iso;
+  modal.classList.add('show');
 }
 
 function saveDate() {
   var modal = document.getElementById('date-modal');
-  var input = document.getElementById('date-input');
-  var val = input.value;
+  var val = document.getElementById('date-input').value;
   var fn = modal._fn;
-  var el = modal._el;
-  var cur = modal._cur;
   modal.classList.remove('show');
-  if (!val) { el.textContent = cur; return; }
+  if (!val) return;
   var parts = val.split('-');
-  var d = new Date(parts[0], parts[1]-1, parts[2]);
+  var d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
   var display = MONTHS_ED[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear();
   fetch('/api/gps/set-date', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({filename: fn, date: display})
-  }).then(function(r) { return r.json(); }).then(function(d) {
-    loadPhotos();
+  }).then(function(r) {
+    if (r.ok) loadPhotos();
   });
 }
 
 function cancelDate() {
-  var modal = document.getElementById('date-modal');
-  modal.classList.remove('show');
+  document.getElementById('date-modal').classList.remove('show');
 }
 
 function deletePanelPhoto(fn) {
