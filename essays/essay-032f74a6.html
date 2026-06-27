@@ -627,16 +627,13 @@ document.addEventListener("DOMContentLoaded", function() {
   var els = document.querySelectorAll('.arithmatex');
   els.forEach(function(el) {
     var t = el.textContent || el.innerText;
-    var isDisplay = t.startsWith('\[') || t.startsWith('\$\$');
-    var clean = t.replace(/^\\(/, '').replace(/\\)\$/, '')
-                .replace(/^\\[/, '').replace(/\\]\$/, '')
-                .replace(/^\$\$/, '').replace(/\$\$\$/, '')
-                .replace(/^\$/, '').replace(/\$\$/, '')
-                .trim();
+    var isDisplay = t.startsWith('\\[') || t.startsWith('\$\$');
+    var clean = t.replace(/^\\\(/, '').replace(/\\\)\$/, '').replace(/^\\\[/, '').replace(/\\\]\$/, '').replace(/^\$\$/, '').replace(/\$\$\$/, '').replace(/^\$/, '').replace(/\$\$/, '').trim();
     try {
       katex.render(clean, el, {displayMode: isDisplay, throwOnError: false});
     } catch(e) { console.error('KaTeX:', e); }
   });
 });
 </script>
+
 
