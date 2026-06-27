@@ -399,8 +399,8 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       style="border:2px solid var(--c2);border-radius:8px;padding:24px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:16px;"
       ondragover="event.preventDefault();this.style.borderColor='#0044cc';this.style.background='rgba(0,102,255,0.05)'"
       ondragleave="this.style.borderColor='var(--c2)';this.style.background=''"
-      ondrop="event.preventDefault();this.style.borderColor='var(--c2)';this.style.background='';handlePhotoDrop(event)"
-      onclick="if(!_photoDropJustHandled)document.getElementById('photo-file-input').click()">
+      ondrop="event.preventDefault();event.stopPropagation();this.style.borderColor='var(--c2)';this.style.background='';handlePhotoDrop(event)"
+      onclick="document.getElementById('photo-file-input').click()">
       <span style="font-size:24px;">⤴</span><br>
       拖拽照片到此处<br>或点击选择文件
     </div>
@@ -476,8 +476,8 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       <div id="track-drop-zone" style="border:2px solid var(--c4);border-radius:8px;padding:24px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .2s,background .2s;"
         ondragover="event.preventDefault();this.style.borderColor='#009a3e';this.style.background='rgba(0,200,83,0.05)'"
         ondragleave="this.style.borderColor='var(--c4)';this.style.background=''"
-        ondrop="event.preventDefault();this.style.borderColor='var(--c4)';this.style.background='';_photoDropJustHandled=true;handleTrackDrop(event);setTimeout(function(){_photoDropJustHandled=false},300)"
-        onclick="if(!_photoDropJustHandled)document.getElementById('track-file-input').click()">
+        ondrop="event.preventDefault();event.stopPropagation();this.style.borderColor='var(--c4)';this.style.background='';handleTrackDrop(event)"
+        onclick="document.getElementById('track-file-input').click()">
         <span style="font-size:24px;">⤴</span><br>
         拖拽 .gpx 文件到此处<br>或点击选择文件
       </div>
@@ -1349,11 +1349,8 @@ async function loadPhotos() {
   } catch(e) { toast(e.message, true); }
 }
 
-var _photoDropJustHandled = false;
 function handlePhotoDrop(e) {
-  _photoDropJustHandled = true;
   handlePhotoFiles(e.dataTransfer.files);
-  setTimeout(function() { _photoDropJustHandled = false; }, 300);
 }
 
 function handlePhotoFiles(files) {
