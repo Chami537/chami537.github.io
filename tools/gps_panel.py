@@ -257,7 +257,7 @@ function loadPhotos() {
           '<div class="name">' + escFn + '</div>' +
           '<div class="meta">' +
             (p.date ? '<span class="card-date" data-filename="' + escFn + '" onclick="event.stopPropagation();editDate(this.dataset.filename, this)">' + p.date + '</span>' : '') +
-            (' <button class=\"card-del\" data-fn=\"' + escFn + '\" onclick=\"event.stopPropagation();deletePanelPhoto(this.dataset.fn)\" title=\"删除照片\">\u00d7</button>' +
+            ' <button class=\"card-del\" data-fn=\"' + escFn + '\" onclick=\"event.stopPropagation();deletePanelPhoto(this.dataset.fn)\" title=\"删除照片\">\u00d7</button>' +
             (p.size ? p.size[0] + '\u00d7' + p.size[1] + ' \u00b7 ' : '') +
             (hasGps ? '<span class="has-gps">\u5df2\u6807\u6ce8 ' + p.gps.lat + ', ' + p.gps.lng + '</span>' : '<span class="no-gps">\u672a\u6807\u6ce8</span>') +
           '</div>' +
