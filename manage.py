@@ -1092,7 +1092,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
                 raw_md = _html_to_md(content_match.group(1))
 
     # 2. 将 Markdown 渲染为 HTML 正文
-    rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists']) if raw_md else ""
+    rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}}) if raw_md else ""
     date_str = essay.get('date', '')
     last_edited = _parse_date(date_str)
     time_part = date_str.split(' ')[1].split(':') if ' ' in date_str and len(date_str.split(' ')) > 1 else None
@@ -1270,7 +1270,7 @@ def preview_essay_html(slug):
     if request.method == 'POST' and not isinstance(request.json, dict):
         return jsonify({"error": "Expected a JSON object"}), 400
     md_content = request.args.get('md', '') if request.method == 'GET' else request.json.get('md', '')
-    html_content = md_to_html(md_content, extensions=['extra', 'fenced_code', 'sane_lists'])
+    html_content = md_to_html(md_content, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}})
     return jsonify({"html": html_content})
 
 

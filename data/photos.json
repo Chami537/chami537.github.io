@@ -73,5 +73,135 @@
       }
     },
     "date": "Mar 15, 2026"
+  },
+  {
+    "filename": "6704d97c.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/11236s",
+      "aperture": "f/1.88",
+      "iso": "91",
+      "focal": "5mm"
+    }
+  },
+  {
+    "filename": "db397865.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/539s",
+      "aperture": "f/1.6",
+      "iso": "64",
+      "focal": "6mm"
+    }
+  },
+  {
+    "filename": "19fb16b1.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/33s",
+      "aperture": "f/2.6",
+      "iso": "500",
+      "focal": "13mm"
+    }
+  },
+  {
+    "filename": "da89879a.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/6502s",
+      "aperture": "f/2.6",
+      "iso": "64",
+      "focal": "13mm"
+    }
+  },
+  {
+    "filename": "981189e2.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/25s",
+      "aperture": "f/2.6",
+      "iso": "2000",
+      "focal": "13mm"
+    }
+  },
+  {
+    "filename": "604edad2.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/959s",
+      "aperture": "f/2.6",
+      "iso": "64",
+      "focal": "13mm"
+    }
+  },
+  {
+    "filename": "3ec95210.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/518s",
+      "aperture": "f/2.6",
+      "iso": "50",
+      "focal": "13mm"
+    }
+  },
+  {
+    "filename": "e7a56fd9.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/1737s",
+      "aperture": "f/1.6",
+      "iso": "50",
+      "focal": "6mm"
+    }
+  },
+  {
+    "filename": "2ad57473.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/239s",
+      "aperture": "f/2.6",
+      "iso": "50",
+      "focal": "13mm"
+    }
+  },
+  {
+    "filename": "6608f79a.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/885s",
+      "aperture": "f/1.6",
+      "iso": "50",
+      "focal": "6mm"
+    }
+  },
+  {
+    "filename": "836e13b7.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/129s",
+      "aperture": "f/1.6",
+      "iso": "50",
+      "focal": "6mm"
+    }
+  },
+  {
+    "filename": "bb6be397.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/2018s",
+      "aperture": "f/2.6",
+      "iso": "250",
+      "focal": "13mm"
+    }
+  },
+  {
+    "filename": "5aa075bf.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/15s",
+      "aperture": "f/2.6",
+      "iso": "3200",
+      "focal": "13mm"
+    }
   }
 ]
