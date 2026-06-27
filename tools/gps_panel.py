@@ -91,7 +91,16 @@ def set_date():
             with open(DATA_FILE, 'w', encoding='utf-8') as f:
                 json.dump(photos_data, f, ensure_ascii=False, indent=2)
             return jsonify({'status': 'ok', 'date': date_val})
-    return jsonify({'error': 'File not found in photos.json'}), 404
+    # Not in photos.json yet — auto-create entry if file exists in raw_photos/
+    if os.path.exists(os.path.join(RAW_DIR, filename)):
+        entry = {'filename': filename}
+        if date_val:
+            entry['date'] = date_val
+        photos_data.append(entry)
+        with open(DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(photos_data, f, ensure_ascii=False, indent=2)
+        return jsonify({'status': 'ok', 'date': date_val})
+    return jsonify({'error': 'File not found in raw_photos/'}), 404
 
 @app.route('/api/gps/delete', methods=['POST'])
 def delete_photo():
