@@ -81,14 +81,15 @@ def set_date():
     date_val = data.get('date', '').strip()
     if not filename:
         return jsonify({'error': 'Missing filename'}), 400
-    photos_data = json.load(open(DATA_FILE, 'r', encoding='utf-8')) if os.path.exists(DATA_FILE) else []
+    photos_data = (json.load(open(DATA_FILE, 'r', encoding='utf-8')) if os.path.exists(DATA_FILE) else [])
     for p in photos_data:
         if p.get('filename') == filename:
             if date_val:
                 p['date'] = date_val
             else:
                 p.pop('date', None)
-            json.dump(photos_data, open(DATA_FILE, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+            with open(DATA_FILE, 'w', encoding='utf-8') as f:
+                json.dump(photos_data, f, ensure_ascii=False, indent=2)
             return jsonify({'status': 'ok', 'date': date_val})
     return jsonify({'error': 'File not found in photos.json'}), 404
 
@@ -109,9 +110,10 @@ def delete_photo():
         if os.path.exists(ipath):
             os.remove(ipath)
     # Remove from photos.json
-    pd = json.load(open(DATA_FILE, 'r', encoding='utf-8')) if os.path.exists(DATA_FILE) else []
+    pd = (json.load(open(DATA_FILE, 'r', encoding='utf-8')) if os.path.exists(DATA_FILE) else [])
     pd = [p for p in pd if p.get('filename') != filename]
-    json.dump(pd, open(DATA_FILE, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
+    with open(DATA_FILE, 'w', encoding='utf-8') as f:
+            json.dump(pd, f, ensure_ascii=False, indent=2)
     return jsonify({'status': 'deleted'})
 
 
