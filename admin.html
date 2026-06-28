@@ -243,7 +243,12 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 }
 .preview-panel strong { font-weight: 600; }
 
+.preview-panel .arithmatex { font-size: 1.05em; }
+.preview-panel div.arithmatex { overflow-x: auto; padding: 0.5em 0; }
+.preview-panel .katex-mathml { display: none; }
+
 </style>
+<link rel="stylesheet" href="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.css">
 </head>
 <body>
 
@@ -1314,6 +1319,7 @@ async function previewEssayContent() {
   }
   const md = document.getElementById('essay-content-md').value;    const data = await api('POST', '/api/essays/x/html', { md: md });
     panel.innerHTML = data.html;
+    renderKatexIn(panel);
     panel.style.display = 'block';
   } catch(e) { toast(e.message, true); }
 }
@@ -1775,6 +1781,27 @@ document.addEventListener('drop', function(e) {
     if (count > 0) toast('已插入 ' + count + ' 张图片');
   }
 });
+</script>
+
+<script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
+<script>
+function renderKatexIn(el) {
+  var els = el.querySelectorAll('.arithmatex');
+  els.forEach(function(sp) {
+    var t = sp.textContent || sp.innerText;
+    var isBlock = t.indexOf('\\[') !== -1;
+    var startDelim = isBlock ? '\\[' : '\\(';
+    var endDelim = isBlock ? '\\]' : '\\)';
+    var startIdx = t.indexOf(startDelim);
+    var endIdx = t.lastIndexOf(endDelim);
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      var math = t.substring(startIdx + 2, endIdx);
+      try {
+        katex.render(math, sp, {displayMode: isBlock, throwOnError: false, output: 'htmlAndMathml'});
+      } catch(e) { console.error('KaTeX:', e); }
+    }
+  });
+}
 </script>
 
 </body>
