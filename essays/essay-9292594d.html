@@ -205,6 +205,13 @@ html.dark .essay-body img { border-color: rgba(255,255,255,0.1); }
   border-radius: 6px;
 }
 
+div.arithmatex {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5em 0;
+}
+.katex-mathml { display: none; }
+
 .essay-body::after {
   content: "✦";
   display: block;
@@ -604,17 +611,23 @@ window.addEventListener('message', function(e) {
   <div class="lb-counter" id="lb-counter"></div>
 </div>
 
-<script defer src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {
   var els = document.querySelectorAll('.arithmatex');
   els.forEach(function(el) {
     var t = el.textContent || el.innerText;
-    var isDisplay = t.startsWith('\\[') || t.startsWith('\$\$');
-    var clean = t.replace(/^\\\(/, '').replace(/\\\)\$/, '').replace(/^\\\[/, '').replace(/\\\]\$/, '').replace(/^\$\$/, '').replace(/\$\$\$/, '').replace(/^\$/, '').replace(/\$\$/, '').trim();
-    try {
-      katex.render(clean, el, {displayMode: isDisplay, throwOnError: false});
-    } catch(e) { console.error('KaTeX:', e); }
+    var isBlock = t.indexOf('\\[') !== -1;
+    var startDelim = isBlock ? '\\[' : '\\(';
+    var endDelim = isBlock ? '\\]' : '\\)';
+    var startIdx = t.indexOf(startDelim);
+    var endIdx = t.lastIndexOf(endDelim);
+    if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+      var math = t.substring(startIdx + 2, endIdx);
+      try {
+        katex.render(math, el, {displayMode: isBlock, throwOnError: false, output: 'htmlAndMathml'});
+      } catch(e) { console.error('KaTeX:', e); }
+    }
   });
 });
 </script>
