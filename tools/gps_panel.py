@@ -17,13 +17,26 @@ app = Flask(__name__)
 
 
 def decimal_to_dms(d):
-    sign = 1 if d >= 0 else -1
+    """十进制 → 度分秒元组。始终返回正值，方向由 N/S/E/W tag 承载。"""
     d = abs(d)
     deg = int(d)
     m = (d - deg) * 60
     min_val = int(m)
     sec = (m - min_val) * 60
-    return (sign * deg, min_val, sec)
+    return (deg, min_val, sec)
+
+
+def atomic_write(filepath, data):
+    """原子写入 JSON：先写 .tmp 再 os.replace，防崩溃损坏数据。"""
+    tmp = filepath + '.tmp'
+    try:
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, filepath)
+    except Exception:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
 
 
 @app.route('/')
@@ -81,15 +94,18 @@ def set_date():
     date_val = data.get('date', '').strip()
     if not filename:
         return jsonify({'error': 'Missing filename'}), 400
-    photos_data = (json.load(open(DATA_FILE, 'r', encoding='utf-8')) if os.path.exists(DATA_FILE) else [])
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            photos_data = json.load(f)
+    else:
+        photos_data = []
     for p in photos_data:
         if p.get('filename') == filename:
             if date_val:
                 p['date'] = date_val
             else:
                 p.pop('date', None)
-            with open(DATA_FILE, 'w', encoding='utf-8') as f:
-                json.dump(photos_data, f, ensure_ascii=False, indent=2)
+            atomic_write(DATA_FILE, photos_data)
             return jsonify({'status': 'ok', 'date': date_val})
     # Not in photos.json yet — auto-create entry if file exists in raw_photos/
     if os.path.exists(os.path.join(RAW_DIR, filename)):
@@ -97,8 +113,7 @@ def set_date():
         if date_val:
             entry['date'] = date_val
         photos_data.append(entry)
-        with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(photos_data, f, ensure_ascii=False, indent=2)
+        atomic_write(DATA_FILE, photos_data)
         return jsonify({'status': 'ok', 'date': date_val})
     return jsonify({'error': 'File not found in raw_photos/'}), 404
 
@@ -119,10 +134,13 @@ def delete_photo():
         if os.path.exists(ipath):
             os.remove(ipath)
     # Remove from photos.json
-    pd = (json.load(open(DATA_FILE, 'r', encoding='utf-8')) if os.path.exists(DATA_FILE) else [])
+    if os.path.exists(DATA_FILE):
+        with open(DATA_FILE, 'r', encoding='utf-8') as f:
+            pd = json.load(f)
+    else:
+        pd = []
     pd = [p for p in pd if p.get('filename') != filename]
-    with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(pd, f, ensure_ascii=False, indent=2)
+    atomic_write(DATA_FILE, pd)
     return jsonify({'status': 'deleted'})
 
 
@@ -160,21 +178,29 @@ def set_gps():
         img.close()
 
         # 同步更新 photos.json
-        photos_data = []
         if os.path.exists(DATA_FILE):
             with open(DATA_FILE, 'r', encoding='utf-8') as f:
                 photos_data = json.load(f)
+        else:
+            photos_data = []
 
+        found = False
         for p in photos_data:
             if p['filename'] == filename:
                 if 'exif' not in p:
                     p['exif'] = {}
                 p['exif']['gps'] = {'lat': round(lat, 6), 'lng': round(lng, 6)}
+                found = True
                 break
 
-        with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(photos_data, f, ensure_ascii=False, indent=2)
+        if not found:
+            # Auto-create entry like set_date does
+            photos_data.append({
+                'filename': filename,
+                'exif': {'gps': {'lat': round(lat, 6), 'lng': round(lng, 6)}}
+            })
 
+        atomic_write(DATA_FILE, photos_data)
         return jsonify({'status': 'ok', 'lat': lat, 'lng': lng})
 
     except Exception as e:

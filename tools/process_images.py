@@ -1,5 +1,9 @@
 """Process raw photos into multiple sizes and update photos.json.
 Usage: python process_images.py   or   python manage.py process-images
+
+Now works as a sync tool: processes ALL raw_photos files, re-extracts EXIF,
+updates photos.json entries. Skips thumbnail generation for already-existing
+thumbnails to save time.
 """
 import os
 import json
@@ -9,6 +13,19 @@ RAW_DIR = 'raw_photos'
 IMG_DIR = 'images'
 DATA_FILE = 'data/photos.json'
 SIZES = {'sm': 400, 'md': 800, 'lg': 1920}
+
+
+def atomic_write_json(filepath, data):
+    """Write JSON atomically: .tmp → os.replace, prevents corruption on crash."""
+    tmp = filepath + '.tmp'
+    try:
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, filepath)
+    except Exception:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
 
 
 def format_shutter(val):
@@ -86,6 +103,8 @@ def extract_exif(img):
 
 
 def process_all_images():
+    """Sync: process ALL raw_photos files, update photos.json with full EXIF.
+    Preserves user-set fields (date, size). Generates missing thumbnails."""
     if not os.path.exists(RAW_DIR):
         os.makedirs(RAW_DIR)
         print(f"已创建 {RAW_DIR}/ 文件夹，请将原图放入后重试。")
@@ -94,52 +113,86 @@ def process_all_images():
     for size in SIZES:
         os.makedirs(os.path.join(IMG_DIR, size), exist_ok=True)
 
-    photos_data = []
+    # Load existing data to preserve user-edited fields
+    existing = {}
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            photos_data = json.load(f)
+            for p in json.load(f):
+                existing[p['filename']] = p
 
-    existing_files = {p['filename'] for p in photos_data}
+    photos_data = []
     new_count = 0
+    updated_count = 0
 
     for filename in sorted(os.listdir(RAW_DIR)):
         if not filename.lower().endswith(('.jpg', '.jpeg', '.png')):
             continue
-        if filename in existing_files:
-            continue
 
         raw_path = os.path.join(RAW_DIR, filename)
-        print(f"处理: {filename} ...")
+        old_entry = existing.pop(filename, None)
+        is_new = old_entry is None
+        had_exif = old_entry and 'exif' in old_entry and old_entry['exif']
+
+        print(f"{'[新]' if is_new else '[更新]' if not had_exif else '[同步]'} {filename} ...")
 
         try:
             with Image.open(raw_path) as img:
+                # Always extract EXIF
                 exif_info = extract_exif(img)
 
-                if img.mode != 'RGB':
-                    img = img.convert('RGB')
-
+                # Generate thumbnails (skip if already exist)
                 for size_name, max_width in SIZES.items():
+                    out_path = os.path.join(IMG_DIR, size_name, filename)
+                    if os.path.exists(out_path):
+                        continue  # thumbnail exists, skip
+                    if img.mode != 'RGB':
+                        rgb_img = img.convert('RGB')
+                    else:
+                        rgb_img = img
                     ratio = max_width / float(img.size[0])
                     if ratio < 1:
                         new_h = int(float(img.size[1]) * ratio)
-                        resized = img.resize((max_width, new_h), Image.Resampling.LANCZOS)
+                        resized = rgb_img.resize((max_width, new_h), Image.Resampling.LANCZOS)
                     else:
-                        resized = img.copy()
-                    save_path = os.path.join(IMG_DIR, size_name, filename)
-                    resized.save(save_path, 'JPEG', quality=85)
+                        resized = rgb_img.copy()
+                    resized.save(out_path, 'JPEG', quality=85)
 
-                photos_data.append({"filename": filename, "exif": exif_info})
-                new_count += 1
+                # Build entry: EXIF from file, user fields from old entry
+                entry = {'filename': filename, 'exif': exif_info}
+                if old_entry:
+                    if old_entry.get('date'):
+                        entry['date'] = old_entry['date']
+                    if old_entry.get('size'):
+                        entry['size'] = old_entry['size']
+
+                photos_data.append(entry)
+                if is_new:
+                    new_count += 1
+                elif not had_exif:
+                    updated_count += 1
 
         except Exception as e:
             print(f"  出错: {e}")
+            # Keep old entry on failure
+            if old_entry:
+                photos_data.append(old_entry)
 
-    if new_count > 0:
-        with open(DATA_FILE, 'w', encoding='utf-8') as f:
-            json.dump(photos_data, f, ensure_ascii=False, indent=2)
-        print(f"完成！导入 {new_count} 张新照片。")
-    else:
-        print("没有发现需要处理的新照片。")
+    # Any remaining entries in existing are for files not in raw_photos/
+    # Keep only if thumbnails still exist; warn and drop orphans
+    orphaned = 0
+    for leftover in existing.values():
+        fn = leftover.get('filename', '')
+        sm_path = os.path.join(IMG_DIR, 'sm', fn)
+        if os.path.exists(sm_path):
+            photos_data.append(leftover)
+        else:
+            print(f"  [清理] {fn} — 原图已删除且无缩略图，移除")
+            orphaned += 1
+
+    # Atomic write
+    atomic_write_json(DATA_FILE, photos_data)
+
+    print(f"完成！总计 {len(photos_data)} 张照片，新增 {new_count}，补全 EXIF {updated_count}。" + (f" 清理孤儿条目 {orphaned}。" if orphaned else ""))
 
 
 if __name__ == "__main__":

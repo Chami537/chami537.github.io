@@ -40,7 +40,7 @@ def atomic_write_json(filename, data):
         with open(tmp_filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         os.replace(tmp_filepath, filepath)
-    except Exception as e:
+    except Exception:
         if os.path.exists(tmp_filepath):
             os.remove(tmp_filepath)
         raise
@@ -99,7 +99,10 @@ def delete_work(id):
 # Essays CRUD + Markdown
 # ═══════════════════════════════════════════
 
-ESSAY_TEMPLATE = open(os.path.join(BASE_DIR, 'templates/essay.html'), encoding='utf-8').read()
+def _load_essay_template():
+    """Read essay HTML template from disk on each call — always up-to-date."""
+    with open(os.path.join(BASE_DIR, 'templates/essay.html'), encoding='utf-8') as f:
+        return f.read()
 
 
 def _fe(s):
@@ -1008,7 +1011,7 @@ def create_essay():
     tag_raw = item.get('tag', '')
     tag_display = tag_raw.replace(', ', ' · ').replace(',', ' · ')
     og_image = _extract_first_image(item.get('body', '') or item.get('content', ''))
-    html = ESSAY_TEMPLATE.format(
+    html = _load_essay_template().format(
         title=_fe(item.get('title', '')),
         excerpt=_fe(item.get('excerpt', '')),
         epigraph=_fe(item.get('epigraph', '')),
@@ -1048,12 +1051,16 @@ def update_essay_meta(slug):
             essays[i].update(request.json)
             essays[i]['slug'] = new_slug
             atomic_write_json('essays.json', essays)
-            # Rename HTML file if slug changed
+            # Rename HTML + MD files if slug changed
             if new_slug != slug:
                 old_html = os.path.join(ESSAYS_DIR, f"{slug}.html")
                 new_html = os.path.join(ESSAYS_DIR, f"{new_slug}.html")
+                old_md = os.path.join(MD_DIR, f"{slug}.md")
+                new_md = os.path.join(MD_DIR, f"{new_slug}.md")
                 if os.path.exists(old_html):
                     os.replace(old_html, new_html)
+                if os.path.exists(old_md):
+                    os.replace(old_md, new_md)
             # Tag/order changes affect all sibling nav links — always re-sync all
             for e2 in essays:
                 _sync_essay_html(e2)
@@ -1116,7 +1123,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
 
     # 4. 全量重新渲染 HTML
     og_image = _extract_first_image(raw_md)
-    html = ESSAY_TEMPLATE.format(
+    html = _load_essay_template().format(
         title=_fe(essay.get('title', '')),
         excerpt=_fe(essay.get('excerpt', '')),
         epigraph=_fe(essay.get('epigraph', '')),
@@ -1266,7 +1273,7 @@ def upload_essay_image():
 
 @app.route('/api/essays/<slug>/html', methods=['GET', 'POST'])
 def preview_essay_html(slug):
-    """Preview Markdown → HTML (no save)"""
+    """Preview Markdown → HTML (no save). `slug` from URL path — required by Flask routing."""
     if request.method == 'POST' and not isinstance(request.json, dict):
         return jsonify({"error": "Expected a JSON object"}), 400
     md_content = request.args.get('md', '') if request.method == 'GET' else request.json.get('md', '')
@@ -1284,10 +1291,17 @@ def list_photos():
 
 @app.route('/api/photos', methods=['PUT'])
 def reorder_photos():
-    """Replace entire photo array (for reordering)"""
+    """Replace entire photo array (for reordering). Validates no entries lost."""
     if not isinstance(request.json, list):
         return jsonify({"error": "Expected a JSON array"}), 400
-    atomic_write_json('photos.json', request.json)
+    new_data = request.json
+    existing = load_json('photos.json')
+    existing_fns = {p['filename'] for p in existing}
+    new_fns = {p.get('filename', '') for p in new_data}
+    lost = existing_fns - new_fns
+    if lost:
+        return jsonify({"error": f"Refusing to drop {len(lost)} existing photos: {', '.join(sorted(lost))}"}), 409
+    atomic_write_json('photos.json', new_data)
     return jsonify({"status": "reordered"})
 
 @app.route('/api/photos/<filename>', methods=['DELETE'])
@@ -1351,7 +1365,7 @@ def _extract_gps(exif_dict):
 
 
 def _set_gps(filename, lat, lng):
-    """给 raw_photos/ 中的照片写入 GPS 坐标，保留其他 EXIF"""
+    """给 raw_photos/ 中的照片写入 GPS 坐标 + 同步更新 photos.json"""
     path = os.path.join(BASE_DIR, 'raw_photos', filename)
     if not os.path.exists(path):
         print(f"文件不存在: {path}")
@@ -1360,15 +1374,14 @@ def _set_gps(filename, lat, lng):
     img = Image.open(path)
     exif = img.getexif()
 
-    # 十进制 → 度分秒
+    # 十进制 → 度分秒（始终正值，方向由 N/S/E/W tag 承载）
     def decimal_to_dms(d):
-        sign = 1 if d >= 0 else -1
         d = abs(d)
         deg = int(d)
         m = (d - deg) * 60
         min_val = int(m)
         sec = (m - min_val) * 60
-        return (sign * deg, min_val, sec)
+        return (deg, min_val, sec)
 
     lat_dms = decimal_to_dms(lat)
     lng_dms = decimal_to_dms(lng)
@@ -1384,11 +1397,34 @@ def _set_gps(filename, lat, lng):
     img.save(path, 'JPEG', quality=95, exif=exif.tobytes())
     img.close()
 
+    # 同步更新 photos.json
+    photos_json_path = os.path.join(DATA_DIR, 'photos.json')
+    photos_data = []
+    if os.path.exists(photos_json_path):
+        with open(photos_json_path, 'r', encoding='utf-8') as f:
+            photos_data = json.load(f)
+
+    found = False
+    for p in photos_data:
+        if p['filename'] == filename:
+            if 'exif' not in p:
+                p['exif'] = {}
+            p['exif']['gps'] = {'lat': round(lat, 6), 'lng': round(lng, 6)}
+            found = True
+            break
+
+    if not found:
+        photos_data.append({
+            'filename': filename,
+            'exif': {'gps': {'lat': round(lat, 6), 'lng': round(lng, 6)}}
+        })
+
+    atomic_write_json('photos.json', photos_data)
+
     print(f"GPS 已写入: {filename}")
     print(f"  纬度: {lat} ({'N' if lat >= 0 else 'S'})")
     print(f"  经度: {lng} ({'E' if lng >= 0 else 'W'})")
-    print()
-    print("接下来运行: python manage.py process-images")
+    print(f"  photos.json 已同步更新")
 
 
 @app.route('/api/photos/upload', methods=['POST'])
@@ -1773,7 +1809,7 @@ if __name__ == '__main__':
             _generate_feeds()
             print()
             print(f"Done: {len(essays)} essays + archive + map + RSS + sitemap generated.")
-        elif sys.argv[1] == 'process-images':
+        elif sys.argv[1] in ('process-images', 'sync-photos'):
             import sys; sys.path.insert(0, 'tools'); import process_images
             process_images.process_all_images()
         elif sys.argv[1] == 'set-gps':
@@ -1783,7 +1819,7 @@ if __name__ == '__main__':
                 _set_gps(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]))
         else:
             print(f"Unknown command: {sys.argv[1]}")
-            print("Usage: python manage.py [build|process-images|set-gps]")
+            print("Usage: python manage.py [build|sync-photos|process-images|set-gps]")
     else:
         import webbrowser, threading
         print("  Admin  → http://127.0.0.1:5000")

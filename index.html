@@ -644,10 +644,14 @@ const bar = document.querySelector('.progress');
 const nlinks = document.querySelectorAll('nav .links a');
 const secs = document.querySelectorAll('section[id]:not(#about)');
 
+function getSectionTop(s) {
+  return s.getBoundingClientRect().top + scrollY;
+}
+
 function progressColor(t, h) {
   var colors = ['#ff4d4d', '#ffb800', '#0066ff', '#00c853', '#9c27b0'];
   if (h <= 0 || secs.length < 2) return colors[0];
-  var stops = Array.from(secs).map(function(s) { return (s.offsetTop - 200) / h; });
+  var stops = Array.from(secs).map(function(s) { return (getSectionTop(s) - 200) / h; });
   if (t < stops[0]) return colors[0];
   for (var i = 0; i < stops.length - 1; i++) {
     if (t >= stops[i] && t < stops[i+1]) {
@@ -665,9 +669,7 @@ function lerpColor(a, b, t) {
   return 'rgb(' + Math.round(ar + (br - ar) * t) + ',' + Math.round(ag + (bg - ag) * t) + ',' + Math.round(ab + (bb - ab) * t) + ')';
 }
 
-
-// Single merged scroll handler — reads only cached values, no offsetTop / scrollHeight reflow
-addEventListener('scroll', function() {
+function updateProgress() {
   var h = document.documentElement.scrollHeight - innerHeight; if (h > 0) {
     var t = scrollY / h;
     bar.style.width = (t * 100) + '%';
@@ -678,7 +680,7 @@ addEventListener('scroll', function() {
 
   var cur = '';
   for (var i = 0; i < secs.length; i++) {
-    if (scrollY >= secs[i].offsetTop - 200) cur = secs[i].id;
+    if (scrollY >= getSectionTop(secs[i]) - 200) cur = secs[i].id;
   }
   if (scrollY + innerHeight >= document.documentElement.scrollHeight - 2) {
     cur = secs[secs.length - 1].id;
@@ -686,7 +688,15 @@ addEventListener('scroll', function() {
   for (var i = 0; i < nlinks.length; i++) {
     nlinks[i].classList.toggle('active', nlinks[i].getAttribute('href') === '#' + cur);
   }
-});
+}
+
+// Scroll → progress bar + nav highlight
+addEventListener('scroll', updateProgress, {passive: true});
+
+// ResizeObserver: re-sync when content size changes (lazy images, load-more, etc.)
+if (window.ResizeObserver) {
+  new ResizeObserver(function() { updateProgress(); }).observe(document.body);
+}
 
 // Live star counts
 function initStarFetches() {
@@ -961,12 +971,14 @@ function switchView(view, cb) {
   var mapContainer = document.getElementById('photo-map-container');
   var btnGrid = document.getElementById('btn-grid');
   var btnMap = document.getElementById('btn-map');
+  var lm = document.getElementById('photo-load-more');
 
   if (view === 'map') {
     masonry.style.display = 'none';
     mapContainer.style.display = 'block';
     btnGrid.className = 'inactive';
     btnMap.className = 'active'; document.getElementById('gps-count').style.display = '';
+    lm.style.display = 'none';
 
     loadLeaflet(function() {
       setTimeout(function() { _photoMap.invalidateSize(); }, 50);
@@ -976,6 +988,9 @@ function switchView(view, cb) {
     masonry.style.display = ''; mapContainer.style.display = 'none';
     btnGrid.className = 'active'; document.getElementById('gps-count').style.display = 'none';
     btnMap.className = 'inactive';
+    // Restore load-more visibility: show if expanded or more photos remain
+    var hidden = window._photoData.length - _photoPageSize;
+    lm.style.display = (_photoExpanded || hidden > 0) ? 'block' : 'none';
     if (cb) cb();
   }
 }
