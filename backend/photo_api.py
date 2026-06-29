@@ -46,7 +46,7 @@ def update_photo_gps():
             atomic_write_json('photos.json', photos)
             rp = os.path.join(BASE_DIR, 'raw_photos', d['filename'])
             if os.path.exists(rp):
-                from ssg import _set_gps
+                from backend.ssg import _set_gps
                 _set_gps(d['filename'], lat, lng)
             return jsonify({"status": "ok", "lat": lat, "lng": lng})
     return jsonify({"error": "Photo not found"}), 404
