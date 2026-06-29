@@ -383,6 +383,8 @@
     color: var(--muted); cursor: pointer; user-select: none;
   }
   .essay-filter .ef-more:hover { color: var(--fg); }
+  #photo-tag-filter .ef-chip.active { background: var(--c2); color: #fff; border-color: var(--c2); }
+  #photo-tag-filter .ef-chip:hover { border-color: var(--c2); color: var(--c2); }
 
   /* Stack */
   .stack-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -956,6 +958,19 @@ function filterPhotosByTag(tag) {
     var itemTags = (el.dataset.tags || '').split(',').filter(Boolean);
     el.style.display = (!tag || itemTags.indexOf(tag) >= 0) ? '' : 'none';
   });
+  // Reset paging + re-render initial batch from filtered pool
+  _photoPage = 0; _photoExpanded = false;
+  document.querySelectorAll('.photo-batch').forEach(function(el) { el.remove(); });
+  var pool = _getFilteredPhotos();
+  var masonry = document.getElementById('photo-masonry');
+  var shown = pool.slice(0, _photoPageSize);
+  masonry.innerHTML = renderPhotos(shown);
+  var hidden = pool.length - _photoPageSize;
+  var lm = document.getElementById('photo-load-more');
+  if (hidden > 0) {
+    lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">Load (' + hidden + ' more)</button>';
+    lm.style.display = 'block';
+  } else { lm.style.display = 'none'; }
   // Update filter chip active state
   document.querySelectorAll('#photo-tag-filter .ef-chip').forEach(function(c) {
     c.classList.toggle('active', c.textContent === (tag || '全部'));
@@ -1112,22 +1127,34 @@ function switchView(view, cb) {
 var _photoPage = 0;
 var _photoPageSize = 12;
 var _photoExpanded = false;
+
+function _getFilteredPhotos() {
+  if (!window._photoData) return [];
+  if (!_currentPhotoTag) return window._photoData;
+  return window._photoData.filter(function(p) {
+    return (p.tags || []).indexOf(_currentPhotoTag) >= 0;
+  });
+}
+
 function loadMorePhotos() {
   var lm = document.getElementById('photo-load-more');
   var masonry = document.getElementById('photo-masonry');
+  var pool = _getFilteredPhotos();
   if (_photoExpanded) {
     _photoExpanded = false; _photoPage = 0;
     document.querySelectorAll('.photo-batch').forEach(function(el) { el.remove(); });
-    var hidden = window._photoData.length - _photoPageSize;
-    lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">Load (' + hidden + ' \more)</button>';
-    lm.style.display = 'block';
+    var hidden = pool.length - _photoPageSize;
+    if (hidden > 0) {
+      lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">Load (' + hidden + ' \more)</button>';
+      lm.style.display = 'block';
+    } else { lm.style.display = 'none'; }
     return;
   }
   _photoPage++;
   var start = _photoPage * _photoPageSize;
   var end = start + _photoPageSize;
-  var batch = window._photoData.slice(start, end);
-  var more = window._photoData.length - end;
+  var batch = pool.slice(start, end);
+  var more = pool.length - end;
   var wrapper = document.createElement('div');
   wrapper.className = 'photo-batch';
   wrapper.innerHTML = renderPhotos(batch);
