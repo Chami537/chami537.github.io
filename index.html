@@ -637,6 +637,7 @@
         <span id="btn-map" class="inactive" onclick="switchView('map')">Map</span><span id="gps-count" style="font-size:10px;color:var(--muted);margin-left:4px;display:none"></span>
       </div>
     </div>
+    <div id="photo-tag-filter" class="essay-filter" style="margin-bottom:16px;display:none;"></div>
     <div class="photo-masonry skeleton-loading" id="photo-masonry"></div>
     <div id="photo-load-more" style="text-align:center;padding:16px 0;display:none;"></div>
     <div id="photo-map-container"></div>
@@ -919,7 +920,8 @@ function renderPhotos(data) {
     var gpsHtml = gpsText2 ? ' · <span style="cursor:pointer;text-decoration:underline" class="gps-link" onclick="event.stopPropagation();flyToPhoto(\'' + encodeURIComponent(p.filename) + '\',' + ex.gps.lat + ',' + ex.gps.lng + ')">' + gpsText2 + '</span>' : '';
     var dateHtml = p.date ? '<span class=\"photo-date\">' + p.date + '</span>' : '';
     var infoHtml = (exifStr || gpsHtml) ? '<div class="photo-info">' + exifStr + gpsHtml + '</div>' : '';
-    return '<div class="photo-item">' +
+    var tagStr = (p.tags || []).join(',');
+    return '<div class="photo-item" data-tags="' + htmlEncode(tagStr) + '">' +
       '<img src="images/sm/' + fn + '" srcset="' + srcset + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo" loading="lazy" data-exif="' + htmlEncode(exifStr + (gpsText4 ? ' · ' + gpsText4 : '') + (p.date ? ' · ' + p.date : '')) + '">' +
       dateHtml +
       infoHtml +
@@ -929,6 +931,53 @@ function renderPhotos(data) {
 
 var _photoMap = null;
 var _photoMapLoaded = false;
+var _markerGroup = null;
+var _currentPhotoTag = '';
+
+function buildPhotoTagFilter() {
+  var tags = new Set();
+  (window._photoData || []).forEach(function(p) {
+    (p.tags || []).forEach(function(t) { tags.add(t); });
+  });
+  var el = document.getElementById('photo-tag-filter');
+  if (tags.size === 0) { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  var html = '<span class="ef-chip' + (!_currentPhotoTag ? ' active' : '') + '" onclick="filterPhotosByTag(\'\')">全部</span>';
+  tags.forEach(function(t) {
+    html += '<span class="ef-chip' + (_currentPhotoTag === t ? ' active' : '') + '" onclick="filterPhotosByTag(\'' + htmlEncode(t) + '\')">' + htmlEncode(t) + '</span>';
+  });
+  el.innerHTML = html;
+}
+
+function filterPhotosByTag(tag) {
+  _currentPhotoTag = tag;
+  // Grid: toggle display
+  document.querySelectorAll('.photo-item').forEach(function(el) {
+    var itemTags = (el.dataset.tags || '').split(',').filter(Boolean);
+    el.style.display = (!tag || itemTags.indexOf(tag) >= 0) ? '' : 'none';
+  });
+  // Update filter chip active state
+  document.querySelectorAll('#photo-tag-filter .ef-chip').forEach(function(c) {
+    c.classList.toggle('active', c.textContent === (tag || '全部'));
+  });
+  // Map: rebuild markers
+  if (_markerGroup && window._photoData) {
+    _markerGroup.clearLayers();
+    var filtered = window._photoData.filter(function(p) {
+      return !tag || (p.tags || []).indexOf(tag) >= 0;
+    });
+    filtered.forEach(function(p) {
+      var gps = p.exif && p.exif.gps;
+      if (!gps) return;
+      var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
+      var html = '<img src="images/md/' + encodeURIComponent(p.filename) + '"><b>' + (p.exif.model || p.exif.camera || 'Photo') + '</b>';
+      L.marker([gps.lat, gps.lng], {icon: icon}).addTo(_markerGroup).bindPopup(html);
+    });
+    if (filtered.length > 0) {
+      _photoMap.fitBounds(_markerGroup.getBounds(), {padding: [50, 50], maxZoom: 14});
+    }
+  }
+}
 var _photoMapLoading = false;
 var _photoMapCallbacks = [];
 
@@ -965,7 +1014,7 @@ function loadLeaflet(cb) {
 function initPhotoMap() {
   var container = document.getElementById('photo-map-container');
   _photoMap = L.map(container).setView([22.5431, 113.9579], 11);
-  var _markerGroup = L.featureGroup().addTo(_photoMap);
+  _markerGroup = L.featureGroup().addTo(_photoMap);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
     maxZoom: 19, subdomains: 'abcd',
     attribution: '&copy; OSM &copy; CARTO'
@@ -991,7 +1040,7 @@ function initPhotoMap() {
     });
 
     if (_markerGroup.getLayers().length > 0) {
-      _photoMap.fitBounds(_markerGroup.getBounds(), {padding: [50, 50]});
+      _photoMap.fitBounds(_markerGroup.getBounds(), {padding: [50, 50], maxZoom: 14});
   }
 
   // Load GPX tracks
@@ -1046,6 +1095,7 @@ function switchView(view, cb) {
 
     loadLeaflet(function() {
       setTimeout(function() { _photoMap.invalidateSize(); }, 50);
+      if (_currentPhotoTag) filterPhotosByTag(_currentPhotoTag);  // re-apply filter on map
       if (cb) cb();
     });
   } else {
@@ -1191,6 +1241,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
   // Photos
   if (results.photos) { window._photoData = results.photos; var total = results.photos.length; var cols = total <= 2 ? 2 : total <= 4 ? 3 : total <= 12 ? 4 : 5; var masonry = document.getElementById('photo-masonry'); masonry.style.columnCount = cols; var PS = _photoPageSize; var shown = results.photos.slice(0, PS); var hidden = total - PS; masonry.innerHTML = renderPhotos(shown);
+    buildPhotoTagFilter();
     var lm = document.getElementById('photo-load-more');
     if (hidden > 0) {
       lm.style.display = 'block';
