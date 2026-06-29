@@ -434,9 +434,7 @@
   html.dark .essay-row:hover { background: rgba(255,184,0,0.08); }
   html.dark .music-row:hover { background: rgba(255,255,255,0.03); }
 
-	  @media (prefers-reduced-motion: reduce) {
-	    .photo-item .photo-info { transition: none; }
-	  }
+
   html.dark .contact-row:hover { background: rgba(156,39,176,0.08); }
   html.dark .hero h1 mark { color: #1a1a1c; }
 
@@ -1000,6 +998,11 @@ function filterPhotosByTag(tag) {
       _photoMap.fitBounds(_markerGroup.getBounds(), {padding: [50, 50], maxZoom: 14});
     }
   }
+  // Sync GPS count to filtered pool
+  var gc2 = pool.filter(function(p){return p.exif&&p.exif.gps;}).length;
+  var elGc = document.getElementById('gps-count');
+  if (gc2) { elGc.textContent = '· ' + gc2 + ' location' + (gc2>1?'s':''); elGc.style.display = ''; }
+  else { elGc.style.display = 'none'; }
 }
 var _photoMapLoading = false;
 var _photoMapCallbacks = [];
@@ -1113,7 +1116,7 @@ function switchView(view, cb) {
     masonry.style.display = 'none';
     mapContainer.style.display = 'block';
     btnGrid.className = 'inactive';
-    btnMap.className = 'active'; document.getElementById('gps-count').style.display = '';
+    btnMap.className = 'active';
     lm.style.display = 'none';
 
     loadLeaflet(function() {
@@ -1123,10 +1126,11 @@ function switchView(view, cb) {
     });
   } else {
     masonry.style.display = ''; mapContainer.style.display = 'none';
-    btnGrid.className = 'active'; document.getElementById('gps-count').style.display = 'none';
+    btnGrid.className = 'active';
     btnMap.className = 'inactive';
     // Restore load-more visibility: show if expanded or more photos remain
-    var hidden = window._photoData.length - _photoPageSize;
+    var pool = _getFilteredPhotos();
+    var hidden = pool.length - _photoPageSize;
     lm.style.display = (_photoExpanded || hidden > 0) ? 'block' : 'none';
     if (cb) cb();
   }
@@ -1281,7 +1285,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (hidden > 0) {
       lm.style.display = 'block';
       lm.innerHTML = '<button class=\"load-more-btn\" onclick=\"loadMorePhotos()\">Load (' + hidden + ' more)</button>';
-    } else { lm.style.display = 'none'; } var gc = results.photos.filter(function(p){return p.exif&&p.exif.gps;}).length; if(gc) document.getElementById('gps-count').textContent = '· ' + gc + ' location' + (gc>1?'s':''); }
+    } else { lm.style.display = 'none'; } var gc = results.photos.filter(function(p){return p.exif&&p.exif.gps;}).length; var elGc = document.getElementById('gps-count'); if(gc) { elGc.textContent = '· ' + gc + ' location' + (gc>1?'s':''); elGc.style.display = ''; } }
   // Contact
   if (results.contact) document.getElementById('contact-list').innerHTML = renderContact(results.contact);
   // Friends
@@ -1331,8 +1335,10 @@ function toggleTheme() {
 // ═══ Lightbox ═══
 var lbPhotos = [];
 var lbIndex = 0;
+var _lbInited = false;
 function initLB() {
-  // Collect photos from the grid (re-run after dynamic render)
+  if (_lbInited) return;
+  _lbInited = true;
   document.querySelector('#photo-masonry').addEventListener('click', function(e) {
     var img = e.target.closest('.photo-item')?.querySelector('img');
     if (!img) return;

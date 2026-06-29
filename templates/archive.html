@@ -151,12 +151,12 @@ html.dark nav .theme-btn { border-color: #666; color: #ffd43b; }
 .friends-label {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: #ccc; margin-bottom: 8px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
   width: 100%;
 }
 .friends a {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 11px; color: #bbb; text-decoration: none;
+  font-size: 11px; color: var(--muted); text-decoration: none;
   letter-spacing: .04em; transition: color .2s;
   line-height: 2;
 }
@@ -248,7 +248,7 @@ function toggleTheme() {
     localStorage.setItem('theme', 'dark');
     btn.textContent = '☀';
   } else {
-    localStorage.removeItem('theme');
+    localStorage.setItem('theme', 'light');
     btn.textContent = '🌙';
   }
 }
