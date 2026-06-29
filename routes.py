@@ -446,23 +446,6 @@ def upload_photo():
 
     return jsonify({"status": "success", "filename": filename, "exif": exif_data}), 201
 
-@app.route('/api/photos/<filename>', methods=['DELETE'])
-def delete_photo(filename):
-    photos = load_json('photos.json')
-    photos = [p for p in photos if p['filename'] != filename]
-    atomic_write_json('photos.json', photos)
-    # Remove image files (basename to prevent path traversal)
-    safe_name = os.path.basename(filename)
-    for subdir in ['', 'lg', 'md', 'sm']:
-        path = os.path.join(IMAGES_DIR, subdir, safe_name)
-        if os.path.exists(path):
-            os.remove(path)
-    raw_path = os.path.join(BASE_DIR, 'raw_photos', safe_name)
-    if os.path.exists(raw_path):
-        os.remove(raw_path)
-    return jsonify({"status": "deleted"})
-
-
 @app.route('/api/photos/tags', methods=['PUT'])
 def update_photo_tags():
     data = request.json
@@ -479,6 +462,22 @@ def update_photo_tags():
             atomic_write_json('photos.json', photos)
             return jsonify({"status": "ok", "tags": tags})
     return jsonify({"error": "Photo not found"}), 404
+
+@app.route('/api/photos/<filename>', methods=['DELETE'])
+def delete_photo(filename):
+    photos = load_json('photos.json')
+    photos = [p for p in photos if p['filename'] != filename]
+    atomic_write_json('photos.json', photos)
+    # Remove image files (basename to prevent path traversal)
+    safe_name = os.path.basename(filename)
+    for subdir in ['', 'lg', 'md', 'sm']:
+        path = os.path.join(IMAGES_DIR, subdir, safe_name)
+        if os.path.exists(path):
+            os.remove(path)
+    raw_path = os.path.join(BASE_DIR, 'raw_photos', safe_name)
+    if os.path.exists(raw_path):
+        os.remove(raw_path)
+    return jsonify({"status": "deleted"})
 
 
 @app.route('/api/photos/<filename>/date', methods=['PUT'])
