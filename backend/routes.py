@@ -11,6 +11,8 @@ from flask import request, jsonify
 
 from backend.app import app
 from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
+from markdown import markdown as md_to_html
+
 from backend.ssg import (
     _env, _fe, _calc_read_time, _parse_date,
     _extract_first_image, _parse_tags, _build_nav,
@@ -289,6 +291,7 @@ def preview_essay_html(slug):
         return jsonify({"error": "Expected a JSON object"}), 400
     md_content = request.args.get('md', '') if request.method == 'GET' else request.json.get('md', '')
     html_content = md_to_html(md_content, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}})
+    return jsonify({"html": html_content})
 
 # Photos CRUD + Upload
 # ═══════════════════════════════════════════
