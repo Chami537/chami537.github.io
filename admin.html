@@ -1443,15 +1443,26 @@ async function loadPhotos() {
   } catch(e) { toast(e.message, true); }
 }
 
+// Collect all tags across all photos
+function _allPhotoTags() {
+  var s = new Set();
+  (_photoData || []).forEach(function(p) {
+    (p.tags || []).forEach(function(t) { s.add(t); });
+  });
+  return Array.from(s).sort();
+}
+
 function renderAdminPhotos() {
+  var allTags = _allPhotoTags();
   document.getElementById('photo-grid').innerHTML = _photoData.map(function(p, i) {
-    var tags = p.tags || [];
+    var myTags = p.tags || [];
     var tagsHtml = '<div class="photo-tags" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px;">' +
-      tags.map(function(t) {
-        return '<span class="pt-chip" style="display:inline-flex;align-items:center;gap:2px;padding:1px 6px;border-radius:10px;font-size:10px;background:var(--border);color:var(--fg);">' +
-          esc(t) + '<button onclick="event.stopPropagation();removePhotoTag(' + i + ',\'' + esc(t) + '\')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1;">×</button></span>';
+      allTags.map(function(t) {
+        var active = myTags.indexOf(t) >= 0;
+        return '<span class="pt-chip" onclick="event.stopPropagation();togglePhotoTag(' + i + ',\'' + esc(t) + '\')" style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;cursor:pointer;' +
+          (active ? 'background:var(--c2);color:#fff;' : 'background:var(--border);color:var(--muted);') + '">' + esc(t) + '</span>';
       }).join('') +
-      '<button onclick="event.stopPropagation();addPhotoTag(' + i + ')" style="background:var(--border);border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:1px 6px;border-radius:10px;line-height:1;">+</button>' +
+      '<input onclick="event.stopPropagation();" onkeydown="if(event.key===\'Enter\'){addCustomPhotoTag(' + i + ',this.value);this.value=\'\';}" placeholder="+新标签" style="width:54px;padding:1px 4px;border:1px solid var(--border);border-radius:10px;font-size:10px;background:var(--bg);color:var(--fg);">' +
       '</div>';
     return '<div class="photo-card' + (_selectedPhotoIdx === i ? ' selected' : '') + '" draggable="true" data-index="' + i + '"' +
       ' onclick="selectPhoto(' + i + ')"' +
@@ -1474,19 +1485,21 @@ function renderAdminPhotos() {
   }).join('');
 }
 
-async function addPhotoTag(idx) {
-  var tag = prompt('输入标签（如 Shenzhen, Night）：');
-  if (!tag || !tag.trim()) return;
+async function togglePhotoTag(idx, tag) {
   var tags = (_photoData[idx].tags || []).slice();
-  if (tags.indexOf(tag.trim()) < 0) tags.push(tag.trim());
+  var pos = tags.indexOf(tag);
+  if (pos >= 0) tags.splice(pos, 1); else tags.push(tag);
   await api('PUT', '/api/photo-tags', {filename: _photoData[idx].filename, tags: tags});
-  loadPhotos();  // reload from server to ensure consistency
+  loadPhotos();
 }
 
-async function removePhotoTag(idx, tag) {
-  var tags = (_photoData[idx].tags || []).filter(function(t) { return t !== tag; });
+async function addCustomPhotoTag(idx, val) {
+  var tag = val.trim();
+  if (!tag) return;
+  var tags = (_photoData[idx].tags || []).slice();
+  if (tags.indexOf(tag) < 0) tags.push(tag);
   await api('PUT', '/api/photo-tags', {filename: _photoData[idx].filename, tags: tags});
-  loadPhotos();  // reload from server to ensure consistency
+  loadPhotos();
 }
 
 function selectPhoto(idx) {
