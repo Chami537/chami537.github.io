@@ -57,9 +57,17 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - 内容（照片/作品/随笔元数据等）通过管理面板操作，数据存入 `data/`
 - GitHub Pages 自动从 master 分支部署
 
+## 存档
+
+### 新增（2026-06-29）
+- `index.css` / `index.js` — index.html 的 CSS/JS 已拆分到独立文件
+- `templates/includes/` — 模板共享组件（base.css, nav, footer, theme-init, theme.js）
+- essay.html 从 Python `.format()` 升级到 Jinja2 渲染（统一模板引擎）
+- `_cache_bust_index()` — build 时自动给 CSS/JS 链接加 `?v=<timestamp>`
+- 随笔重生成只同步受影响文章（不再全量循环）
+
 ## 待办
-- 可选：拆分 CSS/JS 到独立文件
-- 可选：Admin 面板登录鉴权
+- 可选：Admin 面板登录鉴权（纯本地跑，物理机密码即 Auth，暂不需要）
 
 ## Claude Code 八荣八耻
 - 以瞎猜接口为耻，以认真查询为荣
