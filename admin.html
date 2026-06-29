@@ -1330,11 +1330,15 @@ document.getElementById('essay-content-md').addEventListener('input', _updateWor
 // Drag-and-drop image upload
 (function() {
   var ta = document.getElementById('essay-content-md');
-  ta.addEventListener('dragover', function(e) { e.preventDefault(); e.stopPropagation(); });
+  ta.addEventListener('dragover', function(e) {
+    if (e.dataTransfer.types && e.dataTransfer.types.indexOf('Files') >= 0) {
+      e.preventDefault(); e.stopPropagation();
+    }
+  });
   ta.addEventListener('drop', async function(e) {
-    e.preventDefault(); e.stopPropagation();
     var file = e.dataTransfer.files[0];
-    if (!file || !file.type.startsWith('image/')) return;
+    if (!file || !file.type.startsWith('image/')) return;  // let browser handle text drag
+    e.preventDefault(); e.stopPropagation();
     var fd = new FormData();
     var slug = document.getElementById('essay-content-editor').dataset.slug;
     if (slug) fd.append('slug', slug);
