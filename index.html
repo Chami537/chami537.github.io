@@ -259,8 +259,8 @@
     font-size: 12px; line-height: 1.6;
   }
   .leaflet-popup-content img {
-    width: 100%; max-height: 150px; object-fit: cover;
-    border-radius: 2px; margin-bottom: 4px;
+    width: 100%; max-height: 260px; object-fit: cover;
+    border-radius: 4px; margin-bottom: 6px;
   }
   .leaflet-popup-content .popup-exif { color: #888; font-size: 10px; }
   .music-list { display: flex; flex-direction: column; }
@@ -985,7 +985,7 @@ function filterPhotosByTag(tag) {
       var gps = p.exif && p.exif.gps;
       if (!gps) return;
       var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
-      var html = '<img src="images/md/' + encodeURIComponent(p.filename) + '"><b>' + (p.exif.model || p.exif.camera || 'Photo') + '</b>';
+      var html = '<img src="images/lg/' + encodeURIComponent(p.filename) + '"><b>' + (p.exif.model || p.exif.camera || 'Photo') + '</b>';
       L.marker([gps.lat, gps.lng], {icon: icon}).addTo(_markerGroup).bindPopup(html);
     });
     if (filtered.length > 0) {
@@ -1041,7 +1041,7 @@ function initPhotoMap() {
       var gps = p.exif && p.exif.gps;
       if (!gps) return;
       var ex = p.exif || {};
-      var html = '<img src="images/md/' + encodeURIComponent(p.filename) + '">' +
+      var html = '<img src="images/lg/' + encodeURIComponent(p.filename) + '">' +
         '<b>' + (ex.model || ex.camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b>';
       var parts = [];
       if (ex.focal) parts.push(String(ex.focal).replace(/&/g,'&amp;'));
