@@ -1411,21 +1411,88 @@ async function deleteEssay(slug) {  const confirmed = await confirmDialog('确�
 // ═══════════════════════════════════
 // Photos
 // ═══════════════════════════════════
+var _dragIdx = -1;
+var _photoData = [];
+
 async function loadPhotos() {
   try {
-    const data = await api('GET', '/api/photos');
-  document.getElementById('photo-grid').innerHTML = data.map((p, i) => `
-    <div class="photo-card">
-      <img src="/images/sm/${encodeURIComponent(p.filename)}" alt="${esc(p.filename)}" loading="lazy">
-      <button class="del-btn" data-filename="${esc(p.filename)}" onclick="deletePhoto(this.dataset.filename)">×</button>
-      <div class="photo-info">
-        <div class="fn">${esc(p.filename)}</div>
-        <div class="sz">${p.size} ${p.exif && p.exif.camera ? '· '+esc(p.exif.camera) : ''}</div>
-        ${p.exif && Object.keys(p.exif).length ? `<div class="photo-exif">${esc(p.exif.aperture||'')} ${esc(p.exif.shutter||'')} ISO${esc(p.exif.iso||'')}</div>` : ''}
-      </div>
-    </div>
-  `).join('');
+    _photoData = await api('GET', '/api/photos');
+    renderAdminPhotos();
   } catch(e) { toast(e.message, true); }
+}
+
+function renderAdminPhotos() {
+  document.getElementById('photo-grid').innerHTML = _photoData.map(function(p, i) {
+    var tags = p.tags || [];
+    var tagsHtml = '<div class="photo-tags" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px;">' +
+      tags.map(function(t) {
+        return '<span class="pt-chip" style="display:inline-flex;align-items:center;gap:2px;padding:1px 6px;border-radius:10px;font-size:10px;background:var(--border);color:var(--fg);">' +
+          esc(t) + '<button onclick="event.stopPropagation();removePhotoTag(' + i + ',\'' + esc(t) + '\')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:0;line-height:1;">×</button></span>';
+      }).join('') +
+      '<button onclick="event.stopPropagation();addPhotoTag(' + i + ')" style="background:var(--border);border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:1px 6px;border-radius:10px;line-height:1;">+</button>' +
+      '</div>';
+    return '<div class="photo-card" draggable="true" data-index="' + i + '"' +
+      ' ondragstart="photoDragStart(event,' + i + ')"' +
+      ' ondragover="photoDragOver(event)"' +
+      ' ondragend="photoDragEnd(event)"' +
+      ' ondrop="photoDrop(event,' + i + ')"' +
+      '>' +
+      '<img src="/images/sm/' + encodeURIComponent(p.filename) + '" alt="' + esc(p.filename) + '" loading="lazy">' +
+      '<button class="del-btn" data-filename="' + esc(p.filename) + '" onclick="deletePhoto(this.dataset.filename)">×</button>' +
+      '<div class="photo-info">' +
+        '<div class="fn">' + esc(p.filename) + '</div>' +
+        '<div class="sz">' + (p.size || '') + (p.exif && p.exif.camera ? ' · ' + esc(p.exif.camera) : '') + '</div>' +
+        (p.exif && Object.keys(p.exif).length ? '<div class="photo-exif">' + esc(p.exif.aperture||'') + ' ' + esc(p.exif.shutter||'') + ' ISO' + esc(p.exif.iso||'') + '</div>' : '') +
+        tagsHtml +
+      '</div>' +
+      '</div>';
+  }).join('');
+}
+
+async function addPhotoTag(idx) {
+  var tag = prompt('输入标签（如 Shenzhen, Night）：');
+  if (!tag || !tag.trim()) return;
+  var tags = _photoData[idx].tags || [];
+  if (tags.indexOf(tag.trim()) < 0) tags.push(tag.trim());
+  await api('PUT', '/api/photos/' + _photoData[idx].filename + '/tags', tags);
+  _photoData[idx].tags = tags;
+  renderAdminPhotos();
+}
+
+async function removePhotoTag(idx, tag) {
+  var tags = (_photoData[idx].tags || []).filter(function(t) { return t !== tag; });
+  await api('PUT', '/api/photos/' + _photoData[idx].filename + '/tags', tags);
+  _photoData[idx].tags = tags;
+  renderAdminPhotos();
+}
+
+function photoDragStart(e, idx) {
+  _dragIdx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.target.style.opacity = '0.4';
+  e.target.style.transform = 'scale(0.95)';
+}
+
+function photoDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function photoDragEnd(e) {
+  e.target.style.opacity = '1';
+  e.target.style.transform = '';
+  _dragIdx = -1;
+}
+
+async function photoDrop(e, toIdx) {
+  e.preventDefault();
+  photoDragEnd(e);
+  if (_dragIdx < 0 || _dragIdx === toIdx) return;
+  var item = _photoData.splice(_dragIdx, 1)[0];
+  _photoData.splice(toIdx, 0, item);
+  renderAdminPhotos();
+  await api('PUT', '/api/photos', _photoData);
+  toast('顺序已保存');
 }
 
 function handlePhotoDrop(e) {

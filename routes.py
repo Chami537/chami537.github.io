@@ -463,6 +463,19 @@ def delete_photo(filename):
     return jsonify({"status": "deleted"})
 
 
+@app.route('/api/photos/<filename>/tags', methods=['PUT'])
+def update_photo_tags(filename):
+    if not isinstance(request.json, list):
+        return jsonify({"error": "Expected a JSON array of strings"}), 400
+    photos = load_json('photos.json')
+    for p in photos:
+        if p['filename'] == filename:
+            p['tags'] = request.json
+            atomic_write_json('photos.json', photos)
+            return jsonify({"status": "ok", "tags": request.json})
+    return jsonify({"error": "Photo not found"}), 404
+
+
 # ═══════════════════════════════════════════
 # Friends CRUD
 # ═══════════════════════════════════════════
