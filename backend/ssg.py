@@ -141,7 +141,9 @@ def _generate_archive():
     essays_sorted = sorted(essays, key=lambda e: e.get('date', ''), reverse=True)
     essays_json = json.dumps(essays_sorted, ensure_ascii=False).replace('</', '<\\/')
     total = len(essays)
-    html = _env.get_template('archive.html').render(total=total, essays_json=essays_json)
+    html = _env.get_template('archive.html').render(
+        total=total, essays_json=essays_json,
+        build_ts=int(datetime.now().timestamp()))
     with open(os.path.join(BASE_DIR, 'archive.html'), 'w', encoding='utf-8') as f:
         f.write(html)
 
@@ -159,7 +161,8 @@ def _generate_map():
         center_lng = sum(lngs) / len(lngs)
     html = _env.get_template('map.html').render(
         photos_json=photos_json, total=total,
-        center_lat=center_lat, center_lng=center_lng)
+        center_lat=center_lat, center_lng=center_lng,
+        build_ts=int(datetime.now().timestamp()))
     with open(os.path.join(BASE_DIR, 'map.html'), 'w', encoding='utf-8') as f:
         f.write(html)
 
@@ -454,9 +457,57 @@ def _sync_essay_html(essay, raw_md_memory=None):
         tag_nav_json=tag_nav_json,
         slug=slug,
         og_image=_fe(og_image),
+        build_ts=int(datetime.now().timestamp()),
     )
 
     # 5. 覆盖写入
     os.makedirs(ESSAYS_DIR, exist_ok=True)
     with open(html_file, 'w', encoding='utf-8') as f:
         f.write(html)
+
+
+def _fetch_stars():
+    """Pre-fetch GitHub star counts for work items and cache in work.json.
+    Uses conditional GET (If-None-Match) to avoid hitting rate limits on repeat runs.
+    Writes an _stars_etag key to track last-seen ETags.
+    """
+    import urllib.request
+    work = load_json('work.json')
+    # Load cached ETags from a sidecar file (avoids polluting work.json)
+    etag_path = os.path.join(DATA_DIR, '_stars_etag.json')
+    etags = {}
+    if os.path.exists(etag_path):
+        with open(etag_path, 'r', encoding='utf-8') as f:
+            etags = json.load(f)
+
+    updated = False
+    for w in work:
+        repo = w.get('repo', '')
+        if not repo:
+            continue
+        url = f'https://api.github.com/repos/{repo}'
+        req = urllib.request.Request(url)
+        req.add_header('Accept', 'application/vnd.github.v3+json')
+        req.add_header('User-Agent', 'Chami-SSG/1.0')
+        etag = etags.get(repo, '')
+        if etag:
+            req.add_header('If-None-Match', etag)
+        try:
+            with urllib.request.urlopen(req, timeout=10) as resp:
+                if resp.status == 304:
+                    continue
+                data = json.loads(resp.read().decode())
+                stars = data.get('stargazers_count', 0)
+                if w.get('stars') != stars:
+                    w['stars'] = stars
+                    updated = True
+                new_etag = resp.headers.get('ETag', '')
+                if new_etag:
+                    etags[repo] = new_etag
+        except Exception:
+            continue
+
+    if updated:
+        atomic_write_json('work.json', work)
+    with open(etag_path, 'w', encoding='utf-8') as f:
+        json.dump(etags, f)

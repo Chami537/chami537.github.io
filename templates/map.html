@@ -154,7 +154,6 @@ footer {
 <footer>
   &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
 </footer>
-{% raw %}
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -194,7 +193,7 @@ if (photos.length > 1) {
 (function() {
   var colors = ['#0066ff', '#ff4d4d', '#00c853', '#ffb800', '#9c27b0'];
   var ci = 0;
-  fetch('/data/tracks.json?v=' + Date.now()).then(function(r) { return r.ok ? r.json() : []; }).then(function(tracks) {
+  fetch('/data/tracks.json?v={% endraw %}{{ build_ts }}{% raw %}').then(function(r) { return r.ok ? r.json() : []; }).then(function(tracks) {
     tracks.forEach(function(t) {
       fetch('/tracks/' + t.file).then(function(r) { return r.text(); }).then(function(xml) {
         var doc = new DOMParser().parseFromString(xml, 'text/xml');
