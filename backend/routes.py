@@ -110,9 +110,9 @@ def create_essay():
     with open(os.path.join(ESSAYS_DIR, f"{slug}.html"), 'w', encoding='utf-8') as f:
         f.write(html)
 
-    # Re-sync all existing essays' nav links + regenerate feeds
-    for e in essays[:-1]:  # exclude the just-created one
-        _sync_essay_html(e)
+    # Re-sync the essay directly before the new one (appended at end — prev may gain next link)
+    if len(essays) > 1:
+        _sync_essay_html(essays[-2])
     _generate_feeds()
 
     return jsonify(item), 201
@@ -142,9 +142,11 @@ def update_essay_meta(slug):
                     os.replace(old_html, new_html)
                 if os.path.exists(old_md):
                     os.replace(old_md, new_md)
-            # Tag/order changes affect all sibling nav links — always re-sync all
-            for e2 in essays:
-                _sync_essay_html(e2)
+            # Only re-sync essays whose nav could have changed (share tags with updated essay)
+            new_tags = _parse_tags(item.get('tag', ''), item)
+            for e in essays:
+                if e['slug'] != slug and new_tags & _parse_tags(e.get('tag', ''), e):
+                    _sync_essay_html(e)
             _generate_feeds()
             return jsonify(essays[i])
     return jsonify({"error": "Not found"}), 404
