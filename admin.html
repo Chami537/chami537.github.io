@@ -1443,6 +1443,11 @@ function renderAdminPhotos() {
         '<div class="fn">' + esc(p.filename) + '</div>' +
         '<div class="sz">' + (p.size || '') + (p.exif && p.exif.camera ? ' · ' + esc(p.exif.camera) : '') + '</div>' +
         (p.exif && Object.keys(p.exif).length ? '<div class="photo-exif">' + esc(p.exif.aperture||'') + ' ' + esc(p.exif.shutter||'') + ' ISO' + esc(p.exif.iso||'') + '</div>' : '') +
+        (p.exif && p.exif.gps ? '<div class="photo-exif">📍 ' + p.exif.gps.lat + ', ' + p.exif.gps.lng + '</div>' : '') +
+        '<div class="photo-actions" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">' +
+          '<button class="btn btn-sm" onclick="event.stopPropagation();editPhotoDate(' + i + ')" style="font-size:10px;padding:1px 6px;">📅 ' + (p.date || '加日期') + '</button>' +
+          '<button class="btn btn-sm" onclick="event.stopPropagation();editPhotoGps(' + i + ')" style="font-size:10px;padding:1px 6px;">' + (p.exif && p.exif.gps ? '📍' + p.exif.gps.lat.toFixed(2) + ',' + p.exif.gps.lng.toFixed(2) : '📍 加GPS') + '</button>' +
+        '</div>' +
         tagsHtml +
       '</div>' +
       '</div>';
@@ -1452,17 +1457,41 @@ function renderAdminPhotos() {
 async function addPhotoTag(idx) {
   var tag = prompt('输入标签（如 Shenzhen, Night）：');
   if (!tag || !tag.trim()) return;
-  var tags = _photoData[idx].tags || [];
+  var tags = (_photoData[idx].tags || []).slice();
   if (tags.indexOf(tag.trim()) < 0) tags.push(tag.trim());
-  await api('PUT', '/api/photos/' + _photoData[idx].filename + '/tags', tags);
+  await api('PUT', '/api/photos/tags', {filename: _photoData[idx].filename, tags: tags});
   _photoData[idx].tags = tags;
   renderAdminPhotos();
 }
 
 async function removePhotoTag(idx, tag) {
   var tags = (_photoData[idx].tags || []).filter(function(t) { return t !== tag; });
-  await api('PUT', '/api/photos/' + _photoData[idx].filename + '/tags', tags);
+  await api('PUT', '/api/photos/tags', {filename: _photoData[idx].filename, tags: tags});
   _photoData[idx].tags = tags;
+  renderAdminPhotos();
+}
+
+async function editPhotoDate(idx) {
+  var cur = _photoData[idx].date || '';
+  var d = prompt('拍摄日期（如 Jul 4, 2026）：', cur);
+  if (d === null) return;
+  await api('PUT', '/api/photos/' + encodeURIComponent(_photoData[idx].filename) + '/date', {date: d.trim()});
+  _photoData[idx].date = d.trim() || undefined;
+  renderAdminPhotos();
+}
+
+async function editPhotoGps(idx) {
+  var p = _photoData[idx];
+  var curLat = p.exif && p.exif.gps ? p.exif.gps.lat : '';
+  var curLng = p.exif && p.exif.gps ? p.exif.gps.lng : '';
+  var input = prompt('GPS 坐标（格式：lat, lng）：', curLat ? curLat + ', ' + curLng : '');
+  if (input === null) return;
+  var parts = input.split(',').map(function(s) { return parseFloat(s.trim()); });
+  if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) { toast('格式错误，请用 lat, lng', true); return; }
+  var lat = parts[0], lng = parts[1];
+  await api('PUT', '/api/photos/' + encodeURIComponent(p.filename) + '/gps', {lat: lat, lng: lng});
+  if (!p.exif) p.exif = {};
+  p.exif.gps = {lat: lat, lng: lng};
   renderAdminPhotos();
 }
 
@@ -1486,9 +1515,11 @@ function photoDragEnd(e) {
 
 async function photoDrop(e, toIdx) {
   e.preventDefault();
+  e.stopPropagation();
+  var fromIdx = _dragIdx;
   photoDragEnd(e);
-  if (_dragIdx < 0 || _dragIdx === toIdx) return;
-  var item = _photoData.splice(_dragIdx, 1)[0];
+  if (fromIdx < 0 || fromIdx === toIdx) return;
+  var item = _photoData.splice(fromIdx, 1)[0];
   _photoData.splice(toIdx, 0, item);
   renderAdminPhotos();
   await api('PUT', '/api/photos', _photoData);
