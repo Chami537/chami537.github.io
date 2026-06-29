@@ -132,20 +132,15 @@ footer {
   #map { height: 55vh; }
 }
 </style>
-<script>
-  if (localStorage.getItem('theme') === 'dark') {
-    document.documentElement.classList.add('dark');
-  }
-</script>
+{% endraw %}
+{% include 'includes/theme-init.html' %}
+{% raw %}
 </head>
 <body>
 
-<nav>
-  <div class="inner">
-    <a href="/index.html" class="logo">Chami</a>
-    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
-  </div>
-</nav>
+{% endraw %}
+{% include 'includes/nav.html' %}
+{% raw %}
 
 <div class="map-header">
   <h1>Footprints</h1>
@@ -156,9 +151,9 @@ footer {
   <div id="map"></div>
 </div>
 
-<footer>
-  &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
-</footer>
+{% endraw %}
+{% include 'includes/footer.html' %}
+{% raw %}
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
@@ -216,22 +211,9 @@ if (photos.length > 1) {
 })();
 
 // Theme toggle
-(function initThemeBtn() {
-  if (localStorage.getItem('theme') === 'dark') {
-    document.getElementById('theme-btn').textContent = '☀';
-  }
-})();
-function toggleTheme() {
-  var html = document.documentElement;
-  var btn = document.getElementById('theme-btn');
-  if (html.classList.toggle('dark')) {
-    localStorage.setItem('theme', 'dark');
-    btn.textContent = '☀';
-  } else {
-    localStorage.setItem('theme', 'light');
-    btn.textContent = '🌙';
-  }
-}
+{% endraw %}
+{% include 'includes/theme.js' %}
+{% raw %}
 </script>
 
 </body>

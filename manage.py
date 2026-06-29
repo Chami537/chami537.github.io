@@ -9,13 +9,14 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1:
         if sys.argv[1] == 'build':
-            from backend.ssg import _sync_essay_html, _generate_feeds
+            from backend.ssg import _sync_essay_html, _generate_feeds, _cache_bust_index
             print("Building static site...")
             essays = load_json('essays.json')
             for e in essays:
                 _sync_essay_html(e)
                 print(f"  ✓ essays/{e['slug']}.html")
             _generate_feeds()
+            _cache_bust_index()
             print()
             print(f"Done: {len(essays)} essays + archive + map + RSS + sitemap generated.")
         elif sys.argv[1] in ('process-images', 'sync-photos'):
