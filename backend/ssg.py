@@ -22,10 +22,27 @@ _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
 
 # ═══════════════════════════════════════════
 
-def _load_essay_template():
-    """Read essay HTML template from disk on each call — always up-to-date."""
-    with open(os.path.join(BASE_DIR, 'templates/essay.html'), encoding='utf-8') as f:
-        return f.read()
+def _cache_bust_index():
+    """Append ?v=<mtime> to index.css and index.js links in index.html.
+    Uses regex to safely replace existing version strings — idempotent, no stacking.
+    """
+    index_path = os.path.join(BASE_DIR, 'index.html')
+    css_path = os.path.join(BASE_DIR, 'index.css')
+    js_path = os.path.join(BASE_DIR, 'index.js')
+    if not os.path.exists(index_path):
+        return
+    ts = int(max(
+        os.path.getmtime(css_path) if os.path.exists(css_path) else 0,
+        os.path.getmtime(js_path) if os.path.exists(js_path) else 0,
+    ))
+    if ts == 0:
+        return
+    with open(index_path, 'r', encoding='utf-8') as f:
+        html = f.read()
+    html = re.sub(r'href="index\.css(\?v=\d+)?"', f'href="index.css?v={ts}"', html)
+    html = re.sub(r'src="index\.js(\?v=\d+)?"', f'src="index.js?v={ts}"', html)
+    with open(index_path, 'w', encoding='utf-8') as f:
+        f.write(html)
 
 
 def _fe(s):
@@ -422,16 +439,18 @@ def _sync_essay_html(essay, raw_md_memory=None):
 
     # 4. 全量重新渲染 HTML
     og_image = _extract_first_image(raw_md)
-    html = _load_essay_template().format(
+    template = _env.get_template('essay.html')
+    from markupsafe import Markup
+    html = template.render(
         title=_fe(essay.get('title', '')),
         excerpt=_fe(essay.get('excerpt', '')),
         epigraph=_fe(essay.get('epigraph', '')),
         tag=tag_display,
         date_display=date_display,
         read_time=essay.get('readTime', 1),
-        body_html=(body_html),
-        prev_nav=(prev_nav),
-        next_nav=(next_nav),
+        body_html=Markup(body_html),
+        prev_nav=Markup(prev_nav),
+        next_nav=Markup(next_nav),
         tag_nav_json=tag_nav_json,
         slug=slug,
         og_image=_fe(og_image),

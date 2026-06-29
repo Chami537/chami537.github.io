@@ -12,12 +12,12 @@ from flask import request, jsonify
 from backend.app import app
 from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
 from backend.ssg import (
-    _load_essay_template, _fe, _calc_read_time, _parse_date,
+    _env, _fe, _calc_read_time, _parse_date,
     _extract_first_image, _parse_tags, _build_nav,
     _build_tag_nav_json, _sync_essay_html, _html_to_md,
     _generate_feeds,
     _fmt_shutter, _fmt_aperture, _fmt_focal, _extract_gps,
-    _set_gps, ESSAYS_DIR, MD_DIR, IMAGES_DIR,
+    ESSAYS_DIR, MD_DIR, IMAGES_DIR,
 )
 
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -92,7 +92,9 @@ def create_essay():
     tag_raw = item.get('tag', '')
     tag_display = tag_raw.replace(', ', ' · ').replace(',', ' · ')
     og_image = _extract_first_image(item.get('body', '') or item.get('content', ''))
-    html = _load_essay_template().format(
+    from markupsafe import Markup
+    template = _env.get_template('essay.html')
+    html = template.render(
         title=_fe(item.get('title', '')),
         excerpt=_fe(item.get('excerpt', '')),
         epigraph=_fe(item.get('epigraph', '')),
@@ -100,8 +102,8 @@ def create_essay():
         date_display=_fe(date_display),
         read_time=read_time,
         body_html='',
-        prev_nav=(prev_nav),
-        next_nav=(next_nav),
+        prev_nav=Markup(prev_nav),
+        next_nav=Markup(next_nav),
         tag_nav_json=tag_nav_json,
         slug=slug,
         og_image=_fe(og_image),

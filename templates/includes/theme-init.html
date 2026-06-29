@@ -1,0 +1,7 @@
+<script>
+  var _mq = window.matchMedia('(prefers-color-scheme: dark)');
+  var _saved = localStorage.getItem('theme');
+  if (_saved === 'dark' || (!_saved && _mq.matches)) {
+    document.documentElement.classList.add('dark');
+  }
+</script>
