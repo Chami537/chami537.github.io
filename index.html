@@ -464,59 +464,81 @@
 
 
   @media (max-width: 768px) {
-    .container { padding: 0 24px; }
+    .container { padding: 0 20px; }
 
-    .photo-masonry { column-count: 2; column-gap: 6px; }
-    .photo-item { margin-bottom: 6px; }
+    /* Section spacing — tighten for mobile proportions */
+    section { padding: 80px 0; }
+    #work    { padding: 100px 0 80px; }
+    #photos  { padding: 80px 0; }
+    #music   { padding: 100px 0 80px; }
+    #essays  { padding: 80px 0 72px; }
+    #contact { padding: 80px 0 72px; }
+    .section-tag   { margin-bottom: 32px; }
+    .section-header { margin-bottom: 32px; }
+
+    /* Photos */
+    .photo-masonry { column-count: 2; column-gap: 4px; }
+    .photo-item { margin-bottom: 4px; }
     .photo-item .photo-info { font-size: 10px; padding: 8px 10px; }
 
-    /* 1. 导航栏自适应：改为上下堆叠，Logo 在上，链接在下并自然换行居中 */
+    /* Nav — slightly tighter */
     nav { padding: 0 16px; }
     nav .inner {
-      flex-direction: column;
-      height: auto;
-      padding: 16px 0;
-      gap: 16px;
+      flex-direction: column; height: auto;
+      padding: 12px 0; gap: 12px;
     }
     nav .links {
-      width: 100%;
-      justify-content: flex-start;
-      flex-wrap: nowrap;
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-      gap: 20px;
-      padding-bottom: 4px;
+      width: 100%; justify-content: flex-start; flex-wrap: nowrap;
+      overflow-x: auto; -webkit-overflow-scrolling: touch;
+      gap: 16px; padding-bottom: 4px;
     }
     nav .links::-webkit-scrollbar { display: none; }
 
-    /* 2. 首屏自适应：改用 Flex 垂直排版，靠内容自身撑开高度，彻底消除巨大空隙 */
+    /* Hero — scaled down for mobile viewport */
     .hero {
-      margin: 0 -24px;
-      padding: 160px 24px 80px; /* 顶部加深 padding，防止被变高的导航栏遮挡 */
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      height: auto;
-      min-height: 100dvh;
-      gap: 48px;
+      margin: 0 -20px; padding: 140px 20px 64px;
+      display: flex; flex-direction: column; justify-content: center;
+      height: auto; min-height: 100dvh; gap: 40px;
     }
-    .hero h1 { font-size: 48px; line-height: 1.05; }
-
-    /* 3. 标签自适应：允许标签组整体换行，但严禁单个标签内部断字 */
-    .hero .meta { flex-wrap: wrap; gap: 16px 24px; margin-top: 20px; }
+    .hero h1 { font-size: clamp(36px, 8vw, 48px); line-height: 1.08; }
+    .hero .meta { flex-wrap: wrap; gap: 12px 20px; margin-top: 16px; font-size: 13px; }
     .hero .meta span { white-space: nowrap; }
+    .portrait { width: 160px; height: 160px; margin: 0 auto; }
 
-    /* 头像自适应居中 */
-    .portrait { width: 180px; height: 180px; margin: 0 auto; }
+    /* About */
+    .about-text { font-size: 15px; line-height: 1.85; }
 
-    /* 其他模块保持不变 */
+    /* Work — compact cards for single column */
     .work-grid { grid-template-columns: 1fr; }
-    .work-card { border-right: none; }
+    .work-card { padding: 24px 20px; border-right: none; }
+    .work-card h3 { font-size: 18px; }
+    .work-card p  { font-size: 12px; }
+    .work-card .num { font-size: 36px; top: 20px; right: 20px; }
+    .work-card .line-tag { font-size: 10px; margin-top: 12px; }
+
+    /* Essays */
+    .essay-row    { padding: 18px 0; }
+    .essay-title  { font-size: 15px; }
+    .essay-excerpt { font-size: 12px; }
+    .essay-right  { gap: 10px; }
+    .essay-tag    { display: none; }
+    .essay-meta   { font-size: 11px; }
+
+    /* Music */
+    .music-row { padding: 16px 0; gap: 14px; grid-template-columns: 28px 1fr auto; }
+    .music-row .title  { font-size: 15px; }
+    .music-row .artist { font-size: 12px; }
+    .music-row .idx    { font-size: 12px; }
+
+    /* Contact */
+    .contact-row { padding: 16px 0; }
+    .contact-row .value { font-size: 15px; }
+
+    /* Map */
     #photo-map-container { height: 50vh; }
-    .music-row { grid-template-columns: 30px 1fr auto; }
-    .essay-right { gap: 10px; }
-    .essay-tag   { display: none; }
-    .essay-meta  { font-size: 11px; }
+
+    /* Filter chips */
+    .essay-filter .ef-chip { font-size: 10px; padding: 2px 10px; }
   }
 </style>
 <script>
