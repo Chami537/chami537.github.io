@@ -446,22 +446,6 @@ def upload_photo():
 
     return jsonify({"status": "success", "filename": filename, "exif": exif_data}), 201
 
-@app.route('/api/photos/tags', methods=['PUT'])
-def update_photo_tags():
-    data = request.json
-    if not isinstance(data, dict) or 'filename' not in data or 'tags' not in data:
-        return jsonify({"error": "Expected {filename, tags: [...]}"}), 400
-    filename = data['filename']
-    tags = data['tags']
-    if not isinstance(tags, list):
-        return jsonify({"error": "tags must be a JSON array"}), 400
-    photos = load_json('photos.json')
-    for p in photos:
-        if p['filename'] == filename:
-            p['tags'] = tags
-            atomic_write_json('photos.json', photos)
-            return jsonify({"status": "ok", "tags": tags})
-    return jsonify({"error": "Photo not found"}), 404
 
 @app.route('/api/photos/<filename>', methods=['DELETE'])
 def delete_photo(filename):
@@ -480,39 +464,7 @@ def delete_photo(filename):
     return jsonify({"status": "deleted"})
 
 
-@app.route('/api/photos/<filename>/date', methods=['PUT'])
-def update_photo_date(filename):
-    data = request.json
-    date_val = (data.get('date') or '').strip() if isinstance(data, dict) else ''
-    photos = load_json('photos.json')
-    for p in photos:
-        if p['filename'] == filename:
-            if date_val:
-                p['date'] = date_val
-            else:
-                p.pop('date', None)
-            atomic_write_json('photos.json', photos)
-            return jsonify({"status": "ok", "date": date_val})
-    return jsonify({"error": "Photo not found"}), 404
 
-@app.route('/api/photos/<filename>/gps', methods=['PUT'])
-def update_photo_gps(filename):
-    data = request.json
-    if not isinstance(data, dict) or 'lat' not in data or 'lng' not in data:
-        return jsonify({"error": "Expected {lat, lng}"}), 400
-    photos = load_json('photos.json')
-    for p in photos:
-        if p['filename'] == filename:
-            lat, lng = float(data['lat']), float(data['lng'])
-            if 'exif' not in p: p['exif'] = {}
-            p['exif']['gps'] = {'lat': round(lat, 6), 'lng': round(lng, 6)}
-            atomic_write_json('photos.json', photos)
-            # Also write to raw EXIF if file exists
-            raw_path = os.path.join(BASE_DIR, 'raw_photos', filename)
-            if os.path.exists(raw_path):
-                _set_gps(filename, lat, lng)
-            return jsonify({"status": "ok", "lat": lat, "lng": lng})
-    return jsonify({"error": "Photo not found"}), 404
 
 
 # ═══════════════════════════════════════════

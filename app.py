@@ -59,5 +59,6 @@ def serve_map():
     return send_from_directory(BASE_DIR, 'map.html')
 
 
-# Register all /api/* routes (side-effect import — must come after app creation)
-import routes  # noqa: E402,F401
+# Register all /api/* routes (side-effect imports — must come after app creation)
+import routes      # noqa: E402,F401
+import photo_api  # noqa: E402,F401  — photo tags/date/gps PUT routes

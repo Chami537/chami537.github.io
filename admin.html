@@ -1479,13 +1479,13 @@ async function addPhotoTag(idx) {
   if (!tag || !tag.trim()) return;
   var tags = (_photoData[idx].tags || []).slice();
   if (tags.indexOf(tag.trim()) < 0) tags.push(tag.trim());
-  await api('PUT', '/api/photos/tags', {filename: _photoData[idx].filename, tags: tags});
+  await api('PUT', '/api/photo-tags', {filename: _photoData[idx].filename, tags: tags});
   loadPhotos();  // reload from server to ensure consistency
 }
 
 async function removePhotoTag(idx, tag) {
   var tags = (_photoData[idx].tags || []).filter(function(t) { return t !== tag; });
-  await api('PUT', '/api/photos/tags', {filename: _photoData[idx].filename, tags: tags});
+  await api('PUT', '/api/photo-tags', {filename: _photoData[idx].filename, tags: tags});
   loadPhotos();  // reload from server to ensure consistency
 }
 
@@ -1538,19 +1538,19 @@ async function savePhotoEditor() {
     var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     dateVal = MONTHS[+dp[1]-1] + ' ' + (+dp[2]) + ', ' + dp[0];
   }
-  await api('PUT', '/api/photos/' + encodeURIComponent(fn) + '/date', {date: dateVal});
+  await api('PUT', '/api/photo-date', {filename: fn, date: dateVal});
   // Save GPS
   var latStr = document.getElementById('photo-editor-lat').value.trim();
   var lngStr = document.getElementById('photo-editor-lng').value.trim();
   if (latStr && lngStr) {
     var lat = parseFloat(latStr), lng = parseFloat(lngStr);
     if (!isNaN(lat) && !isNaN(lng)) {
-      await api('PUT', '/api/photos/' + encodeURIComponent(fn) + '/gps', {lat: lat, lng: lng});
+      await api('PUT', '/api/photo-gps', {filename: fn, lat: lat, lng: lng});
     }
   }
   _selectedPhotoIdx = -1;
   document.getElementById('photo-editor').style.display = 'none';
-  loadPhotos();  // reload from server
+  loadPhotos();
   toast('已保存');
 }
 
