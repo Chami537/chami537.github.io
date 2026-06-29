@@ -1484,11 +1484,11 @@ var _editorMarker = null;
 function _renderPhotoTagTabs() {
   var tags = getPhotoTags();
   var btnStyle = 'padding:3px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--muted);transition:all .15s;user-select:none;background:var(--card-bg);';
-  var html = '<span style="' + btnStyle + (!_currentPhotoTag ? 'background:var(--c2);color:#fff;border-color:var(--c2);' : '') + '" onclick="switchPhotoTabTag(\'\')">全部</span>';
+  var html = '<span tabindex="0" role="button" style="' + btnStyle + (!_currentPhotoTag ? 'background:var(--c2);color:#fff;border-color:var(--c2);' : '') + '" onclick="switchPhotoTabTag(\'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();switchPhotoTabTag(\'\')}">全部</span>';
   tags.forEach(function(t) {
     var del = _photoDeleteTagMode ? '<span onclick="event.stopPropagation();deletePhotoTagGlobal(\'' + esc(t) + '\')" style="margin-left:2px;color:var(--danger);cursor:pointer;font-weight:700;">×</span>' : '';
     var active = _currentPhotoTag === t;
-    html += '<span style="' + btnStyle + (active ? 'background:var(--c2);color:#fff;border-color:var(--c2);' : '') + '" onclick="switchPhotoTabTag(\'' + esc(t) + '\')">' + esc(t) + del + '</span>';
+    html += '<span tabindex="0" role="button" style="' + btnStyle + (active ? 'background:var(--c2);color:#fff;border-color:var(--c2);' : '') + '" onclick="switchPhotoTabTag(\'' + esc(t) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();switchPhotoTabTag(\'' + esc(t) + '\')}">' + esc(t) + del + '</span>';
   });
   document.getElementById('photo-tag-tabs').innerHTML = html;
 }
@@ -1535,17 +1535,20 @@ function renderAdminPhotos() {
 var _tagModalIdx = -1;
 function openPhotoTagModal(idx) {
   _tagModalIdx = idx;
+  _refreshTagModalContent();
+  document.getElementById('tag-modal').showModal();
+}
+function _refreshTagModalContent() {
   var tags = getPhotoTags();
-  var myTags = _photoData[idx].tags || [];
+  var myTags = _photoData[_tagModalIdx].tags || [];
   var html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">';
   tags.forEach(function(t) {
     var active = myTags.indexOf(t) >= 0;
-    html += '<span onclick="toggleModalTag(\'' + esc(t) + '\')" style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;' +
+    html += '<span tabindex="0" role="button" onclick="toggleModalTag(\'' + esc(t) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleModalTag(\'' + esc(t) + '\')}" style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;' +
       (active ? 'background:var(--c2);color:#fff;' : 'background:var(--border);color:var(--muted);') + '">' + esc(t) + '</span>';
   });
   html += '</div>';
   document.getElementById('tag-modal-body').innerHTML = html;
-  document.getElementById('tag-modal').showModal();
 }
 function closeTagModal() { document.getElementById('tag-modal').close(); }
 async function toggleModalTag(tag) {
@@ -1555,8 +1558,8 @@ async function toggleModalTag(tag) {
   if (pos >= 0) tags.splice(pos, 1); else tags.push(tag);
   await api('PUT', '/api/photo-tags', {filename: p.filename, tags: tags});
   p.tags = tags;
-  openPhotoTagModal(_tagModalIdx);  // refresh modal chips
-  renderAdminPhotos();  // refresh card button count
+  _refreshTagModalContent();  // refresh without re-showModal
+  renderAdminPhotos();
 }
 
 function selectPhoto(idx) {
