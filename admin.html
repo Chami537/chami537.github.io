@@ -142,6 +142,10 @@ body {
 .photo-card {
   background: var(--card-bg); border: 1px solid var(--border);
   border-radius: 8px; overflow: hidden; position: relative;
+  cursor: pointer; transition: border-color .2s, box-shadow .2s;
+}
+.photo-card.selected {
+  border-color: var(--c3); box-shadow: 0 0 0 2px rgba(255,184,0,0.3);
 }
 .photo-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
 .photo-info { padding: 8px; font-size: 11px; }
@@ -417,6 +421,21 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       拖拽照片到此处<br>或点击选择文件
     </div>
     <input type="file" id="photo-file-input" accept="image/*" multiple style="display:none" onchange="handlePhotoFiles(this.files)">
+
+    <!-- Selected photo editor: date + GPS + map -->
+    <div id="photo-editor" style="display:none;margin-bottom:16px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:12px;">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
+        <span id="photo-editor-fn" style="font-weight:600;font-size:13px;"></span>
+        <label style="font-size:11px;">📅 <input type="date" id="photo-editor-date" style="font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--fg);"></label>
+        <label style="font-size:11px;">📍 Lat <input type="text" id="photo-editor-lat" placeholder="22.5431" style="width:80px;font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--fg);"></label>
+        <label style="font-size:11px;">Lng <input type="text" id="photo-editor-lng" placeholder="113.9579" style="width:90px;font-size:11px;padding:2px 6px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--fg);"></label>
+        <button class="btn btn-primary btn-sm" onclick="savePhotoEditor()">保存</button>
+        <button class="btn btn-sm" onclick="clearPhotoEditor()">取消</button>
+      </div>
+      <div id="photo-editor-map" style="width:100%;height:250px;border-radius:6px;overflow:hidden;display:none;"></div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px;">点击照片卡片选中 → 在地图上点选坐标 → 保存</div>
+    </div>
+
     <div id="photo-grid" class="photo-grid-admin"></div>
   </div>
 
@@ -1413,6 +1432,9 @@ async function deleteEssay(slug) {  const confirmed = await confirmDialog('确�
 // ═══════════════════════════════════
 var _dragIdx = -1;
 var _photoData = [];
+var _selectedPhotoIdx = -1;
+var _editorMap = null;
+var _editorMarker = null;
 
 async function loadPhotos() {
   try {
@@ -1431,7 +1453,8 @@ function renderAdminPhotos() {
       }).join('') +
       '<button onclick="event.stopPropagation();addPhotoTag(' + i + ')" style="background:var(--border);border:none;color:var(--muted);cursor:pointer;font-size:11px;padding:1px 6px;border-radius:10px;line-height:1;">+</button>' +
       '</div>';
-    return '<div class="photo-card" draggable="true" data-index="' + i + '"' +
+    return '<div class="photo-card' + (_selectedPhotoIdx === i ? ' selected' : '') + '" draggable="true" data-index="' + i + '"' +
+      ' onclick="selectPhoto(' + i + ')"' +
       ' ondragstart="photoDragStart(event,' + i + ')"' +
       ' ondragover="photoDragOver(event)"' +
       ' ondragend="photoDragEnd(event)"' +
@@ -1443,11 +1466,8 @@ function renderAdminPhotos() {
         '<div class="fn">' + esc(p.filename) + '</div>' +
         '<div class="sz">' + (p.size || '') + (p.exif && p.exif.camera ? ' · ' + esc(p.exif.camera) : '') + '</div>' +
         (p.exif && Object.keys(p.exif).length ? '<div class="photo-exif">' + esc(p.exif.aperture||'') + ' ' + esc(p.exif.shutter||'') + ' ISO' + esc(p.exif.iso||'') + '</div>' : '') +
-        (p.exif && p.exif.gps ? '<div class="photo-exif">📍 ' + p.exif.gps.lat + ', ' + p.exif.gps.lng + '</div>' : '') +
-        '<div class="photo-actions" style="margin-top:4px;display:flex;gap:4px;flex-wrap:wrap;">' +
-          '<button class="btn btn-sm" onclick="event.stopPropagation();editPhotoDate(' + i + ')" style="font-size:10px;padding:1px 6px;">📅 ' + (p.date || '加日期') + '</button>' +
-          '<button class="btn btn-sm" onclick="event.stopPropagation();editPhotoGps(' + i + ')" style="font-size:10px;padding:1px 6px;">' + (p.exif && p.exif.gps ? '📍' + p.exif.gps.lat.toFixed(2) + ',' + p.exif.gps.lng.toFixed(2) : '📍 加GPS') + '</button>' +
-        '</div>' +
+        (p.date ? '<div class="photo-exif" style="color:var(--c3)">📅 ' + esc(p.date) + '</div>' : '') +
+        (p.exif && p.exif.gps ? '<div class="photo-exif">📍 ' + p.exif.gps.lat.toFixed(4) + ', ' + p.exif.gps.lng.toFixed(4) + '</div>' : '') +
         tagsHtml +
       '</div>' +
       '</div>';
@@ -1471,29 +1491,116 @@ async function removePhotoTag(idx, tag) {
   renderAdminPhotos();
 }
 
-async function editPhotoDate(idx) {
-  var cur = _photoData[idx].date || '';
-  var d = prompt('拍摄日期（如 Jul 4, 2026）：', cur);
-  if (d === null) return;
-  await api('PUT', '/api/photos/' + encodeURIComponent(_photoData[idx].filename) + '/date', {date: d.trim()});
-  _photoData[idx].date = d.trim() || undefined;
+function selectPhoto(idx) {
+  _selectedPhotoIdx = idx;
+  showPhotoEditor(idx);
+  renderAdminPhotos();
+  loadEditorMap();
+}
+
+function showPhotoEditor(idx) {
+  var p = _photoData[idx];
+  var ed = document.getElementById('photo-editor');
+  ed.style.display = 'block';
+  document.getElementById('photo-editor-fn').textContent = p.filename;
+  // Date
+  var dateInput = document.getElementById('photo-editor-date');
+  var curDate = p.date || '';
+  if (curDate && curDate.match(/^\w{3} \d{1,2}, \d{4}$/)) {
+    var parts = curDate.match(/(\w+) (\d+), (\d+)/);
+    var MONTHS = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+    if (parts) curDate = parts[3] + '-' + MONTHS[parts[1]] + '-' + String(parts[2]).padStart(2,'0');
+  }
+  dateInput.value = curDate;
+  // GPS
+  var gps = p.exif && p.exif.gps;
+  document.getElementById('photo-editor-lat').value = gps ? gps.lat : '';
+  document.getElementById('photo-editor-lng').value = gps ? gps.lng : '';
+  // Update map marker
+  if (_editorMarker && gps) {
+    _editorMarker.setLatLng([gps.lat, gps.lng]);
+    _editorMap.setView([gps.lat, gps.lng], 14);
+  }
+  ed.scrollIntoView({behavior:'smooth'});
+}
+
+function clearPhotoEditor() {
+  _selectedPhotoIdx = -1;
+  document.getElementById('photo-editor').style.display = 'none';
   renderAdminPhotos();
 }
 
-async function editPhotoGps(idx) {
-  var p = _photoData[idx];
-  var curLat = p.exif && p.exif.gps ? p.exif.gps.lat : '';
-  var curLng = p.exif && p.exif.gps ? p.exif.gps.lng : '';
-  var input = prompt('GPS 坐标（格式：lat, lng）：', curLat ? curLat + ', ' + curLng : '');
-  if (input === null) return;
-  var parts = input.split(',').map(function(s) { return parseFloat(s.trim()); });
-  if (parts.length !== 2 || isNaN(parts[0]) || isNaN(parts[1])) { toast('格式错误，请用 lat, lng', true); return; }
-  var lat = parts[0], lng = parts[1];
-  await api('PUT', '/api/photos/' + encodeURIComponent(p.filename) + '/gps', {lat: lat, lng: lng});
-  if (!p.exif) p.exif = {};
-  p.exif.gps = {lat: lat, lng: lng};
-  renderAdminPhotos();
+async function savePhotoEditor() {
+  if (_selectedPhotoIdx < 0) return;
+  var p = _photoData[_selectedPhotoIdx];
+  var fn = p.filename;
+  // Save date
+  var dateVal = document.getElementById('photo-editor-date').value;
+  if (dateVal) {
+    var dp = dateVal.split('-');
+    var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    dateVal = MONTHS[+dp[1]-1] + ' ' + (+dp[2]) + ', ' + dp[0];
+  }
+  await api('PUT', '/api/photos/' + encodeURIComponent(fn) + '/date', {date: dateVal});
+  p.date = dateVal || undefined;
+  // Save GPS
+  var latStr = document.getElementById('photo-editor-lat').value.trim();
+  var lngStr = document.getElementById('photo-editor-lng').value.trim();
+  if (latStr && lngStr) {
+    var lat = parseFloat(latStr), lng = parseFloat(lngStr);
+    if (!isNaN(lat) && !isNaN(lng)) {
+      await api('PUT', '/api/photos/' + encodeURIComponent(fn) + '/gps', {lat: lat, lng: lng});
+      if (!p.exif) p.exif = {};
+      p.exif.gps = {lat: lat, lng: lng};
+    }
+  }
+  clearPhotoEditor();
+  toast('已保存');
 }
+
+function loadEditorMap() {
+  if (_editorMap) return;
+  var container = document.getElementById('photo-editor-map');
+  container.style.display = 'block';
+  if (typeof L === 'undefined') {
+    var css = document.createElement('link'); css.rel='stylesheet';
+    css.href='https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css';
+    document.head.appendChild(css);
+    var s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
+    s.onload = function() { initEditorMap(container); };
+    document.head.appendChild(s);
+  } else {
+    initEditorMap(container);
+  }
+}
+
+function initEditorMap(container) {
+  _editorMap = L.map(container).setView([22.5431, 113.9579], 11);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+    maxZoom: 19, subdomains: 'abcd', attribution: '&copy; OSM &copy; CARTO'
+  }).addTo(_editorMap);
+  // Click to set GPS
+  _editorMap.on('click', function(e) {
+    var lat = e.latlng.lat.toFixed(6), lng = e.latlng.lng.toFixed(6);
+    document.getElementById('photo-editor-lat').value = lat;
+    document.getElementById('photo-editor-lng').value = lng;
+    if (_editorMarker) _editorMap.removeLayer(_editorMarker);
+    _editorMarker = L.marker([lat, lng]).addTo(_editorMap);
+  });
+  // If selected photo has GPS, show it
+  if (_selectedPhotoIdx >= 0) {
+    var gps = _photoData[_selectedPhotoIdx].exif && _photoData[_selectedPhotoIdx].exif.gps;
+    if (gps) {
+      _editorMarker = L.marker([gps.lat, gps.lng]).addTo(_editorMap);
+      _editorMap.setView([gps.lat, gps.lng], 14);
+    }
+  }
+  setTimeout(function() { _editorMap.invalidateSize(); }, 200);
+}
+
+// Update card click to select
+// remove old prompt-based functions (editPhotoDate, editPhotoGps) — replaced by panel above
 
 function photoDragStart(e, idx) {
   _dragIdx = idx;
@@ -1527,6 +1634,7 @@ async function photoDrop(e, toIdx) {
 }
 
 function handlePhotoDrop(e) {
+  if (!e.dataTransfer.files.length) return;  // internal drag, skip
   handlePhotoFiles(e.dataTransfer.files);
 }
 
