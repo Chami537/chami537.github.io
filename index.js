@@ -67,17 +67,6 @@ if (window.ResizeObserver) {
   new ResizeObserver(function() { updateProgress(); }).observe(document.body);
 }
 
-// Live star counts
-function initStarFetches() {
-  document.querySelectorAll('[data-repo]').forEach(card => {
-    const repo = card.dataset.repo;
-    const el = card.querySelector('.stars');
-    fetch(`https://api.github.com/repos/${repo}`)
-      .then(r => r.json())
-      .then(d => { if (d.stargazers_count != null) el.textContent = d.stargazers_count + ' stars'; })
-      .catch(e => console.debug('GitHub stars:', e.message));
-  });
-}
 var player, curRow;
 var musicTimeHandler, musicEndHandler;
 
@@ -378,7 +367,7 @@ function initPhotoMap() {
 function loadGpxTracks() {
   var trackColors = ['#0066ff', '#ff4d4d', '#00c853', '#ffb800', '#9c27b0'];
   var colorIdx = 0;
-  fetch('/data/tracks.json?v=' + Date.now()).then(function(r) {
+  fetch('/data/tracks.json?v=' + TS).then(function(r) {
     if (!r.ok) return;
     return r.json();
   }).then(function(tracks) {
@@ -566,7 +555,6 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Work
   if (results.work) {
     document.getElementById('work-container').innerHTML = renderWork(results.work);
-    initStarFetches();
   }
   // Essays
   if (results.essays) {

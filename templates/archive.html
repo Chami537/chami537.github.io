@@ -330,7 +330,7 @@ renderArchiveEntries(_archiveEssays);
 (function() {
   try {
     var xhr = new XMLHttpRequest();
-    xhr.open('GET', '/data/friends.json?v=' + Date.now(), true);
+    xhr.open('GET', '/data/friends.json?v={% endraw %}{{ build_ts }}{% raw %}', true);
     xhr.onload = function() {
       if (xhr.status < 200 || xhr.status >= 300) return;
       var friends = JSON.parse(xhr.responseText);

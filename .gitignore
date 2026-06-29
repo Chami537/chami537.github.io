@@ -6,3 +6,4 @@ __pycache__/
 /rss.xml
 /sitemap.xml
 raw_photos/
+_stars_etag.json

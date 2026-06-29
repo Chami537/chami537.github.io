@@ -46,6 +46,10 @@ if __name__ == '__main__':
             else:
                 print("  (feeds unchanged — skipped)")
 
+            # Pre-fetch GitHub stars (rate-limited, only on full or when work data changed)
+            from backend.ssg import _fetch_stars
+            _fetch_stars()
+
             print()
             print(f"Done: {rebuilt} rebuilt, {skipped} skipped — {len(essays)} essays + feeds + cache bust.")
         elif sys.argv[1] in ('process-images', 'sync-photos'):

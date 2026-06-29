@@ -473,7 +473,7 @@ addEventListener('scroll', () => {
 // Render friends
 (async () => {
   try {
-    const friends = await fetch('/data/friends.json?v=' + Date.now()).then(r => r.json());
+    const friends = await fetch('/data/friends.json?v={{ build_ts }}').then(r => r.json());
     const container = document.getElementById('friends-container');
     let html = '<div class="friends-label">FRIEND</div>';
     friends.forEach((f, i) => {

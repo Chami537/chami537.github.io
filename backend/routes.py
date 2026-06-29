@@ -107,6 +107,7 @@ def create_essay():
         tag_nav_json=tag_nav_json,
         slug=slug,
         og_image=_fe(og_image),
+        build_ts=int(__import__('time').time()),
     )
     os.makedirs(ESSAYS_DIR, exist_ok=True)
     with open(os.path.join(ESSAYS_DIR, f"{slug}.html"), 'w', encoding='utf-8') as f:
