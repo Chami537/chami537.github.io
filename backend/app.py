@@ -3,7 +3,7 @@
 import os
 from flask import Flask, send_from_directory
 
-from data import BASE_DIR, DATA_DIR
+from backend.data import BASE_DIR, DATA_DIR
 
 ESSAYS_DIR = os.path.join(BASE_DIR, 'essays')
 IMAGES_DIR = os.path.join(BASE_DIR, 'images')
@@ -60,5 +60,5 @@ def serve_map():
 
 
 # Register all /api/* routes (side-effect imports — must come after app creation)
-import routes      # noqa: E402,F401
-import photo_api  # noqa: E402,F401  — photo tags/date/gps PUT routes
+from backend import routes       # noqa: E402,F401
+from backend import photo_api   # noqa: E402,F401  — photo tags/date/gps PUT routes

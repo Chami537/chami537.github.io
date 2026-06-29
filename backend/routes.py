@@ -9,9 +9,9 @@ from datetime import datetime
 from PIL import Image, ExifTags
 from flask import request, jsonify
 
-from app import app
-from data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
-from ssg import (
+from backend.app import app
+from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
+from backend.ssg import (
     _load_essay_template, _fe, _calc_read_time, _parse_date,
     _extract_first_image, _parse_tags, _build_nav,
     _build_tag_nav_json, _sync_essay_html, _html_to_md,

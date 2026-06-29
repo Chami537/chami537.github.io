@@ -4,12 +4,12 @@
 import sys
 
 if __name__ == '__main__':
-    from app import app
-    from data import load_json
+    from backend.app import app
+    from backend.data import load_json
 
     if len(sys.argv) > 1:
         if sys.argv[1] == 'build':
-            from ssg import _sync_essay_html, _generate_feeds
+            from backend.ssg import _sync_essay_html, _generate_feeds
             print("Building static site...")
             essays = load_json('essays.json')
             for e in essays:
@@ -23,7 +23,7 @@ if __name__ == '__main__':
             import process_images
             process_images.process_all_images()
         elif sys.argv[1] == 'set-gps':
-            from ssg import _set_gps
+            from backend.ssg import _set_gps
             if len(sys.argv) < 5:
                 print("Usage: python manage.py set-gps <filename> <lat> <lng>")
             else:
