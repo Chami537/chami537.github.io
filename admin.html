@@ -91,6 +91,7 @@ body {
   transition: background .2s, border-color .2s;
 }
 .btn:hover { background: #f3f4f6; }
+body.dark .btn:hover { background: #333; }
 .btn-primary { background: var(--accent); color: #fff; border-color: var(--accent); }
 .btn-primary:hover { background: #0256b9; }
 .btn-danger { color: var(--danger); border-color: var(--danger); }
@@ -103,22 +104,26 @@ body {
 .form-group input, .form-group textarea, .form-group select {
   width: 100%; padding: 8px 12px; border: 1px solid var(--border);
   border-radius: 6px; font-size: 13px; font-family: inherit;
-  background: var(--bg);
+  background: var(--bg); color: var(--fg);
+  outline: none;
+}
+.form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+  border-color: var(--c2);
 }
 .form-group textarea { resize: vertical; min-height: 80px; font-family: inherit; }
 #essay-content-md {
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
   font-size: 14px; line-height: 1.8;
   padding: 16px; min-height: 360px;
-  background: #fafaf8; color: #333;
-  border: 1px solid #e0dcd5; border-radius: 4px;
+  background: var(--bg); color: var(--fg);
+  border: 1px solid var(--border); border-radius: 4px;
 }
 
 /* Tags display */
 .tags { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 6px; }
 .tag {
   font-size: 10px; font-weight: 600; letter-spacing: .06em;
-  padding: 2px 8px; border-radius: 4px; background: #f0f0f0; color: #666;
+  padding: 2px 8px; border-radius: 4px; background: var(--border); color: var(--muted);
 }
 .tag-chip {
   display: inline-flex; align-items: center; gap: 4px; padding: 4px 12px; border-radius: 20px;
@@ -196,7 +201,7 @@ dialog .dlg-footer button {
   background: var(--card-bg); color: var(--fg);
   transition: background .15s;
 }
-dialog .dlg-footer button:hover { background: #f0f0f0; }
+dialog .dlg-footer button:hover { background: var(--line); }
 dialog .dlg-footer button.btn-accent {
   background: var(--accent); color: #fff; border-color: var(--accent);
 }
@@ -207,7 +212,7 @@ dialog .dlg-footer button.btn-warn {
 dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 
 /* Git panel */
-.git-status { font-family: monospace; font-size: 12px; white-space: pre-wrap; background: #f6f8fa; padding: 16px; border-radius: 6px; margin-bottom: 12px; }
+.git-status { font-family: monospace; font-size: 12px; white-space: pre-wrap; background: var(--card-bg); color: var(--fg); padding: 16px; border-radius: 6px; margin-bottom: 12px; }
 .git-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 
 #essay-tag-tabs::-webkit-scrollbar { display: none; }
@@ -225,7 +230,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 
 /* Preview panel */
 .preview-panel {
-  background: #fafaf8; border: 1px solid var(--border);
+  background: var(--bg); border: 1px solid var(--border);
   border-radius: 8px; padding: 24px; margin-top: 12px;
   max-width: 680px; font-family: 'Inter', 'Noto Sans SC', sans-serif;
   font-size: 17px; line-height: 1.9;
@@ -234,10 +239,10 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 .preview-panel p { margin-bottom: 1.5em; }
 .preview-panel p:last-child { margin-bottom: 0; }
 .preview-panel blockquote {
-  border-left: 3px solid #ffb800;
+  border-left: 3px solid var(--c3);
   padding: 0.5em 16px;
   margin: 1.5em 0;
-  color: #555;
+  color: var(--fg);
   background: rgba(255,184,0,0.10);
 }
 .preview-panel img {
@@ -558,7 +563,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 <dialog id="diff-dialog" style="max-width:800px;">
   <div class="dlg-header">Git Diff</div>
   <div class="dlg-body">
-    <pre id="diff-content" style="font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;max-height:60vh;overflow-y:auto;background:#f6f8fa;padding:16px;border-radius:6px;margin:0;"></pre>
+    <pre id="diff-content" style="font-family:monospace;font-size:12px;line-height:1.6;white-space:pre-wrap;max-height:60vh;overflow-y:auto;background:var(--card-bg);color:var(--fg);padding:16px;border-radius:6px;margin:0;"></pre>
   </div>
   <div class="dlg-footer">
     <button value="cancel" type="button" onclick="this.closest('dialog').close()">关闭</button>
