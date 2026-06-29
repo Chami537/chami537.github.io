@@ -58,6 +58,14 @@ def serve_archive():
 def serve_map():
     return send_from_directory(BASE_DIR, 'map.html')
 
+@app.route('/index.css')
+def serve_index_css():
+    return send_from_directory(BASE_DIR, 'index.css')
+
+@app.route('/index.js')
+def serve_index_js():
+    return send_from_directory(BASE_DIR, 'index.js')
+
 
 # Register all /api/* routes (side-effect imports — must come after app creation)
 from backend import routes       # noqa: E402,F401
