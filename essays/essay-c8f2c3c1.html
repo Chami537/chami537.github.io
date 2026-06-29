@@ -54,7 +54,9 @@ nav {
   padding: 0 48px;
   background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
   border-bottom: 2px solid var(--fg);
+  transition: transform .3s ease;
 }
+nav.hidden { transform: translateY(-100%); }
 nav .inner {
   max-width: 1200px; margin: 0 auto; display: flex;
   align-items: center; justify-content: space-between; height: 56px;
@@ -353,7 +355,9 @@ footer {
 
 </style>
 <script>
-  if (localStorage.getItem('theme') === 'dark') {
+  var _mq = window.matchMedia('(prefers-color-scheme: dark)');
+  var _saved = localStorage.getItem('theme');
+  if (_saved === 'dark' || (!_saved && _mq.matches)) {
     document.documentElement.classList.add('dark');
   }
 </script>
@@ -552,9 +556,15 @@ document.addEventListener('keydown', function(e) {
 });
 
 (function initThemeBtn() {
-  if (localStorage.getItem('theme') === 'dark') {
-    document.getElementById('theme-btn').textContent = '☀';
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  var btn = document.getElementById('theme-btn');
+  if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && mq.matches)) {
+    btn.textContent = '☀';
   }
+  mq.addEventListener('change', function(e) {
+    if (localStorage.getItem('theme')) return;
+    btn.textContent = e.matches ? '☀' : '🌙';
+  });
 })();
 function toggleTheme() {
   var html = document.documentElement;
@@ -563,10 +573,21 @@ function toggleTheme() {
     localStorage.setItem('theme', 'dark');
     btn.textContent = '☀';
   } else {
-    localStorage.removeItem('theme');
+    localStorage.setItem('theme', 'light');
     btn.textContent = '🌙';
   }
 }
+
+// Nav sticky: hide on scroll down, show on scroll up
+var _lastScrollY = scrollY;
+addEventListener('scroll', function() {
+  var nav = document.querySelector('nav');
+  var dy = scrollY - _lastScrollY;
+  if (scrollY < 100) nav.classList.remove('hidden');
+  else if (dy > 8) nav.classList.add('hidden');
+  else if (dy < -8) nav.classList.remove('hidden');
+  _lastScrollY = scrollY;
+}, { passive: true });
 </script>
 
 <!--
