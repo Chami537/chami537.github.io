@@ -1,0 +1,377 @@
+{% raw %}<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archive — Chami</title>
+<meta name="description" content="Chami 的随笔归档 · 共 {% endraw %}{{ total }}{% raw %} 篇">
+<meta property="og:title" content="Archive — Chami">
+<meta property="og:description" content="Chami 的随笔归档 · 共 {% endraw %}{{ total }}{% raw %} 篇">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">
+<meta property="og:site_name" content="Chami">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="images/avatar.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+:root {
+  --bg: #fafaf8; --fg: #111; --c3: #ffb800; --line: #e0dcd5; --muted: #999;
+}
+html.dark { --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }
+html.dark nav { background: rgba(26,26,28,0.88); }
+
+body {
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  background: var(--bg); color: var(--fg);
+  -webkit-font-smoothing: antialiased;
+}
+
+nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+  padding: 0 48px;
+  background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
+  border-bottom: 2px solid var(--fg);
+}
+nav .inner {
+  max-width: 1200px; margin: 0 auto; display: flex;
+  align-items: center; justify-content: space-between; height: 56px;
+}
+nav .logo {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 17px; font-weight: 800; letter-spacing: -0.01em;
+  text-decoration: none; color: var(--fg);
+}
+nav .theme-btn {
+  width: 32px; height: 32px; border-radius: 50%;
+  border: 1px solid var(--line); background: none;
+  font-size: 16px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center;
+  transition: background .2s, border-color .2s;
+  padding: 0; line-height: 1; color: inherit;
+  flex-shrink: 0;
+}
+nav .theme-btn:hover { background: var(--line); }
+html.dark nav .theme-btn { border-color: #666; color: #ffd43b; }
+
+.archive-wrap {
+  max-width: 680px; margin: 0 auto; padding: 120px 48px 100px;
+}
+.archive-header {
+  margin-bottom: 48px;
+}
+.archive-header h1 {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: clamp(40px, 7vw, 64px);
+  font-weight: 900; line-height: 1.0;
+  letter-spacing: -0.025em; margin-bottom: 12px;
+}
+.archive-header .sub {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 15px; color: var(--muted);
+}
+
+/* Tag filter chips */
+.essay-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.ef-chip {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  display: inline-block; padding: 3px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--line); color: var(--muted);
+  transition: all .15s; user-select: none;
+}
+.ef-chip:hover { border-color: var(--c3); color: var(--c3); }
+.ef-chip.active { background: var(--c3); color: #fff; border-color: var(--c3); }
+
+/* Search */
+.essay-search {
+  margin-bottom: 12px; position: relative;
+}
+.essay-search input {
+  width: 100%; padding: 8px 14px 8px 34px;
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 13px; color: var(--fg);
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: 8px; outline: none;
+  transition: border-color .2s;
+}
+.essay-search input:focus { border-color: var(--c3); }
+.essay-search input::placeholder { color: #bbb; }
+.essay-search::before {
+  content: "🔍"; position: absolute;
+  left: 10px; top: 50%; transform: translateY(-50%);
+  font-size: 13px; pointer-events: none;
+}
+
+.archive-year { margin-bottom: 40px; }
+.archive-year-heading {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 28px; font-weight: 800; color: var(--c3);
+  border-left: 3px solid var(--c3); padding-left: 14px;
+  margin-bottom: 20px;
+}
+.archive-row {
+  display: flex; align-items: baseline; gap: 16px;
+  padding: 14px 0; border-bottom: 1px solid var(--line);
+  text-decoration: none; color: var(--fg);
+  transition: padding-left .3s, background .3s;
+}
+.archive-row:hover {
+  padding-left: 24px; background: rgba(255,184,0,0.05);
+}
+.archive-date {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 12px; color: var(--muted); min-width: 72px;
+}
+.archive-title {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 17px; font-weight: 600; flex: 1;
+}
+.archive-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--c3);
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+}
+
+/* Back link */
+.back-link {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 13px; font-weight: 600; color: var(--muted);
+  text-decoration: none; display: flex; align-items: center; justify-content: center;
+  gap: 6px; margin-top: 48px; transition: color .2s;
+}
+.back-link:hover { color: var(--c3); }
+.back-link .arr { transition: transform .2s; display: inline-block; }
+.back-link:hover .arr { transform: translateX(-4px); }
+
+/* Friends */
+.friends { margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; }
+.friends-label {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: #ccc; margin-bottom: 8px;
+  width: 100%;
+}
+.friends a {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 11px; color: #bbb; text-decoration: none;
+  letter-spacing: .04em; transition: color .2s;
+  line-height: 2;
+}
+.friends a:hover { color: var(--fg); }
+.friends a + a::before { content: '·'; margin: 0 8px; color: var(--muted); }
+
+.map-header { text-align: center; }
+
+.custom-marker { background: none !important; border: none !important; }
+.custom-marker .marker-dot {
+  width: 12px; height: 12px;
+  background-color: #0066ff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+}
+.custom-marker:hover .marker-dot { transform: scale(1.5); }
+
+footer {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+  letter-spacing: .04em; border-top: 1px solid var(--line);
+  max-width: 680px; margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+  nav { padding: 0 16px; }
+  .archive-wrap { padding: 100px 24px 80px; }
+  .archive-row { gap: 10px; }
+  .archive-date { min-width: 56px; font-size: 11px; }
+  .archive-tag { display: none; }
+  .ef-chip { font-size: 10px; padding: 2px 10px; }
+}
+</style>
+<script>
+  if (localStorage.getItem('theme') === 'dark') {
+    document.documentElement.classList.add('dark');
+  }
+</script>
+</head>
+<body>
+
+<nav>
+  <div class="inner">
+    <a href="/index.html" class="logo">Chami</a>
+    <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
+  </div>
+</nav>
+
+<main class="archive-wrap">
+  <div class="archive-header">
+    <h1>Archive</h1>
+    <p class="sub">共 {% endraw %}{{ total }}{% raw %} 篇随笔</p>
+  </div>
+
+  <div class="essay-search"><input type="text" id="archive-search" placeholder="搜索随笔..." oninput="onArchiveSearch(this.value)"></div>
+  <div id="archive-tag-filter" class="essay-filter"></div>
+  <div id="archive-entries"></div>
+
+  <a href="/index.html" class="back-link">
+    <span class="arr">←</span>
+    <span>返回主页</span>
+  </a>
+</main>
+
+<footer>
+  <div class="friends" id="friends-container">
+    <div class="friends-label">FRIEND</div>
+  </div>
+  &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
+</footer>
+
+<script>
+var _archiveEssays = {% endraw %}{{ essays_json }}{% raw %};
+var _archiveFilter = '';
+var _archiveSearchTimer = null;
+
+// Theme init
+(function initThemeBtn() {
+  if (localStorage.getItem('theme') === 'dark') {
+    document.getElementById('theme-btn').textContent = '☀';
+  }
+})();
+function toggleTheme() {
+  var html = document.documentElement;
+  var btn = document.getElementById('theme-btn');
+  if (html.classList.toggle('dark')) {
+    localStorage.setItem('theme', 'dark');
+    btn.textContent = '☀';
+  } else {
+    localStorage.removeItem('theme');
+    btn.textContent = '🌙';
+  }
+}
+
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function monthDay(dateStr) {
+  try {
+    var dp = (dateStr.indexOf(' ') !== -1 ? dateStr.split(' ')[0] : dateStr).split('-');
+    if (dp.length >= 3 && dp[2]) {
+      var mi = +dp[1] - 1;
+      if (mi >= 0 && mi < 12) return MONTHS[mi] + ' ' + (+dp[2]);
+    }
+  } catch(e) {}
+  return '';
+}
+
+function renderArchiveEntries(data) {
+  // Group by year
+  var years = {};
+  data.forEach(function(e) {
+    var dateStr = e.date || '';
+    var year = dateStr.length >= 4 ? dateStr.slice(0, 4) : 'Unknown';
+    if (!years[year]) years[year] = [];
+    years[year].push(e);
+  });
+
+  var yearKeys = Object.keys(years).sort().reverse();
+  var html = '';
+  yearKeys.forEach(function(year) {
+    html += '<div class="archive-year"><h2 class="archive-year-heading">' + year + '</h2>';
+    years[year].forEach(function(e) {
+      var slug = e.slug.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var title = e.title.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var tag = (e.tag || '').replace(/, ?/g, ' · ').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var md = monthDay(e.date);
+      html += '<a href="essays/' + slug + '.html" class="archive-row">' +
+        '<span class="archive-date">' + md + '</span>' +
+        '<span class="archive-title">' + title + '</span>' +
+        '<span class="archive-tag">' + tag + '</span>' +
+        '</a>';
+    });
+    html += '</div>';
+  });
+
+  var container = document.getElementById('archive-entries');
+  if (html) {
+    container.innerHTML = html;
+  } else {
+    container.innerHTML = '<p style="color:var(--muted);text-align:center;padding:60px 0;">没有匹配的随笔</p>';
+  }
+}
+
+function buildTagFilter() {
+  var tags = new Set();
+  _archiveEssays.forEach(function(e) {
+    (e.tag || '').split(/[,，]/).forEach(function(t) { t = t.trim(); if (t) tags.add(t); });
+  });
+  var html = '<span class="ef-chip' + (!_archiveFilter ? ' active' : '') + '" onclick="filterArchiveByTag(\'\')">全部</span>';
+  tags.forEach(function(t) {
+    html += '<span class="ef-chip' + (_archiveFilter === t ? ' active' : '') + '" data-tag="' + t.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '" onclick="filterArchiveByTag(this.getAttribute(\'data-tag\'))">' + t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+  });
+  document.getElementById('archive-tag-filter').innerHTML = html;
+}
+
+function filterArchiveByTag(tag) {
+  _archiveFilter = tag;
+  buildTagFilter();
+  applyFilters();
+}
+
+function onArchiveSearch(query) {
+  clearTimeout(_archiveSearchTimer);
+  _archiveSearchTimer = setTimeout(function() {
+    applyFilters(query.toLowerCase().trim());
+  }, 100);
+}
+
+function applyFilters(searchQuery) {
+  var filtered = _archiveEssays;
+  if (_archiveFilter) {
+    filtered = filtered.filter(function(e) {
+      return (e.tag || '').split(/[,，]/).some(function(t) { return t.trim() === _archiveFilter; });
+    });
+  }
+  if (searchQuery) {
+    filtered = filtered.filter(function(e) {
+      return (e.title || '').toLowerCase().indexOf(searchQuery) !== -1 ||
+             (e.excerpt || '').toLowerCase().indexOf(searchQuery) !== -1;
+    });
+  }
+  renderArchiveEntries(filtered);
+}
+
+// Initial render
+buildTagFilter();
+renderArchiveEntries(_archiveEssays);
+
+// Render friends
+(function() {
+  try {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', '/data/friends.json?v=' + Date.now(), true);
+    xhr.onload = function() {
+      if (xhr.status < 200 || xhr.status >= 300) return;
+      var friends = JSON.parse(xhr.responseText);
+      var container = document.getElementById('friends-container');
+      var html = '<div class="friends-label">FRIEND</div>';
+      friends.forEach(function(f) {
+        var escUrl = f.url.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var escName = f.name.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        if (/^https?:\/\//i.test(f.url)) {
+          html += '<a href="' + escUrl + '">' + escName + '</a>';
+        } else {
+          html += '<span>' + escName + '</span>';
+        }
+      });
+      container.innerHTML = html;
+    };
+    xhr.send();
+  } catch(e) {}
+})();
+</script>
+
+</body>
+</html>{% endraw %}
