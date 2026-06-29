@@ -27,7 +27,10 @@
       }
     },
     "date": "May 30, 2026",
-    "size": "md"
+    "size": "md",
+    "tags": [
+      "Sky"
+    ]
   },
   {
     "filename": "68b93d07a342daef4f8483cdb249c4f7.jpg",
@@ -57,7 +60,10 @@
       }
     },
     "date": "Mar 15, 2026",
-    "size": "sm"
+    "size": "sm",
+    "tags": [
+      "Sky"
+    ]
   },
   {
     "filename": "11f6710f.jpg",
@@ -312,7 +318,10 @@
         "lng": 113.947931
       }
     },
-    "date": "Oct 7, 2025"
+    "date": "Oct 7, 2025",
+    "tags": [
+      "Sky"
+    ]
   },
   {
     "filename": "d2f4c482.jpg",

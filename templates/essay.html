@@ -242,6 +242,7 @@ div.arithmatex {{
   background: none; border: none; color: #fff;
   font-size: 48px; cursor: pointer; opacity: 0.4;
   transition: opacity .2s; transform: translateY(-50%);
+  user-select: none;
 }}
 .lb-prev {{ left: 20px; }} .lb-next {{ right: 20px; }}
 .lb-prev:hover, .lb-next:hover {{ opacity: 1; }}
@@ -312,12 +313,12 @@ footer {{
 .friends-label {{
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 10px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: #ccc; margin-bottom: 8px;
+  text-transform: uppercase; color: var(--muted); margin-bottom: 8px;
   width: 100%;
 }}
 .friends a {{
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 11px; color: #bbb; text-decoration: none;
+  font-size: 11px; color: var(--muted); text-decoration: none;
   letter-spacing: .04em; transition: color .2s;
   line-height: 2;
 }}
@@ -327,6 +328,8 @@ footer {{
 @media (max-width: 768px) {{
   nav {{ padding: 0 16px; }}
   .reading {{ padding: 100px 24px 80px; }}
+  .lb-prev, .lb-next {{ font-size: 36px; }}
+  .lb-close {{ font-size: 28px; }}
 }}
 
 /* View Transitions — tasteful cross-fade between pages */
@@ -547,6 +550,14 @@ document.addEventListener('keydown', function(e) {{
   if (e.key === 'ArrowLeft') lbNav(-1);
   if (e.key === 'ArrowRight') lbNav(1);
 }});
+// Touch swipe
+var _lbTouchX = 0;
+var lbEl = document.getElementById('lb');
+lbEl.addEventListener('touchstart', function(e) {{ _lbTouchX = e.touches[0].clientX; }}, {{passive: true}});
+lbEl.addEventListener('touchend', function(e) {{
+  var dx = e.changedTouches[0].clientX - _lbTouchX;
+  if (Math.abs(dx) > 50) lbNav(dx < 0 ? 1 : -1);
+}}, {{passive: true}});
 
 (function initThemeBtn() {{
   var mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -644,4 +655,5 @@ document.addEventListener("DOMContentLoaded", function() {{
 }});
 </script>
 
-
+</body>
+</html>

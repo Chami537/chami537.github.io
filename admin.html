@@ -669,16 +669,6 @@ async function renameLastTrack(name) {
   }
 }
 
-async function uploadTrackFile(f, autoName) {
-  var fd = new FormData(); fd.append('file', f);
-  var r = await api('POST', '/api/tracks/upload', fd);
-  if (r.file) {
-    document.getElementById('track-file').value = r.file;
-    if (autoName) document.getElementById('track-name').value = r.file.replace('.gpx','');
-    loadTracks();
-    toast('已上传: ' + r.file);
-  }
-}
 
 function handleTrackDrop(e) {
   var files = e.dataTransfer.files;
@@ -776,7 +766,7 @@ async function loadWork() {
 }
 
 function pad2(n) { return String(n).padStart(2, '0'); }
-function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML.replace(/'/g, "\\'"); }
+function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'"); }
 
 async function editWork(id) {  const form = document.getElementById('work-form');
   if (form.style.display === 'block' && document.getElementById('work-edit-id').value == id) {
@@ -1615,8 +1605,10 @@ async function savePhotoEditor() {
   var dateVal = document.getElementById('photo-editor-date').value;
   if (dateVal) {
     var dp = dateVal.split('-');
-    var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    dateVal = MONTHS[+dp[1]-1] + ' ' + (+dp[2]) + ', ' + dp[0];
+    if (dp.length === 3) {
+      var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      dateVal = MONTHS[+dp[1]-1] + ' ' + (+dp[2]) + ', ' + dp[0];
+    }
   }
   await api('PUT', '/api/photo-date', {filename: fn, date: dateVal});
   // Save GPS
