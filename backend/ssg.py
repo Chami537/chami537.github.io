@@ -8,7 +8,7 @@ from datetime import datetime
 from markdown import markdown as md_to_html
 from PIL import Image, ExifTags
 
-from data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
+from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
 from jinja2 import Environment, FileSystemLoader
 
 ESSAYS_DIR = os.path.join(BASE_DIR, 'essays')

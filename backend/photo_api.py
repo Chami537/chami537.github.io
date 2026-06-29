@@ -1,7 +1,7 @@
 """Photo tag/date/GPS API — separate module to avoid Werkzeug routing conflicts."""
 from flask import request, jsonify
-from app import app
-from data import load_json, atomic_write_json, BASE_DIR
+from backend.app import app
+from backend.data import load_json, atomic_write_json, BASE_DIR
 import os
 
 @app.route('/api/photo-tags', methods=['PUT'])
