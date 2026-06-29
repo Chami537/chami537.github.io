@@ -379,16 +379,8 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 
 不需要手打任何 HTML 标签。"></textarea>
       </div>
-      <div style="font-size:11px;color:var(--muted);margin-bottom:12px;line-height:1.8;">
-        <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 16px;font-size:12px;color:var(--muted);line-height:2;">
-          <div style="font-weight:700;color:var(--fg);margin-bottom:4px;">📝 语法参考</div>
-          <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">## 标题</code> → 二级标题<br>
-          <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">&gt; 文字</code> → <span style="border-left:2px solid #ffb800;padding-left:6px;background:rgba(255,184,0,0.10);">引用块</span><br>
-          <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">**文字**</code> → <strong>加粗</strong> &nbsp; <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">*文字*</code> → <em>斜体</em><br>
-          <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">![](/images/essays/xxx.png)</code> → 插入图片<br>
-          <code style="background:#e8e8e8;padding:1px 5px;border-radius:3px;">[文字](url)</code> → 超链接<br>
-          空行分段 · 不需要手打任何 HTML 标签
-        </div>
+      <div style="display:flex;gap:16px;align-items:center;margin-bottom:6px;">
+        <span id="essay-word-count" style="font-size:11px;color:var(--muted);"></span>
       </div>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="btn btn-primary" onclick="saveEssayContent()">保存内容</button>
@@ -1237,6 +1229,7 @@ async function editEssayContent(slug) {
   try {
     const data = await api('GET', '/api/essays/' + slug + '/content');
     document.getElementById('essay-content-md').value = data.content || '';
+    _updateWordCount();
     startAutosave(slug);
     checkDraft(slug);
   } catch(e) {
@@ -1254,7 +1247,30 @@ function hideEssayContentEditor() {
   document.getElementById('essay-preview').style.display = 'none';
 }
 
-// ═══ Editor: Tab + Ctrl+S + Autosave ═══
+// ═══ Editor: Tab + Shortcuts + Autosave + Drag-Drop ═══
+function _wrapSelection(ta, before, after) {
+  var s = ta.selectionStart, e = ta.selectionEnd;
+  var sel = ta.value.slice(s, e);
+  ta.value = ta.value.slice(0, s) + before + sel + after + ta.value.slice(e);
+  var offset = before.length;
+  if (sel.length) {
+    ta.selectionStart = s + offset;
+    ta.selectionEnd = e + offset;
+  } else {
+    ta.selectionStart = ta.selectionEnd = s + offset;
+  }
+}
+
+function _updateWordCount() {
+  var ta = document.getElementById('essay-content-md');
+  var text = ta.value;
+  var chars = text.length;
+  var cjk = (text.match(/[\u4e00-\u9fff\u3400-\u4dbf]/g) || []).length;
+  var words = (text.match(/[a-zA-Z]+/g) || []).length;
+  var el = document.getElementById('essay-word-count');
+  el.textContent = chars + ' 字符 · ' + (cjk + words) + ' 词 · ~' + Math.max(1, Math.round((cjk + words * 1.5) / 300)) + ' min';
+}
+
 document.addEventListener('keydown', function(e) {
   var ta = document.getElementById('essay-content-md');
   if (document.activeElement !== ta) return;
@@ -1265,12 +1281,41 @@ document.addEventListener('keydown', function(e) {
     ta.value = v.slice(0, s) + '  ' + v.slice(ta.selectionEnd);
     ta.selectionStart = ta.selectionEnd = s + 2;
   }
-  // Ctrl+S / Cmd+S → save
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    e.preventDefault();
-    saveEssayContent();
+  if (e.ctrlKey || e.metaKey) {
+    if (e.key === 's') { e.preventDefault(); saveEssayContent(); }
+    if (e.key === 'b') { e.preventDefault(); _wrapSelection(ta, '**', '**'); }
+    if (e.key === 'i') { e.preventDefault(); _wrapSelection(ta, '*', '*'); }
+    if (e.key === 'k') { e.preventDefault(); _wrapSelection(ta, '[', '](url)'); }
   }
 });
+
+// Word count on input
+document.getElementById('essay-content-md').addEventListener('input', _updateWordCount);
+
+// Drag-and-drop image upload
+(function() {
+  var ta = document.getElementById('essay-content-md');
+  ta.addEventListener('dragover', function(e) { e.preventDefault(); e.stopPropagation(); });
+  ta.addEventListener('drop', async function(e) {
+    e.preventDefault(); e.stopPropagation();
+    var file = e.dataTransfer.files[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    var fd = new FormData();
+    var slug = document.getElementById('essay-content-editor').dataset.slug;
+    if (slug) fd.append('slug', slug);
+    fd.append('file', file);
+    try {
+      var result = await api('POST', '/api/essays/upload-image', fd);
+      var url = result.url || '';
+      var md = '![](' + (url.startsWith('/') ? url : '/' + url) + ')';
+      var s = ta.selectionStart, end = ta.selectionEnd;
+      ta.value = ta.value.slice(0, s) + md + ta.value.slice(end);
+      ta.focus();
+      ta.selectionStart = ta.selectionEnd = s + md.length;
+      toast('图片已插入');
+    } catch(ex) { toast(ex.message, true); }
+  });
+})();
 
 var _autosaveInterval;
 function startAutosave(slug) {
