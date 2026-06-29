@@ -410,7 +410,15 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 
   <!-- ═══ PHOTOS ═══ -->
   <div id="tab-photos" class="tab-panel">
-    <h2 style="font-size:18px;margin-bottom:16px;">Photos 照片</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="font-size:18px;">Photos 照片</h2>
+      <div style="display:flex;gap:6px;">
+        <button class="btn btn-sm" onclick="promptNewPhotoTag()">+ 新建标签</button>
+        <button class="btn btn-sm" id="delete-photo-tag-btn" onclick="toggleDeletePhotoTagMode()">删除标签</button>
+      </div>
+    </div>
+    <div id="photo-tag-tabs" style="display:flex;gap:8px;overflow-x:auto;padding-bottom:12px;scrollbar-width:none;"></div>
+    <div style="border-bottom:1px solid var(--border);margin-bottom:16px;"></div>
     <div id="photo-drop-zone"
       style="border:2px solid var(--c2);border-radius:8px;padding:24px;text-align:center;color:var(--muted);cursor:pointer;transition:border-color .2s,background .2s;margin-bottom:16px;"
       ondragover="event.preventDefault();this.style.borderColor='#0044cc';this.style.background='rgba(0,102,255,0.05)'"
@@ -1430,30 +1438,86 @@ async function deleteEssay(slug) {  const confirmed = await confirmDialog('确�
 // ═══════════════════════════════════
 // Photos
 // ═══════════════════════════════════
+// Photo tag library (localStorage, like essay tags)
+var _currentPhotoTag = '';
+var _photoDeleteTagMode = false;
+function getPhotoTags() {
+  try { return JSON.parse(localStorage.getItem('photo-tags') || '["Shenzhen", "Night", "Street"]'); }
+  catch(e) { return ["Shenzhen", "Night", "Street"]; }
+}
+function savePhotoTags(tags) { localStorage.setItem('photo-tags', JSON.stringify(tags)); }
+
+function switchPhotoTabTag(tag) {
+  _currentPhotoTag = tag;
+  loadPhotos();
+}
+function promptNewPhotoTag() {
+  var t = prompt('请输入新标签名称：');
+  if (!t || !t.trim()) return;
+  var tags = getPhotoTags();
+  if (tags.indexOf(t.trim()) < 0) { tags.push(t.trim()); savePhotoTags(tags); }
+  _currentPhotoTag = t.trim();
+  loadPhotos();
+}
+function toggleDeletePhotoTagMode() {
+  _photoDeleteTagMode = !_photoDeleteTagMode;
+  var btn = document.getElementById('delete-photo-tag-btn');
+  btn.textContent = _photoDeleteTagMode ? '完成' : '删除标签';
+  btn.style.color = _photoDeleteTagMode ? 'var(--danger)' : '';
+  btn.style.borderColor = _photoDeleteTagMode ? 'var(--danger)' : '';
+  loadPhotos();
+}
+async function deletePhotoTagGlobal(tag) {
+  if (!confirm('确定永久删除标签 "' + tag + '"？这将从所有照片中移除该标签。')) return;
+  var tags = getPhotoTags();
+  tags = tags.filter(function(t) { return t !== tag; });
+  savePhotoTags(tags);
+  // Strip from all photos
+  for (var p of _photoData) {
+    if (!p.tags) continue;
+    var before = p.tags.length;
+    p.tags = p.tags.filter(function(t) { return t !== tag; });
+    if (p.tags.length !== before) {
+      await api('PUT', '/api/photo-tags', {filename: p.filename, tags: p.tags});
+    }
+  }
+  if (_currentPhotoTag === tag) _currentPhotoTag = '';
+  loadPhotos();
+}
+
 var _dragIdx = -1;
 var _photoData = [];
 var _selectedPhotoIdx = -1;
 var _editorMap = null;
 var _editorMarker = null;
 
+function _renderPhotoTagTabs() {
+  var tags = getPhotoTags();
+  var btnStyle = 'padding:3px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--muted);transition:all .15s;user-select:none;background:var(--card-bg);';
+  var html = '<span style="' + btnStyle + (!_currentPhotoTag ? 'background:var(--c2);color:#fff;border-color:var(--c2);' : '') + '" onclick="switchPhotoTabTag(\'\')">全部</span>';
+  tags.forEach(function(t) {
+    var del = _photoDeleteTagMode ? '<span onclick="event.stopPropagation();deletePhotoTagGlobal(\'' + esc(t) + '\')" style="margin-left:2px;color:var(--danger);cursor:pointer;font-weight:700;">×</span>' : '';
+    var active = _currentPhotoTag === t;
+    html += '<span style="' + btnStyle + (active ? 'background:var(--c2);color:#fff;border-color:var(--c2);' : '') + '" onclick="switchPhotoTabTag(\'' + esc(t) + '\')">' + esc(t) + del + '</span>';
+  });
+  document.getElementById('photo-tag-tabs').innerHTML = html;
+}
+
 async function loadPhotos() {
   try {
     _photoData = await api('GET', '/api/photos');
+    _renderPhotoTagTabs();
+    if (_currentPhotoTag) {
+      _photoData = _photoData.filter(function(p) {
+        return (p.tags || []).indexOf(_currentPhotoTag) >= 0;
+      });
+    }
     renderAdminPhotos();
   } catch(e) { toast(e.message, true); }
 }
 
-// Collect all tags across all photos
-function _allPhotoTags() {
-  var s = new Set();
-  (_photoData || []).forEach(function(p) {
-    (p.tags || []).forEach(function(t) { s.add(t); });
-  });
-  return Array.from(s).sort();
-}
-
 function renderAdminPhotos() {
-  var allTags = _allPhotoTags();
+  var allTags = getPhotoTags();
   document.getElementById('photo-grid').innerHTML = _photoData.map(function(p, i) {
     var myTags = p.tags || [];
     var tagsHtml = '<div class="photo-tags" style="margin-top:4px;display:flex;flex-wrap:wrap;gap:3px;">' +
@@ -1462,7 +1526,6 @@ function renderAdminPhotos() {
         return '<span class="pt-chip" onclick="event.stopPropagation();togglePhotoTag(' + i + ',\'' + esc(t) + '\')" style="display:inline-block;padding:1px 6px;border-radius:10px;font-size:10px;cursor:pointer;' +
           (active ? 'background:var(--c2);color:#fff;' : 'background:var(--border);color:var(--muted);') + '">' + esc(t) + '</span>';
       }).join('') +
-      '<input onclick="event.stopPropagation();" onkeydown="if(event.key===\'Enter\'){addCustomPhotoTag(' + i + ',this.value);this.value=\'\';}" placeholder="+新标签" style="width:54px;padding:1px 4px;border:1px solid var(--border);border-radius:10px;font-size:10px;background:var(--bg);color:var(--fg);">' +
       '</div>';
     return '<div class="photo-card' + (_selectedPhotoIdx === i ? ' selected' : '') + '" draggable="true" data-index="' + i + '"' +
       ' onclick="selectPhoto(' + i + ')"' +
@@ -1490,16 +1553,9 @@ async function togglePhotoTag(idx, tag) {
   var pos = tags.indexOf(tag);
   if (pos >= 0) tags.splice(pos, 1); else tags.push(tag);
   await api('PUT', '/api/photo-tags', {filename: _photoData[idx].filename, tags: tags});
-  loadPhotos();
-}
-
-async function addCustomPhotoTag(idx, val) {
-  var tag = val.trim();
-  if (!tag) return;
-  var tags = (_photoData[idx].tags || []).slice();
-  if (tags.indexOf(tag) < 0) tags.push(tag);
-  await api('PUT', '/api/photo-tags', {filename: _photoData[idx].filename, tags: tags});
-  loadPhotos();
+  // Refresh local data without full reload to avoid losing filter
+  _photoData[idx].tags = tags;
+  renderAdminPhotos();
 }
 
 function selectPhoto(idx) {
