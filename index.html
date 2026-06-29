@@ -29,6 +29,7 @@
     --c3: #ffb800; /* yellow */
     --c4: #00c853; /* green */
     --c5: #9c27b0; /* purple */
+    --c6: #ff6d00; /* orange */
     --line: #e0dcd5;
     --muted: #999;
   }
@@ -131,6 +132,7 @@
   .section-tag.green { color: var(--c4); border-color: var(--c4); }
   .section-tag.yellow { color: var(--c3); border-color: var(--c3); }
   .section-tag.purple { color: var(--c5); border-color: var(--c5); }
+  .section-tag.orange { color: var(--c6); border-color: var(--c6); }
 
   /* Work */
   .work-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
@@ -380,6 +382,22 @@
   }
   .essay-filter .ef-more:hover { color: var(--fg); }
 
+  /* Stack */
+  .stack-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
+  .stack-chip {
+    display: inline-block; padding: 4px 14px; border-radius: 20px;
+    font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+    font-size: 12px; font-weight: 600; letter-spacing: 0.03em;
+    border: 1px solid var(--line);
+    color: var(--muted);
+    transition: all .2s ease;
+    cursor: default;
+  }
+  .stack-chip:hover {
+    border-color: var(--chip-color);
+    color: var(--chip-color);
+  }
+
   footer {
     font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
     padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
@@ -537,6 +555,10 @@
     /* Map */
     #photo-map-container { height: 50vh; }
 
+    /* Stack */
+    .stack-cloud { gap: 6px; }
+    .stack-chip { font-size: 11px; padding: 3px 12px; }
+
     /* Filter chips */
     .essay-filter .ef-chip { font-size: 10px; padding: 2px 10px; }
   }
@@ -556,6 +578,7 @@
     <a href="/index.html" class="logo">Chami</a>
     <div class="links">
       <a href="#work">Work</a>
+      <a href="#stack">Stack</a>
       <a href="#essays">Essays</a>
       <a href="#photos">Photos</a>
       <a href="#music">Music</a>
@@ -588,6 +611,11 @@
       <a class="work-card" data-repo="Chami537/claude-skills" href="https://github.com/Chami537/claude-skills" target="_blank" rel="noopener noreferrer"><div class="num">05</div><h3>Claude Skills</h3><p>自用 Claude Code 工作流技能集 · 含 MCP Server · dev/fix/refactor 全流程</p><div class="line-tag">Markdown · Python <span class="stars"></span></div></a>
       <a class="work-card" data-repo="Chami537/chami537.github.io" href="https://github.com/Chami537/chami537.github.io" target="_blank" rel="noopener noreferrer"><div class="num">06</div><h3>本站</h3><p>手写 HTML/CSS/JS · 零框架零依赖 · 一个下午 vibecoding 产物</p><div class="line-tag">HTML · CSS · JavaScript <span class="stars"></span></div></a>
     </div>
+  </section>
+
+  <section id="stack">
+    <div class="section-tag orange">STACK</div>
+    <div class="stack-cloud" id="stack-cloud"></div>
   </section>
 
   <section id="essays">
@@ -672,7 +700,7 @@ function getSectionTop(s) {
 }
 
 function progressColor(t, h) {
-  var colors = ['#ff4d4d', '#ffb800', '#0066ff', '#00c853', '#9c27b0'];
+  var colors = ['#ff4d4d', '#ff6d00', '#ffb800', '#0066ff', '#00c853', '#9c27b0'];
   if (h <= 0 || secs.length < 2) return colors[0];
   var stops = Array.from(secs).map(function(s) { return (getSectionTop(s) - 200) / h; });
   if (t < stops[0]) return colors[0];
@@ -1105,9 +1133,16 @@ function renderContact(data) {
   }).join('');
 }
 
+function renderStack(data) {
+  var colors = ['#ff4d4d','#ff6d00','#ffb800','#0066ff','#00c853','#9c27b0'];
+  return data.map(function(c, i) {
+    return '<span class="stack-chip" style="--chip-color:' + colors[i % 6] + '">' + htmlEncode(c) + '</span>';
+  }).join('');
+}
+
 document.addEventListener('DOMContentLoaded', async function() {
   // Fetch all data in parallel, then render all at once — one layout pass, zero jank
-  var sections = ['about','work','essays','photos','contact','friends','music'];
+  var sections = ['about','work','essays','photos','contact','friends','music','stack'];
   var results = {};
   try {
     var fetched = await Promise.all(sections.map(function(s) {
@@ -1154,6 +1189,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (results.friends) document.getElementById('friends-container').innerHTML = renderFriends(results.friends);
   // Music
   if (results.music) document.getElementById('music-list').innerHTML = renderMusic(results.music);
+  // Stack
+  if (results.stack) document.getElementById('stack-cloud').innerHTML = renderStack(results.stack);
   // Remove all skeleton classes at once
   document.querySelectorAll('.skeleton-loading').forEach(function(el) { el.classList.remove('skeleton-loading'); });
 

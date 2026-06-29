@@ -1674,6 +1674,20 @@ def delete_music(id):
     return jsonify({"status": "deleted"})
 
 
+
+# Stack CRUD
+@app.route('/api/stack', methods=['GET'])
+def get_stack():
+    return jsonify(load_json('stack.json'))
+
+@app.route('/api/stack', methods=['PUT'])
+def update_stack():
+    if not isinstance(request.json, list):
+        return jsonify({"error": "Expected a JSON array of strings"}), 400
+    atomic_write_json('stack.json', request.json)
+    return jsonify({"status": "updated"})
+
+
 # ═══════════════════════════════════════════
 # Git Integration
 # ═══════════════════════════════════════════
