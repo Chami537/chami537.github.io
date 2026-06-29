@@ -10,15 +10,44 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         if sys.argv[1] == 'build':
             from backend.ssg import _sync_essay_html, _generate_feeds, _cache_bust_index
-            print("Building static site...")
+            import os
+            force = '--force' in sys.argv
+            print("Building static site..." + (" (incremental)" if not force else " (full)"))
+
             essays = load_json('essays.json')
+            essays_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'essays')
+            md_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'md')
+            data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+            essays_json = os.path.join(data_dir, 'essays.json')
+
+            rebuilt = 0
+            skipped = 0
             for e in essays:
+                slug = e['slug']
+                html_path = os.path.join(essays_dir, f'{slug}.html')
+                md_path = os.path.join(md_dir, f'{slug}.md')
+
+                if not force and os.path.exists(html_path):
+                    html_mtime = os.path.getmtime(html_path)
+                    md_mtime = os.path.getmtime(md_path) if os.path.exists(md_path) else 0
+                    if html_mtime >= md_mtime and html_mtime >= os.path.getmtime(essays_json):
+                        skipped += 1
+                        continue
+
                 _sync_essay_html(e)
-                print(f"  ✓ essays/{e['slug']}.html")
-            _generate_feeds()
-            _cache_bust_index()
+                print(f"  ✓ essays/{slug}.html")
+                rebuilt += 1
+
+            feeds_need_rebuild = force or rebuilt > 0 or skipped < len(essays)
+            if feeds_need_rebuild:
+                archive_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'archive.html')
+                _generate_feeds()
+                _cache_bust_index()
+            else:
+                print("  (feeds unchanged — skipped)")
+
             print()
-            print(f"Done: {len(essays)} essays + archive + map + RSS + sitemap generated.")
+            print(f"Done: {rebuilt} rebuilt, {skipped} skipped — {len(essays)} essays + feeds + cache bust.")
         elif sys.argv[1] in ('process-images', 'sync-photos'):
             import sys as _sys; _sys.path.insert(0, 'tools')
             import process_images
