@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Chami</title>
+    <link>https://chami537.github.io</link>
+    <description>Chami 的个人博客 — CS Student &amp; Photographer</description>
+    <language>zh-CN</language>
+    <lastBuildDate>{{ last_build }}</lastBuildDate>
+{% for e in essays %}
+    <item>
+      <title>{{ e.title | e }}</title>
+      <link>https://chami537.github.io/essays/{{ e.slug | e }}.html</link>
+      <description>{{ e.excerpt | e }}</description>
+      <pubDate>{{ e.pub_date }}</pubDate>
+      <guid>https://chami537.github.io/essays/{{ e.slug | e }}.html</guid>
+    </item>
+{% endfor %}
+  </channel>
+</rss>
