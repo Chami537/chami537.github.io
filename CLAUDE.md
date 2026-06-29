@@ -13,15 +13,17 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - `admin.html` — 管理面板（localhost:5000 访问）
 - `manage.py` — CLI 入口（42 行），`python manage.py [build|sync-photos|set-gps]`
 - `manage.bat` — 一键启动脚本
-- **后端模块**（1842 行单体 → 5 文件）：
-  - `data.py` — `load_json` / `atomic_write_json`，单源真值
+- `scripts/` — 辅助脚本（`gps_panel.bat`）
+- **后端** `backend/`（1842 行单体 → 6 文件包）：
+  - `data.py` — `load_json` / `atomic_write_json`
   - `app.py` — Flask 创建 + 静态文件路由
   - `routes.py` — 全部 41 个 `/api/*` CRUD 端点
-  - `ssg.py` — Essay 辅助 + RSS/Sitemap/Archive/Map/Feeds 生成器（Jinja2 模板渲染）
-  - 导入链：`manage → app → routes → ssg → data`（单向无循环）
+  - `ssg.py` — Essay 辅助 + SSG 生成器（Jinja2 模板）
+  - `photo_api.py` — 照片标签/日期/GPS PUT 端点
+  - 导入链：`manage → backend.app → backend.routes → backend.ssg → backend.data`（单向无循环）
 - `tools/` — 独立工具
-  - `gps_panel.py` — 可视化 GPS 标注面板（照片坐标 + 日期编辑，端口 5001）
-  - `process_images.py` — 自动化图像流水线（全量同步模式，原片 → 缩略图 + EXIF + photos.json）
+  - `gps_panel.py` — 可视化 GPS 标注面板（端口 5001）
+  - `process_images.py` — 图像流水线（全量同步模式）
 - `templates/` — Jinja2 模板
   - `essay.html` — 随笔页模板
   - `rss.xml` — RSS 订阅源模板
@@ -42,12 +44,13 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 ## 编辑须知
 - **前端**：改 `index.html`（CSS 在 `<style>`，JS 在 `<script>`）
 - **管理面板**：改 `admin.html`
-- **后端**：
-  - 数据工具 → `data.py`
-  - Flask 路由 → `routes.py`
-  - SSG / 随笔逻辑 → `ssg.py`
-  - 静态文件路由 → `app.py`
-  - CLI 入口 → `manage.py`
+- **后端**（`backend/`）：
+  - 数据工具 → `backend/data.py`
+  - Flask 路由 → `backend/routes.py`
+  - SSG / 随笔逻辑 → `backend/ssg.py`
+  - 静态文件路由 → `backend/app.py`
+  - 照片 API → `backend/photo_api.py`
+  - CLI 入口 → `manage.py`（根目录）
 - **运行管理面板**：`python manage.py`（localhost:5000）
 - `python manage.py build` — 生成全站静态文件（CI 也用）
 - `python manage.py sync-photos` — 从 raw_photos/ 全量同步照片 EXIF 到 photos.json
