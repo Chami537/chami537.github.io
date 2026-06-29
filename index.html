@@ -950,9 +950,9 @@ function buildPhotoTagFilter() {
   var el = document.getElementById('photo-tag-filter');
   if (tags.size === 0) { el.style.display = 'none'; return; }
   el.style.display = 'flex';
-  var html = '<span class="ef-chip' + (!_currentPhotoTag ? ' active' : '') + '" onclick="filterPhotosByTag(\'\')">全部</span>';
+  var html = '<span tabindex="0" role="button" class="ef-chip' + (!_currentPhotoTag ? ' active' : '') + '" onclick="filterPhotosByTag(\'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterPhotosByTag(\'\')}">全部</span>';
   tags.forEach(function(t) {
-    html += '<span class="ef-chip' + (_currentPhotoTag === t ? ' active' : '') + '" onclick="filterPhotosByTag(\'' + htmlEncode(t) + '\')">' + htmlEncode(t) + '</span>';
+    html += '<span tabindex="0" role="button" class="ef-chip' + (_currentPhotoTag === t ? ' active' : '') + '" onclick="filterPhotosByTag(\'' + htmlEncode(t) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterPhotosByTag(\'' + htmlEncode(t) + '\')}">' + htmlEncode(t) + '</span>';
   });
   el.innerHTML = html;
 }
