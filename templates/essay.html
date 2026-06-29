@@ -537,11 +537,13 @@ document.addEventListener('keydown', function(e) {
 // Touch swipe
 var _lbTouchX = 0;
 var lbEl = document.getElementById('lb');
-lbEl.addEventListener('touchstart', function(e) { _lbTouchX = e.touches[0].clientX; }, {passive: true});
-lbEl.addEventListener('touchend', function(e) {
-  var dx = e.changedTouches[0].clientX - _lbTouchX;
-  if (Math.abs(dx) > 50) lbNav(dx < 0 ? 1 : -1);
-}, {passive: true});
+if (lbEl) {
+  lbEl.addEventListener('touchstart', function(e) { _lbTouchX = e.touches[0].clientX; }, {passive: true});
+  lbEl.addEventListener('touchend', function(e) {
+    var dx = e.changedTouches[0].clientX - _lbTouchX;
+    if (Math.abs(dx) > 50) lbNav(dx < 0 ? 1 : -1);
+  }, {passive: true});
+}
 
     {% include 'includes/theme.js' %}
 
