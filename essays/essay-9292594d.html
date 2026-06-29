@@ -54,7 +54,9 @@ nav {
   padding: 0 48px;
   background: rgba(250,250,248,0.88); backdrop-filter: blur(12px);
   border-bottom: 2px solid var(--fg);
+  transition: transform .3s ease;
 }
+nav.hidden { transform: translateY(-100%); }
 nav .inner {
   max-width: 1200px; margin: 0 auto; display: flex;
   align-items: center; justify-content: space-between; height: 56px;
@@ -353,7 +355,9 @@ footer {
 
 </style>
 <script>
-  if (localStorage.getItem('theme') === 'dark') {
+  var _mq = window.matchMedia('(prefers-color-scheme: dark)');
+  var _saved = localStorage.getItem('theme');
+  if (_saved === 'dark' || (!_saved && _mq.matches)) {
     document.documentElement.classList.add('dark');
   }
 </script>
@@ -380,7 +384,7 @@ footer {
   <div class="essay-meta">
     <span class="essay-meta-tag">随笔</span>
     <span class="dot">·</span>
-    <span class="essay-meta-date">Jun 25, 2026</span>
+    <span class="essay-meta-date">Jun 29, 2026</span>
     <span class="dot">·</span>
     <span class="essay-meta-read">1 min read</span>
   </div>
@@ -397,10 +401,11 @@ footer {
 <p>那些在夏天里没有说出口的话，最终也会随着季节一起静下来。不是消失，只是换了一种形式存在。</p>
 </blockquote>
 <h2>深圳的夏天不懂收敛。它热烈、潮湿、执拗地拒绝离场。</h2>
-<p>但今年有一个傍晚，我骑车经过大沙河，忽然觉得风里多了什么——不是凉意，是某种轻微的空缺。就好像有人悄悄拿走了一样东西，而你还不确定那是什么。</p>
+<p>但今年有一个傍晚，我骑车经过大沙河，忽然觉得风里多了什么——不是凉意，是某种轻微的空缺。</p>
+<p>就好像有人悄悄拿走了一样东西，而你还不确定那是什么。</p>
 <p>我想，我大概会一直喜欢这种时刻。事情将要改变但还没有改变的时刻。</p>
-<p>是永远不会忘记的时刻。</p>
-<p class="essay-updated">Last edited at 22:11, Jun 25, 2026</p>
+<p>是<strong>永远不会忘记</strong>的时刻。</p>
+<p class="essay-updated">Last edited at 13:29, Jun 29, 2026</p>
 
   </div>
 
@@ -554,9 +559,15 @@ document.addEventListener('keydown', function(e) {
 });
 
 (function initThemeBtn() {
-  if (localStorage.getItem('theme') === 'dark') {
-    document.getElementById('theme-btn').textContent = '☀';
+  var mq = window.matchMedia('(prefers-color-scheme: dark)');
+  var btn = document.getElementById('theme-btn');
+  if (localStorage.getItem('theme') === 'dark' || (!localStorage.getItem('theme') && mq.matches)) {
+    btn.textContent = '☀';
   }
+  mq.addEventListener('change', function(e) {
+    if (localStorage.getItem('theme')) return;
+    btn.textContent = e.matches ? '☀' : '🌙';
+  });
 })();
 function toggleTheme() {
   var html = document.documentElement;
@@ -565,10 +576,21 @@ function toggleTheme() {
     localStorage.setItem('theme', 'dark');
     btn.textContent = '☀';
   } else {
-    localStorage.removeItem('theme');
+    localStorage.setItem('theme', 'light');
     btn.textContent = '🌙';
   }
 }
+
+// Nav sticky: hide on scroll down, show on scroll up
+var _lastScrollY = scrollY;
+addEventListener('scroll', function() {
+  var nav = document.querySelector('nav');
+  var dy = scrollY - _lastScrollY;
+  if (scrollY < 100) nav.classList.remove('hidden');
+  else if (dy > 8) nav.classList.add('hidden');
+  else if (dy < -8) nav.classList.remove('hidden');
+  _lastScrollY = scrollY;
+}, { passive: true });
 </script>
 
 <!--
