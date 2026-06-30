@@ -359,12 +359,14 @@ html.dark .leaflet-popup { filter: none; }
 }
 .essay-filter .ef-chip:hover { border-color: var(--c3); color: var(--c3); }
 .essay-filter .ef-chip.active { background: var(--c3); color: #fff; border-color: var(--c3); }
+.essay-filter .ef-chip.active:hover { color: #fff; }
 .essay-filter .ef-more {
   display: inline-block; padding: 3px 12px; font-size: 11px;
   color: var(--muted); cursor: pointer; user-select: none;
 }
 .essay-filter .ef-more:hover { color: var(--fg); }
 #photo-tag-filter .ef-chip.active { background: var(--c2); color: #fff; border-color: var(--c2); }
+#photo-tag-filter .ef-chip.active:hover { color: #fff; }
 #photo-tag-filter .ef-chip:hover { border-color: var(--c2); color: var(--c2); }
 
 /* Stack */
