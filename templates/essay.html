@@ -455,6 +455,7 @@ footer {
         '</div></a>';
     };
     var row = document.getElementById('nav-row');
+    if (!row) return;
     row.innerHTML = buildLink(nav.prev, 'prev-link', '上一篇', '←') +
                     buildLink(nav.next, 'next-link', '下一篇', '→');
   } catch(e) {}

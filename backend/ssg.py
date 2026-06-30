@@ -217,7 +217,7 @@ def _extract_gps(exif_dict):
             lng = -lng
 
         return {"lat": round(lat, 6), "lng": round(lng, 6)}
-    except Exception:
+    except (KeyError, TypeError, ValueError, IndexError):
         return None
 
 
