@@ -1,3 +1,4 @@
+import html
 import os
 import re
 import uuid
@@ -10,7 +11,7 @@ from markupsafe import Markup
 from backend.app import app
 from backend.data import load_json, atomic_write_json, DATA_DIR
 from backend.ssg import (
-    _env, _fe, _calc_read_time, _parse_date,
+    _env, _calc_read_time, _parse_date,
     _extract_first_image, _parse_tags, _build_nav,
     _build_tag_nav_json, _sync_essay_html,
     _generate_feeds,
@@ -48,18 +49,18 @@ def create_essay():
     og_image = _extract_first_image(item.get('body', '') or item.get('content', ''))
     template = _env.get_template('essay.html')
     html = template.render(
-        title=_fe(item.get('title', '')),
-        excerpt=_fe(item.get('excerpt', '')),
-        epigraph=_fe(item.get('epigraph', '')),
-        tag=_fe(tag_display),
-        date_display=_fe(date_display),
+        title=html.escape(item.get('title', '')),
+        excerpt=html.escape(item.get('excerpt', '')),
+        epigraph=html.escape(item.get('epigraph', '')),
+        tag=html.escape(tag_display),
+        date_display=html.escape(date_display),
         read_time=read_time,
         body_html='',
         prev_nav=Markup(prev_nav),
         next_nav=Markup(next_nav),
         tag_nav_json=tag_nav_json,
         slug=slug,
-        og_image=_fe(og_image),
+        og_image=html.escape(og_image),
         build_ts=int(time.time()),
     )
     os.makedirs(ESSAYS_DIR, exist_ok=True)

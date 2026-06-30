@@ -3,10 +3,7 @@
 import os
 from flask import Flask, send_from_directory
 
-from backend.data import BASE_DIR, DATA_DIR
-
-ESSAYS_DIR = os.path.join(BASE_DIR, 'essays')
-IMAGES_DIR = os.path.join(BASE_DIR, 'images')
+from backend.data import BASE_DIR, DATA_DIR, ESSAYS_DIR, IMAGES_DIR
 
 app = Flask(__name__)
 
@@ -22,49 +19,37 @@ def admin_panel():
 def serve_data(filename):
     return send_from_directory(DATA_DIR, filename)
 
+
 @app.route('/images/<path:filename>')
 def serve_images(filename):
     return send_from_directory(IMAGES_DIR, filename)
+
 
 @app.route('/index.html')
 def serve_index():
     return send_from_directory(BASE_DIR, 'index.html')
 
+
 @app.route('/essays/<path:filename>')
 def serve_essay(filename):
     return send_from_directory(ESSAYS_DIR, filename)
+
 
 @app.route('/music/<path:filename>')
 def serve_music(filename):
     return send_from_directory(os.path.join(BASE_DIR, 'music'), filename)
 
+
 @app.route('/tracks/<path:filename>')
 def serve_tracks(filename):
     return send_from_directory(os.path.join(BASE_DIR, 'tracks'), filename)
 
-@app.route('/rss.xml')
-def serve_rss():
-    return send_from_directory(BASE_DIR, 'rss.xml')
 
-@app.route('/sitemap.xml')
-def serve_sitemap():
-    return send_from_directory(BASE_DIR, 'sitemap.xml')
-
-@app.route('/archive.html')
-def serve_archive():
-    return send_from_directory(BASE_DIR, 'archive.html')
-
-@app.route('/map.html')
-def serve_map():
-    return send_from_directory(BASE_DIR, 'map.html')
-
-@app.route('/index.css')
-def serve_index_css():
-    return send_from_directory(BASE_DIR, 'index.css')
-
-@app.route('/index.js')
-def serve_index_js():
-    return send_from_directory(BASE_DIR, 'index.js')
+# Routes for root-level generated files (rss, sitemap, archive, map, CSS, JS)
+_ROOTS = ['rss.xml', 'sitemap.xml', 'archive.html', 'map.html', 'index.css', 'index.js']
+for _f in _ROOTS:
+    _ep = f'serve_{_f.replace(".", "_")}'
+    app.add_url_rule(f'/{_f}', _ep, lambda _f=_f: send_from_directory(BASE_DIR, _f))
 
 
 # Register all /api/* routes (side-effect imports — must come after app creation)

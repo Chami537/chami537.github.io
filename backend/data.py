@@ -5,8 +5,12 @@ import json
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(BASE_DIR, 'data')
+ESSAYS_DIR = os.path.join(BASE_DIR, 'essays')
+MD_DIR = os.path.join(BASE_DIR, 'md')
+IMAGES_DIR = os.path.join(BASE_DIR, 'images')
 
-os.makedirs(DATA_DIR, exist_ok=True)
+for _d in (DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR):
+    os.makedirs(_d, exist_ok=True)
 
 
 def load_json(name):
