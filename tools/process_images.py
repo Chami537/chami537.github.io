@@ -7,42 +7,14 @@ thumbnails to save time.
 """
 import os
 import sys
-from PIL import Image, ExifTags
+from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from backend.data import load_json, atomic_write_json, format_shutter, format_aperture, format_focal
-from backend.ssg import _extract_gps
+from backend.data import load_json, atomic_write_json
+from backend.ssg import _extract_exif
 
 RAW_DIR = 'raw_photos'
 IMG_DIR = 'images'
 SIZES = {'sm': 400, 'md': 800, 'lg': 1920}
-
-
-def extract_exif(img):
-    exif_data = {}
-    exif_raw = img._getexif()
-    if not exif_raw:
-        return exif_data
-
-    tags = {ExifTags.TAGS.get(k, k): str(v) for k, v in exif_raw.items()}
-
-    if 'Model' in tags:
-        exif_data['model'] = tags['Model']
-    elif 'Make' in tags:
-        exif_data['camera'] = tags['Make']
-    if 'FocalLength' in tags:
-        exif_data['focal'] = format_focal(tags['FocalLength'])
-    if 'FNumber' in tags:
-        exif_data['aperture'] = format_aperture(tags['FNumber'])
-    if 'ExposureTime' in tags:
-        exif_data['shutter'] = format_shutter(tags['ExposureTime'])
-    if 'ISOSpeedRatings' in tags:
-        exif_data['iso'] = tags['ISOSpeedRatings']
-
-    gps_data = _extract_gps(exif_raw)
-    if gps_data:
-        exif_data['gps'] = gps_data
-
-    return exif_data
 
 
 def process_all_images():
@@ -82,7 +54,7 @@ def process_all_images():
         try:
             with Image.open(raw_path) as img:
                 # Always extract EXIF
-                exif_info = extract_exif(img)
+                exif_info = _extract_exif(img)
 
                 # Generate thumbnails (skip if already exist)
                 for size_name, max_width in SIZES.items():

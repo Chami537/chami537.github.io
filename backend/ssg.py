@@ -8,15 +8,8 @@ from datetime import datetime
 from markdown import markdown as md_to_html
 from PIL import Image, ExifTags
 
-from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, format_shutter, format_aperture, format_focal, BASE_DIR, DATA_DIR
+from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, format_shutter, format_aperture, format_focal, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR
 from jinja2 import Environment, FileSystemLoader
-
-ESSAYS_DIR = os.path.join(BASE_DIR, 'essays')
-MD_DIR = os.path.join(BASE_DIR, 'md')
-IMAGES_DIR = os.path.join(BASE_DIR, 'images')
-
-os.makedirs(MD_DIR, exist_ok=True)
-os.makedirs(ESSAYS_DIR, exist_ok=True)
 
 _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
 
@@ -43,11 +36,6 @@ def _cache_bust_index():
     html = re.sub(r'src="index\.js(\?v=\d+)?"', f'src="index.js?v={ts}"', html)
     with open(index_path, 'w', encoding='utf-8') as f:
         f.write(html)
-
-
-def _fe(s):
-    """HTML-escape user content for safe embedding in HTML."""
-    return html_mod.escape(str(s))
 
 
 def _calc_read_time(text):
@@ -199,6 +187,31 @@ def _extract_gps(exif_dict):
         return None
 
 
+def _extract_exif(img):
+    """从 PIL Image 提取 EXIF 元数据（相机/镜头/ISO/GPS 等），返回 dict。"""
+    exif_data = {}
+    exif_raw = img._getexif()
+    if not exif_raw:
+        return exif_data
+    tags = {ExifTags.TAGS.get(k, k): str(v) for k, v in exif_raw.items()}
+    if 'Make' in tags:
+        exif_data['camera'] = tags['Make']
+    if 'Model' in tags:
+        exif_data['model'] = tags['Model']
+    if 'ExposureTime' in tags:
+        exif_data['shutter'] = format_shutter(tags['ExposureTime'])
+    if 'FNumber' in tags:
+        exif_data['aperture'] = format_aperture(tags['FNumber'])
+    if 'ISOSpeedRatings' in tags:
+        exif_data['iso'] = tags['ISOSpeedRatings']
+    if 'FocalLength' in tags:
+        exif_data['focal'] = format_focal(tags['FocalLength'])
+    gps_data = _extract_gps(exif_raw)
+    if gps_data:
+        exif_data['gps'] = gps_data
+    return exif_data
+
+
 def _set_gps(filename, lat, lng):
     """给 raw_photos/ 中的照片写入 GPS 坐标 + 同步更新 photos.json"""
     path = os.path.join(BASE_DIR, 'raw_photos', filename)
@@ -263,6 +276,18 @@ def _parse_tags(tag_str, essay=None):
         tags.add('置顶')
     return tags
 
+def _find_adjacent_siblings(essays, idx, siblings):
+    """Find prev/next sibling essays within *siblings* list, ordered by *essays* date order."""
+    prev_sib, next_sib = None, None
+    for i in range(idx - 1, -1, -1):
+        if essays[i] in siblings:
+            prev_sib = essays[i]; break
+    for i in range(idx + 1, len(essays)):
+        if essays[i] in siblings:
+            next_sib = essays[i]; break
+    return prev_sib, next_sib
+
+
 def _build_nav(essays, current_slug):
     """Build prev/next essay navigation links, scoped to essays sharing at least one tag."""
     current = next((e for e in essays if e['slug'] == current_slug), None)
@@ -275,13 +300,7 @@ def _build_nav(essays, current_slug):
 
     # Find prev/next among siblings by global date order
     idx = next((i for i, e in enumerate(essays) if e['slug'] == current_slug), -1)
-    prev_sib, next_sib = None, None
-    for i in range(idx - 1, -1, -1):
-        if essays[i] in siblings:
-            prev_sib = essays[i]; break
-    for i in range(idx + 1, len(essays)):
-        if essays[i] in siblings:
-            next_sib = essays[i]; break
+    prev_sib, next_sib = _find_adjacent_siblings(essays, idx, siblings)
 
     prev_nav = '<div></div>'
     next_nav = '<div></div>'
@@ -318,13 +337,7 @@ def _build_tag_nav_json(essays, slug):
     idx = next((i for i, e in enumerate(essays) if e['slug'] == slug), -1)
     for tag in current_tags:
         siblings = [e for e in essays if e['slug'] != slug and tag in _parse_tags(e.get('tag', ''), e)]
-        prev_sib, next_sib = None, None
-        for i in range(idx - 1, -1, -1):
-            if essays[i] in siblings:
-                prev_sib = essays[i]; break
-        for i in range(idx + 1, len(essays)):
-            if essays[i] in siblings:
-                next_sib = essays[i]; break
+        prev_sib, next_sib = _find_adjacent_siblings(essays, idx, siblings)
         result[tag] = {
             'prev': {'slug': prev_sib['slug'], 'title': prev_sib['title']} if prev_sib else None,
             'next': {'slug': next_sib['slug'], 'title': next_sib['title']} if next_sib else None,
@@ -377,17 +390,17 @@ def _sync_essay_html(essay, raw_md_memory=None):
     tag_nav_json = _build_tag_nav_json(essays, slug)
 
     tag_raw = essay.get('tag', '')
-    tag_display = _fe(tag_raw.replace(', ', ' · ').replace(',', ' · '))
-    date_display = _fe(_parse_date(essay.get('date', '')))
+    tag_display = html_mod.escape(tag_raw.replace(', ', ' · ').replace(',', ' · '))
+    date_display = html_mod.escape(_parse_date(essay.get('date', '')))
 
     # 4. 全量重新渲染 HTML
     og_image = _extract_first_image(raw_md)
     template = _env.get_template('essay.html')
     from markupsafe import Markup
     html = template.render(
-        title=_fe(essay.get('title', '')),
-        excerpt=_fe(essay.get('excerpt', '')),
-        epigraph=_fe(essay.get('epigraph', '')),
+        title=html_mod.escape(essay.get('title', '')),
+        excerpt=html_mod.escape(essay.get('excerpt', '')),
+        epigraph=html_mod.escape(essay.get('epigraph', '')),
         tag=tag_display,
         date_display=date_display,
         read_time=essay.get('readTime', 1),
@@ -396,7 +409,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
         next_nav=Markup(next_nav),
         tag_nav_json=tag_nav_json,
         slug=slug,
-        og_image=_fe(og_image),
+        og_image=html_mod.escape(og_image),
         build_ts=int(datetime.now().timestamp()),
     )
 

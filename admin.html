@@ -335,7 +335,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       <div class="form-group"><label>技术标签 (逗号分隔)</label><input id="work-tags" placeholder="Python, Flask, SQLite"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="saveWork()">保存</button>
-        <button class="btn" onclick="hideWorkForm()">取消</button>
+        <button class="btn" onclick="hidePanel('work-form')">取消</button>
       </div>
     </div>
   </div>
@@ -371,7 +371,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       <div class="form-group"><label>摘要</label><textarea id="essay-excerpt" rows="2"></textarea></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="saveEssay()">保存</button>
-        <button class="btn" onclick="hideEssayForm()">取消</button>
+        <button class="btn" onclick="hidePanel('essay-form')">取消</button>
       </div>
     </div>
     <!-- Content editor -->
@@ -470,7 +470,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       <div class="form-group"><label>链接 URL（留空则不链接）</label><input id="contact-url"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="saveContact()">保存</button>
-        <button class="btn" onclick="hideContactForm()">取消</button>
+        <button class="btn" onclick="hidePanel('contact-form')">取消</button>
       </div>
     </div>
   </div>
@@ -489,7 +489,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       <div class="form-group"><label>URL</label><input id="friend-url"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="saveFriend()">保存</button>
-        <button class="btn" onclick="hideFriendForm()">取消</button>
+        <button class="btn" onclick="hidePanel('friend-form')">取消</button>
       </div>
     </div>
   </div>
@@ -510,7 +510,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
       <div class="form-group"><label>文件名</label><input id="music-filename" readonly style="color:var(--muted);"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="saveMusic()">保存并上传</button>
-        <button class="btn" onclick="hideMusicForm()">取消</button>
+        <button class="btn" onclick="hidePanel('music-form')">取消</button>
       </div>
     </div>
   </div>
@@ -646,6 +646,7 @@ function toast(msg, err) {
 }
 
 function markClean() { isDirty = false; }
+function hidePanel(id) { document.getElementById(id).style.display = 'none'; }
 
 // ═══════════════════════════════════
 // Tabs
@@ -837,7 +838,6 @@ function showWorkForm() {
   form.scrollIntoView({ behavior: 'smooth' });
 }
 
-function hideWorkForm() { document.getElementById('work-form').style.display = 'none'; }
 
 async function saveWork() {
   try {
@@ -854,7 +854,7 @@ async function saveWork() {
       await api('POST', '/api/work', item);
     }
     markClean();
-    hideWorkForm();
+    hidePanel('work-form');
     loadWork();
     toast(id ? '项目已更新' : '项目已创建');
   } catch(e) { toast(e.message, true); }
@@ -863,7 +863,7 @@ async function saveWork() {
 async function deleteWork(id) {  const confirmed = await confirmDialog('确定删除这个项目？');
   if (!confirmed) return;
   await api('DELETE', '/api/work/' + id);
-  if (document.getElementById('work-edit-id').value == id) hideWorkForm();
+  if (document.getElementById('work-edit-id').value == id) hidePanel('work-form');
   loadWork();
   toast('项目已删除');
 }
@@ -963,13 +963,22 @@ function _promptTag(key, fallback, onAdd) {
   if (tags.indexOf(t.trim()) < 0) { tags.push(t.trim()); _saveTagLib(key, tags); }
   onAdd(t.trim());
 }
+function _toggleDeleteTagMode(btnId, flag, onDone) {
+  var btn = document.getElementById(btnId);
+  var on = !flag;
+  btn.textContent = on ? '完成' : '删除标签';
+  btn.style.color = on ? 'var(--danger)' : '';
+  btn.style.borderColor = on ? 'var(--danger)' : '';
+  onDone();
+  return on;
+}
 
 // 初始化标签库
 function getTags() { return _tagLib('essay-tags', '["随笔","摄影","剪辑","骑行","投资"]'); }
 function saveTags(tags) { _saveTagLib('essay-tags', tags); }
 
 function switchEssayTag(tag) {
-  hideEssayForm();
+  hidePanel('essay-form');
   hideEssayContentEditor();
   currentEssayTag = tag;
   loadEssays();
@@ -980,18 +989,7 @@ function promptNewTag() {
 }
 
 function toggleDeleteTagMode() {
-  essayDeleteTagMode = !essayDeleteTagMode;
-  var btn = document.getElementById('delete-tag-btn');
-  if (essayDeleteTagMode) {
-    btn.textContent = '完成';
-    btn.style.color = 'var(--danger)';
-    btn.style.borderColor = 'var(--danger)';
-  } else {
-    btn.textContent = '删除标签';
-    btn.style.color = '';
-    btn.style.borderColor = '';
-  }
-  loadEssays();
+  essayDeleteTagMode = _toggleDeleteTagMode('delete-tag-btn', essayDeleteTagMode, loadEssays);
 }
 
 function deleteTagFromTabs(tag) {
@@ -1230,7 +1228,6 @@ function showEssayForm() {
   form.scrollIntoView({ behavior: 'smooth' });
 }
 
-function hideEssayForm() { document.getElementById('essay-form').style.display = 'none'; }
 
 async function editEssayMeta(slug) {  const form = document.getElementById('essay-form');
   if (form.style.display === 'block' && document.getElementById('essay-edit-slug').value === slug) {
@@ -1271,7 +1268,7 @@ async function saveEssay() {
       toast('随笔已创建，HTML 文件已生成');
     }
     markClean();
-    hideEssayForm();
+    hidePanel('essay-form');
     loadEssays();
   } catch(e) { toast(e.message, true); }
 }
@@ -1459,7 +1456,7 @@ async function deleteEssay(slug) {  const confirmed = await confirmDialog('确�
   if (!confirmed) return;
   await api('DELETE', '/api/essays/' + slug);
   // Close any open panels for this essay
-  if (document.getElementById('essay-edit-slug').value === slug) hideEssayForm();
+  if (document.getElementById('essay-edit-slug').value === slug) hidePanel('essay-form');
   if (document.getElementById('essay-content-editor').dataset.slug === slug) hideEssayContentEditor();
   clearDraft(slug);
   loadEssays();
@@ -1483,12 +1480,7 @@ function promptNewPhotoTag() {
   _promptTag('photo-tags', '["Shenzhen","Night","Street"]', function(t) { _currentPhotoTag = t; loadPhotos(); });
 }
 function toggleDeletePhotoTagMode() {
-  _photoDeleteTagMode = !_photoDeleteTagMode;
-  var btn = document.getElementById('delete-photo-tag-btn');
-  btn.textContent = _photoDeleteTagMode ? '完成' : '删除标签';
-  btn.style.color = _photoDeleteTagMode ? 'var(--danger)' : '';
-  btn.style.borderColor = _photoDeleteTagMode ? 'var(--danger)' : '';
-  loadPhotos();
+  _photoDeleteTagMode = _toggleDeleteTagMode('delete-photo-tag-btn', _photoDeleteTagMode, loadPhotos);
 }
 async function deletePhotoTagGlobal(tag) {
   if (!confirm('确定永久删除标签 "' + tag + '"？这将从所有照片中移除该标签。')) return;
@@ -1792,7 +1784,6 @@ function showContactForm() {
   form.scrollIntoView({ behavior: 'smooth' });
 }
 
-function hideContactForm() { document.getElementById('contact-form').style.display = 'none'; }
 
 function editContact(i) {
   var form = document.getElementById('contact-form');
@@ -1821,7 +1812,7 @@ async function saveContact() {
   };    if (idx !== '') { await api('PUT', '/api/contact/' + idx, item); }
     else { await api('POST', '/api/contact', item); }
     markClean();
-    hideContactForm();
+    hidePanel('contact-form');
     loadContact();
     toast('已保存');
   } catch(e) { toast(e.message, true); }
@@ -1830,7 +1821,7 @@ async function saveContact() {
 async function deleteContact(i) {  var confirmed = await confirmDialog('确定删除？');
   if (!confirmed) return;
   await api('DELETE', '/api/contact/' + i);
-  if (document.getElementById('contact-edit-index').value == i) hideContactForm();
+  if (document.getElementById('contact-edit-index').value == i) hidePanel('contact-form');
   loadContact();
   toast('已删除');
 }
@@ -1867,7 +1858,6 @@ function showFriendForm() {
   form.scrollIntoView({ behavior: 'smooth' });
 }
 
-function hideFriendForm() { document.getElementById('friend-form').style.display = 'none'; }
 
 function editFriend(i) {
   var form = document.getElementById('friend-form');
@@ -1893,7 +1883,7 @@ async function saveFriend() {
       await api('POST', '/api/friends', item);
     }
     markClean();
-    hideFriendForm();
+    hidePanel('friend-form');
     loadFriends();
     toast('友链已保存');
   } catch(e) { toast(e.message, true); }
@@ -1902,7 +1892,7 @@ async function saveFriend() {
 async function deleteFriend(i) {  const confirmed = await confirmDialog('确定删除这个友链？');
   if (!confirmed) return;
   await api('DELETE', '/api/friends/' + i);
-  if (document.getElementById('friend-edit-index').value == i) hideFriendForm();
+  if (document.getElementById('friend-edit-index').value == i) hidePanel('friend-form');
   loadFriends();
   toast('友链已删除');
 }
@@ -1955,7 +1945,6 @@ function showMusicForm() {
   form.scrollIntoView({ behavior: 'smooth' });
 }
 
-function hideMusicForm() { document.getElementById('music-form').style.display = 'none'; }
 
 async function editMusic(id) {  var form = document.getElementById('music-form');
   if (form.style.display === 'block' && document.getElementById('music-edit-id').value == id) {
@@ -1992,7 +1981,7 @@ async function saveMusic() {
   };    if (id) { await api('PUT', '/api/music/' + id, item); }
     else { await api('POST', '/api/music', item); }
     markClean();
-    hideMusicForm();
+    hidePanel('music-form');
     loadMusic();
     toast(id ? '曲目已更新' : '曲目已添加');
   } catch(e) { toast(e.message, true); }
@@ -2001,7 +1990,7 @@ async function saveMusic() {
 async function deleteMusic(id) {  const confirmed = await confirmDialog('确定删除这个曲目？');
   if (!confirmed) return;
   await api('DELETE', '/api/music/' + id);
-  if (document.getElementById('music-edit-id').value == id) hideMusicForm();
+  if (document.getElementById('music-edit-id').value == id) hidePanel('music-form');
   loadMusic();
   toast('曲目已删除');
 }

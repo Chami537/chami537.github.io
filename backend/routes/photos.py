@@ -1,12 +1,12 @@
 import os
 import uuid
 
-from PIL import Image, ExifTags
+from PIL import Image
 from flask import request, jsonify
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, format_shutter, format_aperture, format_focal, BASE_DIR
-from backend.ssg import _extract_gps, IMAGES_DIR
+from backend.data import load_json, atomic_write_json, BASE_DIR
+from backend.ssg import _extract_exif, IMAGES_DIR
 
 
 @app.route('/api/photos', methods=['GET'])
@@ -48,27 +48,8 @@ def upload_photo():
     except Exception:
         return jsonify({"error": "Invalid or corrupted image file"}), 400
 
-    # Extract EXIF
-    exif_data = {}
-    exif = img._getexif()
-    if exif:
-        exif_tags = {ExifTags.TAGS.get(k, k): str(v) for k, v in exif.items()}
-        if 'Make' in exif_tags:
-            exif_data['camera'] = exif_tags['Make']
-        if 'Model' in exif_tags:
-            exif_data['model'] = exif_tags['Model']
-        if 'ExposureTime' in exif_tags:
-            exif_data['shutter'] = format_shutter(exif_tags['ExposureTime'])
-        if 'FNumber' in exif_tags:
-            exif_data['aperture'] = format_aperture(exif_tags['FNumber'])
-        if 'ISOSpeedRatings' in exif_tags:
-            exif_data['iso'] = exif_tags['ISOSpeedRatings']
-        if 'FocalLength' in exif_tags:
-            exif_data['focal'] = format_focal(exif_tags['FocalLength'])
-
-        gps_data = _extract_gps(exif)
-        if gps_data:
-            exif_data['gps'] = gps_data
+    # Extract EXIF (shared helper in ssg.py)
+    exif_data = _extract_exif(img)
 
     # Generate thumbnails
     for size_name, max_w in [('lg', 1920), ('md', 800), ('sm', 400)]:
