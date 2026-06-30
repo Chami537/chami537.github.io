@@ -117,12 +117,13 @@ def set_gps():
     if not filename or lat is None or lng is None:
         return jsonify({'error': 'Missing filename/lat/lng'}), 400
 
-    path = os.path.join(RAW_DIR, filename)
+    safe_fn = os.path.basename(filename)
+    path = os.path.join(RAW_DIR, safe_fn)
     if not os.path.exists(path):
         return jsonify({'error': 'File not found'}), 404
 
     try:
-        _set_gps(filename, float(lat), float(lng))
+        _set_gps(safe_fn, float(lat), float(lng))
         return jsonify({'status': 'ok', 'lat': lat, 'lng': lng})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
