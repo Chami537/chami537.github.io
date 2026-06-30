@@ -90,9 +90,12 @@ def process_all_images():
     new_count = 0
     updated_count = 0
 
-    for filename in sorted(os.listdir(RAW_DIR)):
-        if not filename.lower().endswith(('.jpg', '.jpeg', '.png')):
-            continue
+    # Preserve order from existing photos.json; append new files at end
+    raw_files = {f for f in os.listdir(RAW_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))}
+    ordered = [f for f in existing if f in raw_files]
+    ordered += [f for f in sorted(raw_files) if f not in existing]
+
+    for filename in ordered:
 
         raw_path = os.path.join(RAW_DIR, filename)
         old_entry = existing.pop(filename, None)
