@@ -76,6 +76,28 @@ footer {
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
 
+/* Custom map marker (shared: archive / map / index) */
+.custom-marker { background: none !important; border: none !important; }
+.custom-marker .marker-dot {
+  width: 12px; height: 12px;
+  background-color: #0066ff;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  transition: transform 0.2s;
+}
+.custom-marker:hover .marker-dot { transform: scale(1.5); }
+
+/* Tag filter chip base (shared: archive / index) */
+.essay-filter { display: flex; flex-wrap: wrap; gap: 6px; }
+.ef-chip {
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  display: inline-block; padding: 3px 12px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; cursor: pointer;
+  border: 1px solid var(--line); color: var(--muted);
+  transition: all .15s; user-select: none;
+}
+
 ::view-transition-old(root) { animation: vt-fade-out .2s ease-out both; }
 ::view-transition-new(root) { animation: vt-fade-in .3s ease-out .12s both; }
 @keyframes vt-fade-out { to { opacity: 0; } }
