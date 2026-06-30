@@ -6,26 +6,16 @@ updates photos.json entries. Skips thumbnail generation for already-existing
 thumbnails to save time.
 """
 import os
+import sys
 import json
 from PIL import Image, ExifTags
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+from backend.data import atomic_write, dms_to_decimal
 
 RAW_DIR = 'raw_photos'
 IMG_DIR = 'images'
 DATA_FILE = 'data/photos.json'
 SIZES = {'sm': 400, 'md': 800, 'lg': 1920}
-
-
-def atomic_write_json(filepath, data):
-    """Write JSON atomically: .tmp → os.replace, prevents corruption on crash."""
-    tmp = filepath + '.tmp'
-    try:
-        with open(tmp, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        os.replace(tmp, filepath)
-    except Exception:
-        if os.path.exists(tmp):
-            os.remove(tmp)
-        raise
 
 
 def format_shutter(val):
@@ -58,9 +48,6 @@ def extract_gps(exif_dict):
         return None
     gps_info = exif_dict[34853]
     try:
-        def dms_to_decimal(value):
-            return float(value[0]) + (float(value[1]) / 60.0) + (float(value[2]) / 3600.0)
-
         lat = dms_to_decimal(gps_info[2])
         if gps_info.get(1, 'N') == 'S':
             lat = -lat
@@ -190,7 +177,7 @@ def process_all_images():
             orphaned += 1
 
     # Atomic write
-    atomic_write_json(DATA_FILE, photos_data)
+    atomic_write(DATA_FILE, photos_data)
 
     print(f"完成！总计 {len(photos_data)} 张照片，新增 {new_count}，补全 EXIF {updated_count}。" + (f" 清理孤儿条目 {orphaned}。" if orphaned else ""))
 

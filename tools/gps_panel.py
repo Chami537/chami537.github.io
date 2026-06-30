@@ -3,40 +3,20 @@ Usage: python gps_panel.py
 打开浏览器 → 在地图上点击设置照片的 GPS 坐标
 """
 import os
+import sys
 import json
 import webbrowser
 import threading
 from flask import Flask, jsonify, request, send_from_directory
 from PIL import Image
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
+from backend.data import atomic_write, decimal_to_dms, dms_to_decimal
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_DIR = os.path.join(BASE_DIR, 'raw_photos')
 DATA_FILE = os.path.join(BASE_DIR, 'data', 'photos.json')
 
 app = Flask(__name__)
-
-
-def decimal_to_dms(d):
-    """十进制 → 度分秒元组。始终返回正值，方向由 N/S/E/W tag 承载。"""
-    d = abs(d)
-    deg = int(d)
-    m = (d - deg) * 60
-    min_val = int(m)
-    sec = (m - min_val) * 60
-    return (deg, min_val, sec)
-
-
-def atomic_write(filepath, data):
-    """原子写入 JSON：先写 .tmp 再 os.replace，防崩溃损坏数据。"""
-    tmp = filepath + '.tmp'
-    try:
-        with open(tmp, 'w', encoding='utf-8') as f:
-            json.dump(data, f, ensure_ascii=False, indent=2)
-        os.replace(tmp, filepath)
-    except Exception:
-        if os.path.exists(tmp):
-            os.remove(tmp)
-        raise
 
 
 @app.route('/')
@@ -74,10 +54,9 @@ def list_photos():
                 exif = img._getexif()
                 if exif and 34853 in exif:
                     g = exif[34853]
-                    dms_to_dec = lambda v: float(v[0]) + float(v[1])/60 + float(v[2])/3600
-                    lat = dms_to_dec(g[2])
+                    lat = dms_to_decimal(g[2])
                     if g.get(1, 'N') == 'S': lat = -lat
-                    lng = dms_to_dec(g[4])
+                    lng = dms_to_decimal(g[4])
                     if g.get(3, 'E') == 'W': lng = -lng
                     info['gps'] = {'lat': round(lat, 6), 'lng': round(lng, 6)}
                 img.close()
