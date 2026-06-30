@@ -57,8 +57,9 @@ def update_photo_gps():
         p['exif'] = {}
     p['exif']['gps'] = {'lat': round(lat, 6), 'lng': round(lng, 6)}
     atomic_write_json('photos.json', photos_lock)
-    rp = os.path.join(BASE_DIR, 'raw_photos', d['filename'])
+    safe_fn = os.path.basename(d['filename'])
+    rp = os.path.join(BASE_DIR, 'raw_photos', safe_fn)
     if os.path.exists(rp):
         from backend.ssg import _set_gps
-        _set_gps(d['filename'], lat, lng)
+        _set_gps(safe_fn, lat, lng)
     return jsonify({"status": "ok", "lat": lat, "lng": lng})

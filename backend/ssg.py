@@ -214,6 +214,7 @@ def _extract_exif(img):
 
 def _set_gps(filename, lat, lng):
     """给 raw_photos/ 中的照片写入 GPS 坐标 + 同步更新 photos.json"""
+    filename = os.path.basename(filename)
     path = os.path.join(BASE_DIR, 'raw_photos', filename)
     if not os.path.exists(path):
         print(f"文件不存在: {path}")
