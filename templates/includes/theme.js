@@ -9,6 +9,7 @@
     btn.textContent = e.matches ? '☀' : '🌙';
   });
 })();
+// [shared] Keep in sync with index.js::toggleTheme()
 function toggleTheme() {
   var html = document.documentElement;
   var btn = document.getElementById('theme-btn');

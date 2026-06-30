@@ -8,7 +8,7 @@ from datetime import datetime
 from markdown import markdown as md_to_html
 from PIL import Image, ExifTags
 
-from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
+from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, BASE_DIR, DATA_DIR
 from jinja2 import Environment, FileSystemLoader
 
 ESSAYS_DIR = os.path.join(BASE_DIR, 'essays')
@@ -205,9 +205,6 @@ def _extract_gps(exif_dict):
         return None
     gps_info = exif_dict[34853]
     try:
-        def dms_to_decimal(value):
-            return float(value[0]) + (float(value[1]) / 60.0) + (float(value[2]) / 3600.0)
-
         lat = dms_to_decimal(gps_info[2])
         if gps_info.get(1, 'N') == 'S':
             lat = -lat
@@ -231,15 +228,7 @@ def _set_gps(filename, lat, lng):
     img = Image.open(path)
     exif = img.getexif()
 
-    # 十进制 → 度分秒（始终正值，方向由 N/S/E/W tag 承载）
-    def decimal_to_dms(d):
-        d = abs(d)
-        deg = int(d)
-        m = (d - deg) * 60
-        min_val = int(m)
-        sec = (m - min_val) * 60
-        return (deg, min_val, sec)
-
+    # 十进制 → 度分秒（始终正值，方向由 N/S/E/W tag 承载，见 backend/data.py）
     lat_dms = decimal_to_dms(lat)
     lng_dms = decimal_to_dms(lng)
 

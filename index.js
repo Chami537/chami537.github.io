@@ -605,6 +605,7 @@ function initThemeBtn() {
     _applyTheme(e.matches ? 'dark' : 'light');
   });
 }
+// [shared] Keep in sync with templates/includes/theme.js::toggleTheme()
 function toggleTheme() {
   if (document.documentElement.classList.contains('dark')) {
     localStorage.setItem('theme', 'light');
