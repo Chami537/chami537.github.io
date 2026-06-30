@@ -950,15 +950,23 @@ async function loadEssays() {
 let currentEssayTag = null;
 let essayDeleteTagMode = false;
 
-// 初始化标签库
-function getTags() {
-  try { 
-    return JSON.parse(localStorage.getItem('essay-tags') || '["随笔", "摄影", "剪辑", "骑行", "投资"]'); 
-  } catch(e) { 
-    return ["随笔", "摄影", "剪辑", "骑行", "投资"]; 
-  }
+// 标签库 helpers
+function _tagLib(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || fallback); }
+  catch(e) { return JSON.parse(fallback); }
 }
-function saveTags(tags) { localStorage.setItem('essay-tags', JSON.stringify(tags)); }
+function _saveTagLib(key, tags) { localStorage.setItem(key, JSON.stringify(tags)); }
+function _promptTag(key, fallback, onAdd) {
+  var t = prompt('请输入新标签名称：');
+  if (!t || !t.trim()) return;
+  var tags = _tagLib(key, fallback);
+  if (tags.indexOf(t.trim()) < 0) { tags.push(t.trim()); _saveTagLib(key, tags); }
+  onAdd(t.trim());
+}
+
+// 初始化标签库
+function getTags() { return _tagLib('essay-tags', '["随笔","摄影","剪辑","骑行","投资"]'); }
+function saveTags(tags) { _saveTagLib('essay-tags', tags); }
 
 function switchEssayTag(tag) {
   hideEssayForm();
@@ -968,15 +976,7 @@ function switchEssayTag(tag) {
 }
 
 function promptNewTag() {
-  const newTag = prompt('请输入新标签名称：');
-  if (newTag && newTag.trim()) {
-    let tags = getTags();
-    if (!tags.includes(newTag.trim())) {
-      tags.push(newTag.trim());
-      saveTags(tags);
-    }
-    switchEssayTag(newTag.trim());
-  }
+  _promptTag('essay-tags', '["随笔","摄影","剪辑","骑行","投资"]', switchEssayTag);
 }
 
 function toggleDeleteTagMode() {
@@ -1095,14 +1095,12 @@ function toggleTag(tag) {
 
 // ═══ About tag system ═══
 function getAboutTags() {
-  try { var stored = JSON.parse(localStorage.getItem('about-tags') || '["CS STUDENT","PHOTOGRAPHER","SHENZHEN"]'); }
-  catch(e) { stored = ['CS STUDENT','PHOTOGRAPHER','SHENZHEN']; }
-  // Merge tags from current selection (may include tags from data file not yet in localStorage)
+  var stored = _tagLib('about-tags', '["CS STUDENT","PHOTOGRAPHER","SHENZHEN"]');
   var cur = document.getElementById('about-tags').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
   cur.forEach(function(t) { if (stored.indexOf(t) < 0) stored.push(t); });
   return stored;
 }
-function saveAboutTags(tags) { localStorage.setItem('about-tags', JSON.stringify(tags)); }
+function saveAboutTags(tags) { _saveTagLib('about-tags', tags); }
 
 var _aboutDragIdx = -1;
 var _aboutEditingTag = null;
@@ -1474,23 +1472,15 @@ async function deleteEssay(slug) {  const confirmed = await confirmDialog('确�
 // Photo tag library (localStorage, like essay tags)
 var _currentPhotoTag = '';
 var _photoDeleteTagMode = false;
-function getPhotoTags() {
-  try { return JSON.parse(localStorage.getItem('photo-tags') || '["Shenzhen", "Night", "Street"]'); }
-  catch(e) { return ["Shenzhen", "Night", "Street"]; }
-}
-function savePhotoTags(tags) { localStorage.setItem('photo-tags', JSON.stringify(tags)); }
+function getPhotoTags() { return _tagLib('photo-tags', '["Shenzhen","Night","Street"]'); }
+function savePhotoTags(tags) { _saveTagLib('photo-tags', tags); }
 
 function switchPhotoTabTag(tag) {
   _currentPhotoTag = tag;
   loadPhotos();
 }
 function promptNewPhotoTag() {
-  var t = prompt('请输入新标签名称：');
-  if (!t || !t.trim()) return;
-  var tags = getPhotoTags();
-  if (tags.indexOf(t.trim()) < 0) { tags.push(t.trim()); savePhotoTags(tags); }
-  _currentPhotoTag = t.trim();
-  loadPhotos();
+  _promptTag('photo-tags', '["Shenzhen","Night","Street"]', function(t) { _currentPhotoTag = t; loadPhotos(); });
 }
 function toggleDeletePhotoTagMode() {
   _photoDeleteTagMode = !_photoDeleteTagMode;
