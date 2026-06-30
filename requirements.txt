@@ -2,3 +2,4 @@ flask
 markdown
 Pillow
 pymdown-extensions
+pytest
