@@ -7,37 +7,14 @@ thumbnails to save time.
 """
 import os
 import sys
-import json
 from PIL import Image, ExifTags
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from backend.data import atomic_write, dms_to_decimal, format_shutter, format_aperture, format_focal
+from backend.data import load_json, atomic_write_json, format_shutter, format_aperture, format_focal
+from backend.ssg import _extract_gps
 
 RAW_DIR = 'raw_photos'
 IMG_DIR = 'images'
-DATA_FILE = 'data/photos.json'
 SIZES = {'sm': 400, 'md': 800, 'lg': 1920}
-
-
-# format_shutter, format_aperture, format_focal — imported from backend.data
-
-
-def extract_gps(exif_dict):
-    """从 _getexif() 原始字典中安全提取 GPS 经纬度 (Tag 34853 = GPSInfo)"""
-    if not exif_dict or 34853 not in exif_dict:
-        return None
-    gps_info = exif_dict[34853]
-    try:
-        lat = dms_to_decimal(gps_info[2])
-        if gps_info.get(1, 'N') == 'S':
-            lat = -lat
-
-        lng = dms_to_decimal(gps_info[4])
-        if gps_info.get(3, 'E') == 'W':
-            lng = -lng
-
-        return {"lat": round(lat, 6), "lng": round(lng, 6)}
-    except Exception:
-        return None
 
 
 def extract_exif(img):
@@ -61,7 +38,7 @@ def extract_exif(img):
     if 'ISOSpeedRatings' in tags:
         exif_data['iso'] = tags['ISOSpeedRatings']
 
-    gps_data = extract_gps(exif_raw)
+    gps_data = _extract_gps(exif_raw)
     if gps_data:
         exif_data['gps'] = gps_data
 
@@ -81,10 +58,8 @@ def process_all_images():
 
     # Load existing data to preserve user-edited fields (date, size, tags)
     existing = {}
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            for p in json.load(f):
-                existing[p['filename']] = p
+    for p in load_json('photos.json'):
+        existing[p['filename']] = p
 
     photos_data = []
     new_count = 0
@@ -161,7 +136,7 @@ def process_all_images():
             orphaned += 1
 
     # Atomic write
-    atomic_write(DATA_FILE, photos_data)
+    atomic_write_json('photos.json', photos_data)
 
     print(f"完成！总计 {len(photos_data)} 张照片，新增 {new_count}，补全 EXIF {updated_count}。" + (f" 清理孤儿条目 {orphaned}。" if orphaned else ""))
 
