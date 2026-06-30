@@ -10,7 +10,7 @@ from PIL import Image, ExifTags
 from flask import request, jsonify
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
+from backend.data import load_json, atomic_write_json, format_shutter, format_aperture, format_focal, BASE_DIR, DATA_DIR
 from markdown import markdown as md_to_html
 
 from backend.ssg import (
@@ -18,7 +18,7 @@ from backend.ssg import (
     _extract_first_image, _parse_tags, _build_nav,
     _build_tag_nav_json, _sync_essay_html, _html_to_md,
     _generate_feeds,
-    _fmt_shutter, _fmt_aperture, _fmt_focal, _extract_gps,
+    _extract_gps,
     ESSAYS_DIR, MD_DIR, IMAGES_DIR,
 )
 
@@ -345,13 +345,13 @@ def upload_photo():
         if 'Model' in exif_tags:
             exif_data['model'] = exif_tags['Model']
         if 'ExposureTime' in exif_tags:
-            exif_data['shutter'] = _fmt_shutter(exif_tags['ExposureTime'])
+            exif_data['shutter'] = format_shutter(exif_tags['ExposureTime'])
         if 'FNumber' in exif_tags:
-            exif_data['aperture'] = _fmt_aperture(exif_tags['FNumber'])
+            exif_data['aperture'] = format_aperture(exif_tags['FNumber'])
         if 'ISOSpeedRatings' in exif_tags:
             exif_data['iso'] = exif_tags['ISOSpeedRatings']
         if 'FocalLength' in exif_tags:
-            exif_data['focal'] = _fmt_focal(exif_tags['FocalLength'])
+            exif_data['focal'] = format_focal(exif_tags['FocalLength'])
 
         gps_data = _extract_gps(exif)
         if gps_data:
