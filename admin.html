@@ -283,6 +283,7 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
   <button class="tab-btn" onclick="switchTab('tracks')">Tracks</button>
   <button class="tab-btn" onclick="switchTab('stack')">Stack</button>
   <button class="tab-btn" onclick="switchTab('git')">Git</button>
+  <button class="tab-btn" onclick="switchTab('readme')">README</button>
 </nav>
 
 <div class="content">
@@ -559,6 +560,17 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
     </div>
   </div>
 
+<!-- ═══ README ═══ -->
+  <div id="tab-readme" class="tab-panel">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <h2 style="font-size:18px;">README.md</h2>
+      <button class="btn btn-primary" onclick="saveReadme()">保存</button>
+    </div>
+    <div class="card">
+      <textarea id="readme-content" rows="20" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:13px;font-family:'Consolas','Courier New',monospace;resize:vertical;background:var(--card-bg);color:var(--fg);" placeholder="# Hello, I'm Chami ..."></textarea>
+    </div>
+  </div>
+
 </div>
 
 <!-- Diff Dialog -->
@@ -710,6 +722,7 @@ function switchTab(name) {
     if (name === 'music') loadMusic();
   if (name === 'stack') loadStack();
   if (name === 'git') refreshGitStatus();
+  if (name === 'readme') loadReadme();
 }
 
 // ═══════════════════════════════════
@@ -745,6 +758,25 @@ async function saveAbout() {
     });
     markClean();
     toast('简介已保存');
+  } catch(e) { toast(e.message, true); }
+}
+
+// README
+// ═══════════════════════════════════
+async function loadReadme() {
+  try {
+    var data = await api('GET', '/api/readme');
+    document.getElementById('readme-content').value = data.content || '';
+  } catch(e) { toast(e.message, true); }
+}
+
+async function saveReadme() {
+  try {
+    await api('PUT', '/api/readme', {
+      content: document.getElementById('readme-content').value
+    });
+    markClean();
+    toast('README 已保存');
   } catch(e) { toast(e.message, true); }
 }
 
