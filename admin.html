@@ -647,6 +647,20 @@ function toast(msg, err) {
 
 function markClean() { isDirty = false; }
 function hidePanel(id) { document.getElementById(id).style.display = 'none'; }
+function showEntryForm(cfg) {
+  var form = document.getElementById(cfg.formId);
+  if (form.style.display === 'block') { form.style.display = 'none'; return; }
+  document.getElementById(cfg.editId).value = '';
+  cfg.fields.forEach(function(id) { document.getElementById(id).value = ''; });
+  if (cfg.defaults) {
+    Object.keys(cfg.defaults).forEach(function(id) {
+      document.getElementById(id).value = cfg.defaults[id];
+    });
+  }
+  document.getElementById(cfg.formId + '-title').textContent = cfg.title;
+  form.style.display = 'block';
+  form.scrollIntoView({ behavior: 'smooth' });
+}
 
 // ═══════════════════════════════════
 // Tabs
@@ -827,15 +841,8 @@ async function editWork(id) {  const form = document.getElementById('work-form')
 }
 
 function showWorkForm() {
-  var form = document.getElementById('work-form');
-  if (form.style.display === 'block') { form.style.display = 'none'; return; }
-  document.getElementById('work-edit-id').value = '';
-  ['work-title','work-desc','work-url','work-repo','work-tags'].forEach(function(id) {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('work-form-title').textContent = '新建项目';
-  form.style.display = 'block';
-  form.scrollIntoView({ behavior: 'smooth' });
+  showEntryForm({ formId: 'work-form', editId: 'work-edit-id', title: '新建项目',
+    fields: ['work-title','work-desc','work-url','work-repo','work-tags'] });
 }
 
 
@@ -1206,26 +1213,14 @@ function genSlug(title) {
 
 
 function showEssayForm() {
-  var form = document.getElementById('essay-form');
-  if (form.style.display === 'block') { form.style.display = 'none'; return; }
-
-  document.getElementById('essay-edit-slug').value = '';
-  ['essay-title','essay-date','essay-readtime','essay-epigraph','essay-excerpt'].forEach(function(id) {
-    document.getElementById(id).value = '';
-  });
-
-  document.getElementById('essay-readtime').value = '4';
-
+  showEntryForm({ formId: 'essay-form', editId: 'essay-edit-slug', title: '新建文章',
+    fields: ['essay-title','essay-date','essay-readtime','essay-epigraph','essay-excerpt'] });
   var now = new Date();
   document.getElementById('essay-date').value = now.getFullYear() + '-' + pad2(now.getMonth()+1) + '-' + pad2(now.getDate());
-  document.getElementById('essay-form-title').textContent = '新建文章';
-
+  document.getElementById('essay-readtime').value = '4';
   let defaultTag = currentEssayTag || '随笔';
   document.getElementById('essay-tag').value = defaultTag;
   renderTagChips(defaultTag);
-
-  form.style.display = 'block';
-  form.scrollIntoView({ behavior: 'smooth' });
 }
 
 
@@ -1775,13 +1770,8 @@ async function loadContact() {
 }
 
 function showContactForm() {
-  var form = document.getElementById('contact-form');
-  if (form.style.display === 'block') { form.style.display = 'none'; return; }
-  document.getElementById('contact-edit-index').value = '';
-  ['contact-label','contact-handle','contact-url'].forEach(function(id) { document.getElementById(id).value = ''; });
-  document.getElementById('contact-form-title').textContent = '添加联系方式';
-  form.style.display = 'block';
-  form.scrollIntoView({ behavior: 'smooth' });
+  showEntryForm({ formId: 'contact-form', editId: 'contact-edit-index', title: '添加联系方式',
+    fields: ['contact-label','contact-handle','contact-url'] });
 }
 
 
@@ -1849,13 +1839,8 @@ async function loadFriends() {
 }
 
 function showFriendForm() {
-  var form = document.getElementById('friend-form');
-  if (form.style.display === 'block') { form.style.display = 'none'; return; }
-  document.getElementById('friend-edit-index').value = '';
-  ['friend-name','friend-url'].forEach(function(id) { document.getElementById(id).value = ''; });
-  document.getElementById('friend-form-title').textContent = '添加友链';
-  form.style.display = 'block';
-  form.scrollIntoView({ behavior: 'smooth' });
+  showEntryForm({ formId: 'friend-form', editId: 'friend-edit-index', title: '添加友链',
+    fields: ['friend-name','friend-url'] });
 }
 
 
@@ -1935,14 +1920,8 @@ function autoFillMusic() {
 }
 
 function showMusicForm() {
-  var form = document.getElementById('music-form');
-  if (form.style.display === 'block') { form.style.display = 'none'; return; }
-  document.getElementById('music-edit-id').value = '';
-  document.getElementById('music-file').value = '';
-  ['music-title','music-artist','music-filename'].forEach(function(id) { document.getElementById(id).value = ''; });
-  document.getElementById('music-form-title').textContent = '添加曲目';
-  form.style.display = 'block';
-  form.scrollIntoView({ behavior: 'smooth' });
+  showEntryForm({ formId: 'music-form', editId: 'music-edit-id', title: '添加曲目',
+    fields: ['music-file','music-title','music-artist','music-filename'] });
 }
 
 
