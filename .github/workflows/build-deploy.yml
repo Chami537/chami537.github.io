@@ -25,6 +25,8 @@ jobs:
 
       - run: pip install -r requirements.txt
 
+      - run: python -m pytest tests/ -v
+
       - run: python manage.py build
 
       - uses: actions/configure-pages@v4
