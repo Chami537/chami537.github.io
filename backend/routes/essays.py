@@ -12,7 +12,7 @@ from backend.data import load_json, atomic_write_json, DATA_DIR
 from backend.ssg import (
     _env, _fe, _calc_read_time, _parse_date,
     _extract_first_image, _parse_tags, _build_nav,
-    _build_tag_nav_json, _sync_essay_html, _html_to_md,
+    _build_tag_nav_json, _sync_essay_html,
     _generate_feeds,
     ESSAYS_DIR, MD_DIR, IMAGES_DIR,
 )
@@ -170,13 +170,6 @@ def get_essay_content(slug):
     md_match = re.search(r'<!-- RAW_MD\n(.*)\nRAW_MD -->', full_html, flags=re.DOTALL)
     if md_match:
         return jsonify({"content": md_match.group(1), "format": "markdown"})
-    # Extract HTML content between anchors, auto-convert to Markdown
-    pattern = r'<!-- CONTENT_START -->\n(.*?)\n\s*<!-- CONTENT_END -->'
-    match = re.search(pattern, full_html, flags=re.DOTALL)
-    content = match.group(1).strip() if match else ''
-    if content:
-        md = _html_to_md(content)
-        return jsonify({"content": md, "format": "markdown"})
     return jsonify({"content": "", "format": "markdown"})
 
 @app.route('/api/essays/<slug>/content', methods=['PUT'])

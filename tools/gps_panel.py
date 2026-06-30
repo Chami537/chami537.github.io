@@ -4,17 +4,16 @@ Usage: python gps_panel.py
 """
 import os
 import sys
-import json
 import webbrowser
 import threading
 from flask import Flask, jsonify, request, send_from_directory
 from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from backend.data import atomic_write, decimal_to_dms, dms_to_decimal
+from backend.data import load_json, atomic_write_json
+from backend.ssg import _extract_gps, _set_gps
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_DIR = os.path.join(BASE_DIR, 'raw_photos')
-DATA_FILE = os.path.join(BASE_DIR, 'data', 'photos.json')
 
 app = Flask(__name__)
 
@@ -33,11 +32,7 @@ def serve_images(subpath):
 def list_photos():
     """列出 raw_photos/ 中所有照片及其 GPS 状态"""
     photos = []
-    # 读取 photos.json（一次性，避免循环内重复打开）
-    photos_json = []
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            photos_json = json.load(f)
+    photos_json = load_json('photos.json')
     if os.path.exists(RAW_DIR):
         for fn in sorted(os.listdir(RAW_DIR)):
             if not fn.lower().endswith(('.jpg', '.jpeg', '.png')):
@@ -51,14 +46,9 @@ def list_photos():
                     if pe.get('filename') == fn and pe.get('date'):
                         info['date'] = pe['date']
                         break
-                exif = img._getexif()
-                if exif and 34853 in exif:
-                    g = exif[34853]
-                    lat = dms_to_decimal(g[2])
-                    if g.get(1, 'N') == 'S': lat = -lat
-                    lng = dms_to_decimal(g[4])
-                    if g.get(3, 'E') == 'W': lng = -lng
-                    info['gps'] = {'lat': round(lat, 6), 'lng': round(lng, 6)}
+                gps_data = _extract_gps(img._getexif())
+                if gps_data:
+                    info['gps'] = gps_data
                 img.close()
             except Exception as e:
                 info['error'] = str(e)
@@ -73,18 +63,14 @@ def set_date():
     date_val = data.get('date', '').strip()
     if not filename:
         return jsonify({'error': 'Missing filename'}), 400
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            photos_data = json.load(f)
-    else:
-        photos_data = []
+    photos_data = load_json('photos.json')
     for p in photos_data:
         if p.get('filename') == filename:
             if date_val:
                 p['date'] = date_val
             else:
                 p.pop('date', None)
-            atomic_write(DATA_FILE, photos_data)
+            atomic_write_json('photos.json', photos_data)
             return jsonify({'status': 'ok', 'date': date_val})
     # Not in photos.json yet — auto-create entry if file exists in raw_photos/
     if os.path.exists(os.path.join(RAW_DIR, filename)):
@@ -92,7 +78,7 @@ def set_date():
         if date_val:
             entry['date'] = date_val
         photos_data.append(entry)
-        atomic_write(DATA_FILE, photos_data)
+        atomic_write_json('photos.json', photos_data)
         return jsonify({'status': 'ok', 'date': date_val})
     return jsonify({'error': 'File not found in raw_photos/'}), 404
 
@@ -113,13 +99,9 @@ def delete_photo():
         if os.path.exists(ipath):
             os.remove(ipath)
     # Remove from photos.json
-    if os.path.exists(DATA_FILE):
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            pd = json.load(f)
-    else:
-        pd = []
+    pd = load_json('photos.json')
     pd = [p for p in pd if p.get('filename') != filename]
-    atomic_write(DATA_FILE, pd)
+    atomic_write_json('photos.json', pd)
     return jsonify({'status': 'deleted'})
 
 
@@ -140,48 +122,8 @@ def set_gps():
         return jsonify({'error': 'File not found'}), 404
 
     try:
-        lat, lng = float(lat), float(lng)
-
-        img = Image.open(path)
-        exif = img.getexif()
-
-        lat_dms = decimal_to_dms(lat)
-        lng_dms = decimal_to_dms(lng)
-        exif[34853] = {
-            1: 'N' if lat >= 0 else 'S',
-            2: lat_dms,
-            3: 'E' if lng >= 0 else 'W',
-            4: lng_dms,
-        }
-        img.save(path, 'JPEG', quality=95, exif=exif.tobytes())
-        img.close()
-
-        # 同步更新 photos.json
-        if os.path.exists(DATA_FILE):
-            with open(DATA_FILE, 'r', encoding='utf-8') as f:
-                photos_data = json.load(f)
-        else:
-            photos_data = []
-
-        found = False
-        for p in photos_data:
-            if p['filename'] == filename:
-                if 'exif' not in p:
-                    p['exif'] = {}
-                p['exif']['gps'] = {'lat': round(lat, 6), 'lng': round(lng, 6)}
-                found = True
-                break
-
-        if not found:
-            # Auto-create entry like set_date does
-            photos_data.append({
-                'filename': filename,
-                'exif': {'gps': {'lat': round(lat, 6), 'lng': round(lng, 6)}}
-            })
-
-        atomic_write(DATA_FILE, photos_data)
+        _set_gps(filename, float(lat), float(lng))
         return jsonify({'status': 'ok', 'lat': lat, 'lng': lng})
-
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

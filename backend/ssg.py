@@ -254,31 +254,6 @@ def _set_gps(filename, lat, lng):
     print(f"  photos.json 已同步更新")
 
 
-def _html_to_md(html):
-    """Convert essay body HTML to Markdown (p, blockquote, h2, strong, em, br, div wrapper)."""
-    md = html.strip()
-    # Remove <div class="essay-body"> wrapper
-    md = re.sub(r'<div\s+class="essay-body"\s*>\s*', '', md, flags=re.DOTALL)
-    md = re.sub(r'\s*</div>\s*$', '', md, flags=re.DOTALL)
-    # Unwrap <blockquote><p>...</p></blockquote> → > text
-    md = re.sub(
-        r'<blockquote>\s*<p[^>]*>(.*?)</p>\s*</blockquote>',
-        r'\n> \1\n', md, flags=re.DOTALL
-    )
-    # Plain <blockquote> without nested <p>
-    md = re.sub(r'<blockquote>\s*(.*?)\s*</blockquote>', r'\n> \1\n', md, flags=re.DOTALL)
-    # Paragraphs with optional attributes
-    md = re.sub(r'<p[^>]*>\s*(.*?)\s*</p>', r'\n\1\n', md, flags=re.DOTALL)
-    # h2
-    md = re.sub(r'<h2[^>]*>\s*(.*?)\s*</h2>', r'\n## \1\n', md, flags=re.DOTALL)
-    # inline tags
-    md = re.sub(r'<strong>(.*?)</strong>', r'**\1**', md)
-    md = re.sub(r'<em>(.*?)</em>', r'*\1*', md)
-    md = re.sub(r'<br\s*/?>', '\n', md)
-    # clean whitespace
-    md = re.sub(r'\n{3,}', '\n\n', md)
-    md = re.sub(r'\n> \n', '\n> ', md)  # Fix "> \n" blockquote spacing
-    return md.strip()
 
 
 def _parse_tags(tag_str, essay=None):
@@ -381,11 +356,6 @@ def _sync_essay_html(essay, raw_md_memory=None):
         md_match = re.search(r'<!-- RAW_MD\n(.*)\nRAW_MD -->', full_html, flags=re.DOTALL)
         if md_match:
             raw_md = md_match.group(1)
-        else:
-            # Fallback: extract HTML from legacy essays without RAW_MD comment
-            content_match = re.search(r'<!-- CONTENT_START -->\n(.*?)\n\s*<!-- CONTENT_END -->', full_html, flags=re.DOTALL)
-            if content_match:
-                raw_md = _html_to_md(content_match.group(1))
 
     # 2. 将 Markdown 渲染为 HTML 正文
     rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}}) if raw_md else ""
