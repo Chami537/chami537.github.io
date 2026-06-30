@@ -118,6 +118,18 @@ function htmlEncode(str) {
   return d.innerHTML.replace(/"/g, '&quot;');
 }
 
+function _exifStr(ex, html) {
+  var parts = [];
+  if (ex.focal) parts.push(String(ex.focal));
+  if (ex.aperture) parts.push(String(ex.aperture));
+  if (ex.shutter) parts.push(String(ex.shutter));
+  if (ex.iso) parts.push('ISO ' + String(ex.iso));
+  var str = parts.join(' · ');
+  return html ? str.replace(/&/g,'&amp;').replace(/</g,'&lt;') : str;
+}
+
+function _exifCamera(ex) { return ex.model || ex.camera || ''; }
+
 const TS = Date.now(); // cache busting timestamp, fixed per page load
 
 
@@ -200,11 +212,7 @@ function renderPhotos(data) {
     var fn = encodeURIComponent(p.filename);
     var srcset = 'images/sm/' + fn + ' 400w, images/md/' + fn + ' 800w, images/lg/' + fn + ' 1920w';
     var ex = p.exif || {};
-    var exifStr = ex.model || ex.camera || '';
-    if (ex.focal) exifStr += (exifStr ? ' · ' : '') + ex.focal;
-    if (ex.aperture) exifStr += (exifStr ? ' · ' : '') + ex.aperture;
-    if (ex.shutter) exifStr += (exifStr ? ' · ' : '') + ex.shutter;
-    if (ex.iso) exifStr += (exifStr ? ' · ' : '') + 'ISO ' + ex.iso;
+    var exifStr = (_exifCamera(ex) + ' ' + _exifStr(ex)).trim();
     var gpsText2 = '', gpsText4 = '';
     if (ex.gps) {
       gpsText2 = Math.abs(ex.gps.lat).toFixed(2) + '°' + (ex.gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(ex.gps.lng).toFixed(2) + '°' + (ex.gps.lng >= 0 ? 'E' : 'W');
@@ -337,14 +345,11 @@ function initPhotoMap() {
       var gps = p.exif && p.exif.gps;
       if (!gps) return;
       var ex = p.exif || {};
+      var camera = _exifCamera(ex);
       var html = '<img src="images/lg/' + encodeURIComponent(p.filename) + '">' +
-        '<b>' + (ex.model || ex.camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b>';
-      var parts = [];
-      if (ex.focal) parts.push(String(ex.focal).replace(/&/g,'&amp;'));
-      if (ex.aperture) parts.push(String(ex.aperture).replace(/&/g,'&amp;'));
-      if (ex.shutter) parts.push(String(ex.shutter).replace(/&/g,'&amp;'));
-      if (ex.iso) parts.push('ISO ' + String(ex.iso));
-      if (parts.length) html += '<br><span class="popup-exif">' + parts.join(' · ') + '</span>';
+        '<b>' + (camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b>';
+      var exifHtml = _exifStr(ex, true);
+      if (exifHtml) html += '<br><span class="popup-exif">' + exifHtml + '</span>';
       html += '<br><span class="popup-exif">' + Math.abs(gps.lat).toFixed(4) + '°' + (gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(gps.lng).toFixed(4) + '°' + (gps.lng >= 0 ? 'E' : 'W') + '</span>';
       var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
       L.marker([gps.lat, gps.lng], {icon: icon}).addTo(_markerGroup).bindPopup(html);
@@ -563,13 +568,32 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderEssayList();
   }
   // Photos
-  if (results.photos) { window._photoData = results.photos; var total = results.photos.length; var cols = total <= 2 ? 2 : total <= 4 ? 3 : total <= 12 ? 4 : 5; var masonry = document.getElementById('photo-masonry'); masonry.style.columnCount = cols; var PS = _photoPageSize; var shown = results.photos.slice(0, PS); var hidden = total - PS; masonry.innerHTML = renderPhotos(shown);
+  if (results.photos) {
+    window._photoData = results.photos;
+    var total = results.photos.length;
+    var cols = total <= 2 ? 2 : total <= 4 ? 3 : total <= 12 ? 4 : 5;
+    document.getElementById('photo-masonry').style.columnCount = cols;
+    var shown = results.photos.slice(0, _photoPageSize);
+    document.getElementById('photo-masonry').innerHTML = renderPhotos(shown);
+    var hidden = total - _photoPageSize;
+
     buildPhotoTagFilter();
+
     var lm = document.getElementById('photo-load-more');
     if (hidden > 0) {
       lm.style.display = 'block';
       lm.innerHTML = '<button class="load-more-btn" onclick="loadMorePhotos()">Load (' + hidden + ' more)</button>';
-    } else { lm.style.display = 'none'; } var gc = results.photos.filter(function(p){return p.exif&&p.exif.gps;}).length; var elGc = document.getElementById('gps-count'); if(gc) { elGc.textContent = '· ' + gc + ' location' + (gc>1?'s':''); elGc.style.display = ''; } }
+    } else {
+      lm.style.display = 'none';
+    }
+
+    var gc = results.photos.filter(function(p) { return p.exif && p.exif.gps; }).length;
+    var elGc = document.getElementById('gps-count');
+    if (gc) {
+      elGc.textContent = '· ' + gc + ' location' + (gc > 1 ? 's' : '');
+      elGc.style.display = '';
+    }
+  }
   // Contact
   if (results.contact) document.getElementById('contact-list').innerHTML = renderContact(results.contact);
   // Friends
