@@ -7,3 +7,4 @@ __pycache__/
 /sitemap.xml
 raw_photos/
 _stars_etag.json
+/graphify-out/
