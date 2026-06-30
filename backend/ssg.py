@@ -8,7 +8,7 @@ from datetime import datetime
 from markdown import markdown as md_to_html
 from PIL import Image, ExifTags
 
-from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, BASE_DIR, DATA_DIR
+from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, format_shutter, format_aperture, format_focal, BASE_DIR, DATA_DIR
 from jinja2 import Environment, FileSystemLoader
 
 ESSAYS_DIR = os.path.join(BASE_DIR, 'essays')
@@ -177,26 +177,7 @@ def _generate_feeds():
 
 
 
-def _fmt_shutter(val):
-    try:
-        v = float(val)
-        if 0 < v < 1:
-            return f"1/{int(round(1/v))}s"
-        return f"{int(v)}s" if v == int(v) else f"{v}s"
-    except (ValueError, TypeError):
-        return str(val)
-
-def _fmt_aperture(val):
-    try:
-        return f"f/{float(val):g}"
-    except (ValueError, TypeError):
-        return str(val)
-
-def _fmt_focal(val):
-    try:
-        return f"{int(float(val))}mm"
-    except (ValueError, TypeError):
-        return str(val)
+# format_shutter, format_aperture, format_focal — imported from backend.data
 
 
 def _extract_gps(exif_dict):

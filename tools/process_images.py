@@ -10,7 +10,7 @@ import sys
 import json
 from PIL import Image, ExifTags
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from backend.data import atomic_write, dms_to_decimal
+from backend.data import atomic_write, dms_to_decimal, format_shutter, format_aperture, format_focal
 
 RAW_DIR = 'raw_photos'
 IMG_DIR = 'images'
@@ -18,28 +18,7 @@ DATA_FILE = 'data/photos.json'
 SIZES = {'sm': 400, 'md': 800, 'lg': 1920}
 
 
-def format_shutter(val):
-    try:
-        v = float(val)
-        if 0 < v < 1:
-            return f"1/{int(round(1/v))}s"
-        return f"{int(v)}s" if v.is_integer() else f"{v}s"
-    except (ValueError, TypeError):
-        return str(val)
-
-
-def format_aperture(val):
-    try:
-        return f"f/{float(val):g}"
-    except (ValueError, TypeError):
-        return str(val)
-
-
-def format_focal(val):
-    try:
-        return f"{int(float(val))}mm"
-    except (ValueError, TypeError):
-        return str(val)
+# format_shutter, format_aperture, format_focal — imported from backend.data
 
 
 def extract_gps(exif_dict):
@@ -91,7 +70,7 @@ def extract_exif(img):
 
 def process_all_images():
     """Sync: process ALL raw_photos files, update photos.json with full EXIF.
-    Preserves user-set fields (date, size). Generates missing thumbnails."""
+    Preserves user-set fields (date, size, tags). Generates missing thumbnails."""
     if not os.path.exists(RAW_DIR):
         os.makedirs(RAW_DIR)
         print(f"已创建 {RAW_DIR}/ 文件夹，请将原图放入后重试。")
@@ -100,7 +79,7 @@ def process_all_images():
     for size in SIZES:
         os.makedirs(os.path.join(IMG_DIR, size), exist_ok=True)
 
-    # Load existing data to preserve user-edited fields
+    # Load existing data to preserve user-edited fields (date, size, tags)
     existing = {}
     if os.path.exists(DATA_FILE):
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
@@ -151,6 +130,8 @@ def process_all_images():
                         entry['date'] = old_entry['date']
                     if old_entry.get('size'):
                         entry['size'] = old_entry['size']
+                    if old_entry.get('tags'):
+                        entry['tags'] = old_entry['tags']
 
                 photos_data.append(entry)
                 if is_new:
