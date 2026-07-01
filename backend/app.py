@@ -1,8 +1,7 @@
 """Flask application for the Chami CMS — app creation + static file serving."""
 
 import os
-from flask import Flask, send_from_directory
-
+from flask import Flask, request, send_from_directory
 from flask import jsonify, session
 
 from backend.data import BASE_DIR, DATA_DIR, ESSAYS_DIR, IMAGES_DIR
