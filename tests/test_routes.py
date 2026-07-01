@@ -181,3 +181,54 @@ def test_serve_data_json(client):
 def test_essay_content_404(client):
     r = client.get('/api/essays/__nonexistent__/content')
     assert r.status_code == 404
+
+
+# ── Essay CRUD with tags (exercises _parse_tags in update_essay_meta) ──
+
+def test_essay_crud_with_tags(client, data_backup):
+    # Create two essays sharing a tag
+    a = client.post('/api/essays', json={
+        'slug': 'test-tag-a', 'title': 'Essay A', 'tag': 'shared, only-a',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'A'
+    })
+    assert a.status_code == 201
+    b = client.post('/api/essays', json={
+        'slug': 'test-tag-b', 'title': 'Essay B', 'tag': 'shared, only-b',
+        'date': '2026-01-02', 'epigraph': '', 'excerpt': 'B'
+    })
+    assert b.status_code == 201
+
+    # Update essay A metadata — triggers _parse_tags in update_essay_meta
+    # on the tag-sync branch (essays sharing 'shared' tag)
+    r = client.put('/api/essays/test-tag-a', json={
+        'slug': 'test-tag-a', 'title': 'Essay A Updated',
+        'tag': 'shared, only-a', 'date': '2026-01-03',
+        'epigraph': '', 'excerpt': 'Updated'
+    })
+    assert r.status_code == 200
+    assert r.json['title'] == 'Essay A Updated'
+
+    # Verify essay B still exists (was re-synced, not deleted)
+    r2 = client.get('/api/essays/test-tag-b/content')
+    assert r2.status_code == 200
+
+    # Cleanup
+    client.delete('/api/essays/test-tag-a')
+    client.delete('/api/essays/test-tag-b')
+
+
+# ── Photo tags: success + not-found paths ──
+
+def test_photo_tags_set(client, data_backup):
+    photos = client.get('/api/photos').json
+    if not photos:
+        return
+    fn = photos[0]['filename']
+    r = client.put('/api/photo-tags', json={'filename': fn, 'tags': ['test-tag']})
+    assert r.status_code == 200
+    assert r.json['tags'] == ['test-tag']
+
+
+def test_photo_tags_not_found(client):
+    r = client.put('/api/photo-tags', json={'filename': '__none__.jpg', 'tags': []})
+    assert r.status_code == 404

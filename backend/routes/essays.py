@@ -2,19 +2,14 @@ import html
 import os
 import re
 import uuid
-import time
 
 from flask import request, jsonify
 from markdown import markdown as md_to_html
-from markupsafe import Markup
 
 from backend.app import app
 from backend.data import load_json, atomic_write_json, DATA_DIR
 from backend.ssg import (
-    _env, _calc_read_time, _parse_date,
-    _extract_first_image, _parse_tags, _build_nav,
-    _build_tag_nav_json, _sync_essay_html,
-    _generate_feeds,
+    _calc_read_time, _parse_tags, _sync_essay_html, _generate_feeds,
     ESSAYS_DIR, MD_DIR, IMAGES_DIR,
 )
 
@@ -40,34 +35,7 @@ def create_essay():
     essays.append(item)
     atomic_write_json('essays.json', essays)
 
-    # Generate HTML file
-    date_display = _parse_date(item.get('date', ''))
-    prev_nav, next_nav = _build_nav(essays, slug)
-    tag_nav_json = _build_tag_nav_json(essays, slug)
-    tag_raw = item.get('tag', '')
-    tag_display = tag_raw.replace(', ', ' · ').replace(',', ' · ')
-    og_image = _extract_first_image(item.get('body', '') or item.get('content', ''))
-    template = _env.get_template('essay.html')
-    html = template.render(
-        title=html.escape(item.get('title', '')),
-        excerpt=html.escape(item.get('excerpt', '')),
-        epigraph=html.escape(item.get('epigraph', '')),
-        tag=html.escape(tag_display),
-        date_display=html.escape(date_display),
-        read_time=read_time,
-        body_html='',
-        prev_nav=Markup(prev_nav),
-        next_nav=Markup(next_nav),
-        tag_nav_json=tag_nav_json,
-        slug=slug,
-        og_image=html.escape(og_image),
-        build_ts=int(time.time()),
-    )
-    os.makedirs(ESSAYS_DIR, exist_ok=True)
-    with open(os.path.join(ESSAYS_DIR, f"{slug}.html"), 'w', encoding='utf-8') as f:
-        f.write(html)
-
-    # Re-sync the essay directly before the new one (appended at end — prev may gain next link)
+    _sync_essay_html(item)
     if len(essays) > 1:
         _sync_essay_html(essays[-2])
     _generate_feeds()
@@ -189,7 +157,8 @@ def update_essay_content(slug):
     # 2. 更新 JSON 数据
     essays = load_json('essays.json')
     target_essay = None
-    now = __import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M')
+    from datetime import datetime
+    now = datetime.now().strftime('%Y-%m-%d %H:%M')
     for e in essays:
         if e['slug'] == slug:
             e['readTime'] = read_time

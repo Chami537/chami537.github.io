@@ -35,6 +35,19 @@ function toast(msg, err) {
 
 function markClean() { isDirty = false; }
 function hidePanel(id) { document.getElementById(id).style.display = 'none'; }
+
+// Shared drag-and-drop reorder helpers
+var _dragState = { idx: -1 };
+function _dragStart(e, idx) {
+  _dragState.idx = idx;
+  e.dataTransfer.effectAllowed = 'move';
+  e.target.style.opacity = '0.5';
+}
+function _dragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
+function _dragEnd(e) { e.target.style.opacity = '1'; _dragState.idx = -1; }
+
+var MONTHS_NUM = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
+var MONTHS_ARR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function showEntryForm(cfg) {
   var form = document.getElementById(cfg.formId);
   if (form.style.display === 'block') { form.style.display = 'none'; return; }
@@ -460,18 +473,6 @@ function renderTagChips(selected) {
 }
 
 
-function deleteTagGlobal(tag) {
-  // Permanently delete a tag from the global library (only callable from tag management UI)
-  var tags = getTags();
-  var idx_t = tags.indexOf(tag);
-  if (idx_t >= 0) { tags.splice(idx_t, 1); saveTags(tags); }
-  // Also remove from current selection
-  var cur = document.getElementById('essay-tag').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
-  var idx_c = cur.indexOf(tag);
-  if (idx_c >= 0) { cur.splice(idx_c, 1); document.getElementById('essay-tag').value = cur.join(', '); }
-  renderTagChips(document.getElementById('essay-tag').value);
-  loadEssays();
-}
 
 function toggleTag(tag) {
   var cur = document.getElementById('essay-tag').value.split(/[,，]/).map(function(s){return s.trim();}).filter(Boolean);
@@ -495,7 +496,6 @@ function getAboutTags() {
 }
 function saveAboutTags(tags) { _saveTagLib('about-tags', tags); }
 
-var _aboutDragIdx = -1;
 var _aboutEditingTag = null;
 
 function renderAboutTagChips() {
@@ -522,33 +522,23 @@ function editAboutChip(tag) {
   input.select();
 }
 
-function aboutDragStart(e, idx) {
-  _aboutDragIdx = idx;
-  e.dataTransfer.effectAllowed = 'move';
-  e.target.style.opacity = '0.5';
-}
-
-function aboutDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
+function aboutDragStart(e, idx) { _dragStart(e, idx); }
+function aboutDragOver(e) { _dragOver(e); }
 
 function aboutDrop(e, targetIdx) {
   e.preventDefault();
-  if (_aboutDragIdx < 0 || _aboutDragIdx === targetIdx) return;
+  var fromIdx = _dragState.idx;
+  if (fromIdx < 0 || fromIdx === targetIdx) return;
   var tags = getAboutTags();
-  var moved = tags.splice(_aboutDragIdx, 1)[0];
+  var moved = tags.splice(fromIdx, 1)[0];
   tags.splice(targetIdx, 0, moved);
   saveAboutTags(tags);
-  _aboutDragIdx = -1;
+  _dragState.idx = -1;
   renderAboutTagChips();
-  saveAbout(); // auto-sync tag order to server
+  saveAbout();
 }
 
-function aboutDragEnd(e) {
-  e.target.style.opacity = '';
-  _aboutDragIdx = -1;
-}
+function aboutDragEnd(e) { _dragEnd(e); }
 
 function deleteAboutTag(tag) {
   var tags = getAboutTags();
@@ -883,7 +873,6 @@ async function deletePhotoTagGlobal(tag) {
   loadPhotos();
 }
 
-var _dragIdx = -1;
 var _photoData = [];
 var _selectedPhotoIdx = -1;
 var _editorMap = null;
@@ -987,8 +976,7 @@ function showPhotoEditor(idx) {
   var curDate = p.date || '';
   if (curDate && curDate.match(/^\w{3} \d{1,2}, \d{4}$/)) {
     var parts = curDate.match(/(\w+) (\d+), (\d+)/);
-    var MONTHS = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
-    if (parts) curDate = parts[3] + '-' + MONTHS[parts[1]] + '-' + String(parts[2]).padStart(2,'0');
+    if (parts) curDate = parts[3] + '-' + MONTHS_NUM[parts[1]] + '-' + String(parts[2]).padStart(2,'0');
   }
   dateInput.value = curDate;
   // GPS
@@ -1017,8 +1005,7 @@ async function savePhotoEditor() {
   if (dateVal) {
     var dp = dateVal.split('-');
     if (dp.length === 3) {
-      var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-      dateVal = MONTHS[+dp[1]-1] + ' ' + (+dp[2]) + ', ' + dp[0];
+      dateVal = MONTHS_ARR[+dp[1]-1] + ' ' + (+dp[2]) + ', ' + dp[0];
     }
   }
   await api('PUT', '/api/photo-date', {filename: fn, date: dateVal});
@@ -1081,29 +1068,15 @@ function initEditorMap(container) {
 // Update card click to select
 // remove old prompt-based functions (editPhotoDate, editPhotoGps) — replaced by panel above
 
-function photoDragStart(e, idx) {
-  _dragIdx = idx;
-  e.dataTransfer.effectAllowed = 'move';
-  e.target.style.opacity = '0.4';
-  e.target.style.transform = 'scale(0.95)';
-}
-
-function photoDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-
-function photoDragEnd(e) {
-  e.target.style.opacity = '1';
-  e.target.style.transform = '';
-  _dragIdx = -1;
-}
+function photoDragStart(e, idx) { _dragStart(e, idx); e.target.style.transform = 'scale(0.95)'; }
+function photoDragOver(e) { _dragOver(e); }
+function photoDragEnd(e) { e.target.style.transform = ''; _dragEnd(e); }
 
 async function photoDrop(e, toIdx) {
   e.preventDefault();
   e.stopPropagation();
-  var fromIdx = _dragIdx;
-  photoDragEnd(e);
+  var fromIdx = _dragState.idx;
+  _dragEnd(e);
   if (fromIdx < 0 || fromIdx === toIdx) return;
   var item = _photoData.splice(fromIdx, 1)[0];
   _photoData.splice(toIdx, 0, item);
@@ -1367,7 +1340,7 @@ async function deleteMusic(id) {  const confirmed = await confirmDialog('确定�
 // ═══════════════════════════════════
 // ═══════════════════════════════════
 // Stack — drag-to-reorder chips
-var _stackDragIdx = -1;
+
 
 function renderStackChips(data) {
   var colors = ['#ff4d4d','#ff6d00','#ffb800','#0066ff','#00c853','#9c27b0'];
@@ -1412,30 +1385,19 @@ async function deleteStackChip(idx) {
   loadStack();
 }
 
-function stackDragStart(e, idx) {
-  _stackDragIdx = idx;
-  e.dataTransfer.effectAllowed = 'move';
-  e.target.style.opacity = '0.5';
-}
-
-function stackDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-
-function stackDragEnd(e) {
-  e.target.style.opacity = '1';
-  _stackDragIdx = -1;
-}
+function stackDragStart(e, idx) { _dragStart(e, idx); }
+function stackDragOver(e) { _dragOver(e); }
+function stackDragEnd(e) { _dragEnd(e); }
 
 async function stackDrop(e, toIdx) {
   e.preventDefault();
-  if (_stackDragIdx < 0 || _stackDragIdx === toIdx) return;
+  var fromIdx = _dragState.idx;
+  if (fromIdx < 0 || fromIdx === toIdx) return;
   var data = await api('GET', '/api/stack');
-  var item = data.splice(_stackDragIdx, 1)[0];
+  var item = data.splice(fromIdx, 1)[0];
   data.splice(toIdx, 0, item);
   await api('PUT', '/api/stack', data);
-  _stackDragIdx = -1;
+  _dragState.idx = -1;
   loadStack();
 }
 

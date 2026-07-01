@@ -54,4 +54,3 @@ for _f in _ROOTS:
 
 # Register all /api/* routes (side-effect imports — must come after app creation)
 from backend import routes       # noqa: E402,F401
-from backend import photo_api   # noqa: E402,F401  — photo tags/date/gps PUT routes
