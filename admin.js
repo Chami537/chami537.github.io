@@ -102,12 +102,12 @@ async function loadTracks() {
   var data = await api('GET', '/api/tracks');
   var html = '';
   data.forEach(function(t, i) {
-    html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line);">' +
-      '<span>' + esc(t.name) + ' <code style="color:#999">' + esc(t.file) + '</code></span>' +
-      '<button class="btn btn-sm" style="color:#c00" onclick="deleteTrack(' + i + ')">删除</button>' +
+    html += '<div class="track-row">' +
+      '<span>' + esc(t.name) + ' <code class="code-muted">' + esc(t.file) + '</code></span>' +
+      '<button class="btn btn-sm btn-danger" onclick="deleteTrack(' + i + ')">删除</button>' +
       '</div>';
   });
-  document.getElementById('tracks-list').innerHTML = html || '<p style="color:#999">暂无轨迹</p>';
+  document.getElementById('tracks-list').innerHTML = html || '<p class="text-muted">暂无轨迹</p>';
 }
 
 var _lastTrackFile = '';
@@ -333,19 +333,13 @@ async function loadEssays() {
     let tabsHtml = '';
     tags.forEach(tag => {
       let isActive = tag === currentEssayTag;
-      let btnStyle = isActive
-        ? 'padding: 6px 16px; border: none; background: var(--accent); color: #fff; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;'
-        : 'padding: 6px 16px; border: 1px solid var(--border); background: var(--card-bg); color: var(--muted); border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap;';
-
-      let hoverAttr = !isActive ? 'onmouseover="this.style.borderColor=\'var(--accent)\'; this.style.color=\'var(--accent)\'" onmouseout="this.style.borderColor=\'var(--border)\'; this.style.color=\'var(--muted)\'"' : '';
-
       if (essayDeleteTagMode) {
-        tabsHtml += '<span style="display:inline-flex;align-items:center;gap:4px;' + btnStyle + '">' +
+        tabsHtml += '<span class="tag-tab-btn' + (isActive ? ' active' : '') + '" style="display:inline-flex;align-items:center;gap:4px">' +
           '<span onclick="switchEssayTag(\'' + esc(tag) + '\')" style="cursor:pointer;">' + esc(tag) + '</span>' +
-          '<span onclick="event.stopPropagation();deleteTagFromTabs(\'' + esc(tag) + '\')" style="cursor:pointer;font-size:14px;opacity:0.5;line-height:1;" title="删除标签">\u00D7</span>' +
+          '<span onclick="event.stopPropagation();deleteTagFromTabs(\'' + esc(tag) + '\')" class="tag-tab-del" title="删除标签">\u00D7</span>' +
           '</span>';
       } else {
-        tabsHtml += '<button style="' + btnStyle + '" ' + hoverAttr + ' onclick="switchEssayTag(\'' + esc(tag) + '\')">' + esc(tag) + '</button>';
+        tabsHtml += '<button class="tag-tab-btn' + (isActive ? ' active' : '') + '" onclick="switchEssayTag(\'' + esc(tag) + '\')">' + esc(tag) + '</button>';
       }
     });
     document.getElementById('essay-tag-tabs').innerHTML = tabsHtml;
@@ -357,19 +351,19 @@ async function loadEssays() {
     });
 
     if (filteredData.length === 0) {
-       document.getElementById('essay-list').innerHTML = '<div style="text-align:center; padding: 60px; color: var(--muted); font-size: 13px; border: 1px dashed var(--border); border-radius: 8px; background: var(--card-bg);">该标签下暂无文章，点击右上角新建</div>';
+       document.getElementById('essay-list').innerHTML = '<div class="empty-state">该标签下暂无文章，点击右上角新建</div>';
        return;
     }
 
     document.getElementById('essay-list').innerHTML = filteredData.map(e => `
     <div class="card">
       <div class="card-header">
-        <div style="display:flex;align-items:center;gap:10px;">
+        <div class="essay-header-row">
           ${pinBtn(e)}
           <div>
             <div class="card-title">${esc(e.title)}</div>
             <div class="card-meta">${esc(e.date)} · ${e.readTime} min · slug: ${esc(e.slug)}</div>
-            <div class="card-meta" style="font-style:italic;">${esc(e.epigraph||'')}</div>
+            <div class="card-meta epigraph">${esc(e.epigraph||'')}</div>
           </div>
         </div>
         <div class="card-actions">
@@ -378,7 +372,7 @@ async function loadEssays() {
           <button class="btn btn-sm btn-danger" onclick="deleteEssay('${esc(e.slug)}')">删除</button>
         </div>
       </div>
-      <div class="card-meta" style="margin-top:4px;"><a href="https://github.com/Chami537/chami537.github.io/discussions?discussions_q=${esc(e.slug)}" target="_blank" rel="noopener" style="color:var(--muted);text-decoration:none;font-size:11px;">💬 查看讨论 →</a></div>
+      <div class="card-meta"><a class="essay-discuss-link" href="https://github.com/Chami537/chami537.github.io/discussions?discussions_q=${esc(e.slug)}" target="_blank" rel="noopener">💬 查看讨论 →</a></div>
     </div>
   `).join('');
   updatePinCount(data);
@@ -407,8 +401,7 @@ function _toggleDeleteTagMode(btnId, flag, onDone) {
   var btn = document.getElementById(btnId);
   var on = !flag;
   btn.textContent = on ? '完成' : '删除标签';
-  btn.style.color = on ? 'var(--danger)' : '';
-  btn.style.borderColor = on ? 'var(--danger)' : '';
+  btn.classList.toggle('btn-danger', on);
   onDone();
   return on;
 }
@@ -465,12 +458,12 @@ function pinBtn(e) {
   var totalPinned = (_essayAllData || []).filter(function(x) { return x.pinned; }).length;
   var atLimit = totalPinned >= 5;
   if (pinned) {
-    return '<button class="pin-toggle pinned" onclick="togglePin(\'' + esc(e.slug) + '\')" title="取消置顶" style="width:32px;height:32px;border:1px solid #ffb800;background:#fff8e0;border-radius:6px;cursor:pointer;font-size:16px;line-height:1;color:#ffb800;flex-shrink:0;">📍</button>';
+    return '<button class="pin-btn pinned" onclick="togglePin(\'' + esc(e.slug) + '\')" title="取消置顶">📍</button>';
   }
   if (atLimit) {
-    return '<button disabled style="width:32px;height:32px;border:1px solid #eee;background:#f5f5f5;border-radius:6px;font-size:16px;line-height:1;color:#ccc;flex-shrink:0;cursor:not-allowed;" title="已满5篇">📌</button>';
+    return '<button class="pin-btn" disabled title="已满5篇">📌</button>';
   }
-  return '<button class="pin-toggle" onclick="togglePin(\'' + esc(e.slug) + '\')" title="置顶" style="width:32px;height:32px;border:1px solid var(--border);background:var(--card-bg);border-radius:6px;cursor:pointer;font-size:16px;line-height:1;color:var(--muted);flex-shrink:0;transition:all .15s;" onmouseover="this.style.borderColor=\'#ffb800\';this.style.color=\'#ffb800\'" onmouseout="this.style.borderColor=\'var(--border)\';this.style.color=\'var(--muted)\'">📌</button>';
+  return '<button class="pin-btn" onclick="togglePin(\'' + esc(e.slug) + '\')" title="置顶">📌</button>';
 }
 
 var _essayAllData = [];
@@ -912,12 +905,11 @@ var _editorMarker = null;
 
 function _renderPhotoTagTabs() {
   var tags = getPhotoTags();
-  var btnStyle = 'padding:3px 12px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);color:var(--muted);transition:all .15s;user-select:none;background:var(--card-bg);';
-  var html = '<span tabindex="0" role="button" style="' + btnStyle + (!_currentPhotoTag ? 'background:var(--c2);color:#fff;border-color:var(--c2);' : '') + '" onclick="switchPhotoTabTag(\'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();switchPhotoTabTag(\'\')}">全部</span>';
+  var html = '<span tabindex="0" role="button" class="tag-tab-btn-sm' + (!_currentPhotoTag ? ' active' : '') + '" onclick="switchPhotoTabTag(\'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();switchPhotoTabTag(\'\')}">全部</span>';
   tags.forEach(function(t) {
-    var del = _photoDeleteTagMode ? '<span onclick="event.stopPropagation();deletePhotoTagGlobal(\'' + esc(t) + '\')" style="margin-left:2px;color:var(--danger);cursor:pointer;font-weight:700;">×</span>' : '';
+    var del = _photoDeleteTagMode ? '<span onclick="event.stopPropagation();deletePhotoTagGlobal(\'' + esc(t) + '\')" class="tag-tab-del">×</span>' : '';
     var active = _currentPhotoTag === t;
-    html += '<span tabindex="0" role="button" style="' + btnStyle + (active ? 'background:var(--c2);color:#fff;border-color:var(--c2);' : '') + '" onclick="switchPhotoTabTag(\'' + esc(t) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();switchPhotoTabTag(\'' + esc(t) + '\')}">' + esc(t) + del + '</span>';
+    html += '<span tabindex="0" role="button" class="tag-tab-btn-sm' + (active ? ' active' : '') + '" onclick="switchPhotoTabTag(\'' + esc(t) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();switchPhotoTabTag(\'' + esc(t) + '\')}">' + esc(t) + del + '</span>';
   });
   document.getElementById('photo-tag-tabs').innerHTML = html;
 }
@@ -973,8 +965,7 @@ function _refreshTagModalContent() {
   var html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">';
   tags.forEach(function(t) {
     var active = myTags.indexOf(t) >= 0;
-    html += '<span tabindex="0" role="button" onclick="toggleModalTag(\'' + esc(t) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleModalTag(\'' + esc(t) + '\')}" style="display:inline-block;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;' +
-      (active ? 'background:var(--c2);color:#fff;' : 'background:var(--border);color:var(--muted);') + '">' + esc(t) + '</span>';
+    html += '<span tabindex="0" role="button" onclick="toggleModalTag(\'' + esc(t) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();toggleModalTag(\'' + esc(t) + '\')}" class="tag-tab-btn-sm' + (active ? ' active' : '') + '">' + esc(t) + '</span>';
   });
   html += '</div>';
   document.getElementById('tag-modal-body').innerHTML = html;
@@ -1379,13 +1370,13 @@ function renderStackChips(data) {
   return data.map(function(c, i) {
     var color = colors[i % 6];
     return '<span class="stack-chip" draggable="true"' +
-      ' style="--chip-color:' + color + ';display:inline-flex;align-items:center;gap:6px;padding:4px 8px 4px 12px;border-radius:20px;font-size:12px;font-weight:600;border:1px solid ' + color + '40;color:' + color + ';cursor:grab;transition:opacity .2s;"' +
+      ' style="--chip-color:' + color + '"' +
       ' ondragstart="stackDragStart(event,' + i + ')"' +
       ' ondragover="stackDragOver(event)"' +
       ' ondragend="stackDragEnd(event)"' +
       ' ondrop="stackDrop(event,' + i + ')"' +
       '>' + esc(c) +
-      '<button onclick="deleteStackChip(' + i + ')" style="background:none;border:none;color:inherit;opacity:0.5;cursor:pointer;font-size:14px;line-height:1;padding:0 2px;" title="删除">\u00d7</button>' +
+      '<button onclick="deleteStackChip(' + i + ')" class="stack-chip-del" title="删除">\u00d7</button>' +
       '</span>';
   }).join('');
 }
@@ -1438,17 +1429,17 @@ async function refreshGitStatus() {
     const data = await api('GET', '/api/git/status');
     document.getElementById('git-badge').textContent = data.branch + (data.clean ? '  ✓' : '  ✗');
     var html = '<div class="card">';
-    html += '<div style="font-size:16px;font-weight:700;margin-bottom:4px;">' + esc(data.branch) + '</div>';
-    html += '<div style="font-size:13px;color:' + (data.clean ? '#28a745' : 'var(--danger)') + ';margin-bottom:12px;">' + (data.clean ? '工作区干净' : '有未提交的改动') + '</div>';
+    html += '<div class="git-branch">' + esc(data.branch) + '</div>';
+    html += '<div class="git-clean' + (data.clean ? ' clean' : ' dirty') + '">' + (data.clean ? '工作区干净' : '有未提交的改动') + '</div>';
     if (data.files && data.files.length > 0) {
-      html += '<div style="font-size:12px;color:var(--muted);margin-bottom:6px;">变更文件:</div>';
+      html += '<div class="git-files-label">变更文件:</div>';
       data.files.forEach(function(f) {
-        var color = f.startsWith('??') ? '#e36209' : f.startsWith(' M') || f.startsWith('M ') ? '#0366d6' : '#28a745';
-        html += '<div style="font-family:monospace;font-size:12px;padding:2px 0;color:' + color + ';">' + esc(f) + '</div>';
+        var cls = f.startsWith('??') ? ' untracked' : f.startsWith(' M') || f.startsWith('M ') ? ' modified' : ' added';
+        html += '<div class="git-file-row' + cls + '">' + esc(f) + '</div>';
       });
     }
     if (data.diffStat) {
-      html += '<div style="font-size:12px;color:var(--muted);margin-top:8px;font-family:monospace;white-space:pre-wrap;">' + esc(data.diffStat) + '</div>';
+      html += '<div class="git-diff-stat">' + esc(data.diffStat) + '</div>';
     }
     html += '</div>';
     document.getElementById('git-status-cards').innerHTML = html;
@@ -1486,9 +1477,9 @@ async function showGitDiff() {
     var el = document.getElementById('diff-content');
     // Simple color: + lines green, - lines red
     var html = (data.diff || '(no changes)').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    html = html.replace(/^(\+.*)$/gm, '<span style="color:#22863a;">$1</span>');
-    html = html.replace(/^(-.*)$/gm, '<span style="color:#cb2431;">$1</span>');
-    html = html.replace(/^(@@.*@@)$/gm, '<span style="color:#0366d6;">$1</span>');
+    html = html.replace(/^(\+.*)$/gm, '<span class="diff-added">$1</span>');
+    html = html.replace(/^(-.*)$/gm, '<span class="diff-removed">$1</span>');
+    html = html.replace(/^(@@.*@@)$/gm, '<span class="diff-hunk">$1</span>');
     el.innerHTML = html;
     document.getElementById('diff-dialog').showModal();
   } catch(e) { toast(e.message, true); }
