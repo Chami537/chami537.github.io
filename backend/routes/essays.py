@@ -99,8 +99,9 @@ def update_essay_meta(slug):
                     os.replace(old_html, new_html)
                 if os.path.exists(old_md):
                     os.replace(old_md, new_md)
-            # Only re-sync essays whose nav could have changed (share tags with updated essay)
-            new_tags = _parse_tags(e.get('tag', ''), e)
+            # Re-sync updated essay + essays sharing tags (nav links may have changed)
+            _sync_essay_html(essays[i])
+            new_tags = _parse_tags(essays[i].get('tag', ''), essays[i])
             for e2 in essays:
                 if e2['slug'] != slug and new_tags & _parse_tags(e2.get('tag', ''), e2):
                     _sync_essay_html(e2)
@@ -114,6 +115,8 @@ def delete_essay(slug):
     target = next((e for e in essays if e['slug'] == slug), None)
     title_folder = target.get('title', slug) if target else slug
     title_folder = title_folder.replace('/', '_').replace('\\', '_')
+    if '..' in title_folder.split(os.sep):
+        return jsonify({"error": "Invalid title"}), 400
     essays = [e for e in essays if e['slug'] != slug]
     atomic_write_json('essays.json', essays)
     html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
@@ -123,7 +126,8 @@ def delete_essay(slug):
     if os.path.exists(md_file):
         os.remove(md_file)
     img_dir = os.path.join(IMAGES_DIR, 'essays', title_folder)
-    if os.path.exists(img_dir):
+    essays_img_dir = os.path.realpath(os.path.join(IMAGES_DIR, 'essays'))
+    if os.path.realpath(img_dir).startswith(essays_img_dir + os.sep) and os.path.exists(img_dir):
         import shutil
         shutil.rmtree(img_dir)
     # Re-sync all remaining essays' nav links
@@ -220,6 +224,8 @@ def upload_essay_image():
         essay = next((e for e in essays if e.get('slug') == slug), None)
         folder = essay.get('title', slug) if essay else slug
         folder = folder.replace('/', '_').replace('\\', '_')
+        if '..' in folder.split(os.sep):
+            folder = slug
         img_dir = os.path.join(IMAGES_DIR, 'essays', folder)
         url = f"/images/essays/{folder}/{filename}"
     else:
