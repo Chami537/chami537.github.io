@@ -53,7 +53,7 @@ def test_get_readme(client):
 
 # ── CRUD: create → update → delete (contact, index-based) ──
 
-def test_contact_crud(client):
+def test_contact_crud(client, data_backup):
     # Create
     r = client.post('/api/contact', json={'label': 'Test', 'handle': 'unit', 'url': 'https://x.com'})
     assert r.status_code == 201
@@ -72,7 +72,7 @@ def test_contact_crud(client):
 
 # ── Friend CRUD ──
 
-def test_friend_crud(client):
+def test_friend_crud(client, data_backup):
     r = client.post('/api/friends', json={'name': 'Tester', 'url': 'https://test.dev'})
     assert r.status_code == 201
     r = client.get('/api/friends')
@@ -83,7 +83,7 @@ def test_friend_crud(client):
 
 # ── Stack replace ──
 
-def test_stack_replace(client):
+def test_stack_replace(client, data_backup):
     items = ['Python', 'Flask', 'Test']
     r = client.put('/api/stack', json=items)
     assert r.status_code == 200
@@ -93,7 +93,7 @@ def test_stack_replace(client):
 
 # ── About update ──
 
-def test_about_update(client):
+def test_about_update(client, data_backup):
     r = client.get('/api/about')
     original = dict(r.json)
     r = client.put('/api/about', json=original)
@@ -117,7 +117,7 @@ def test_create_essay_duplicate_slug(client):
 
 # ── Photos: reorder validation ──
 
-def test_photos_reorder_refuses_drop(client):
+def test_photos_reorder_refuses_drop(client, data_backup):
     photos = client.get('/api/photos').json
     if not photos:
         return
