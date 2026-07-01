@@ -324,27 +324,6 @@ def _build_nav(essays, current_slug):
     return prev_nav, next_nav
 
 
-def _build_tag_nav_json(essays, slug):
-    """Build per-tag prev/next navigation data as JSON, keyed by tag name.
-    Returns a JS object string like: {"置顶":{"prev":{"slug":"x","title":"X"},"next":null},...}
-    """
-    current = next((e for e in essays if e['slug'] == slug), None)
-    if not current:
-        return '{}'
-    current_tags = _parse_tags(current.get('tag', ''), current)
-    if not current_tags:
-        return '{}'
-    result = {}
-    idx = next((i for i, e in enumerate(essays) if e['slug'] == slug), -1)
-    for tag in current_tags:
-        siblings = [e for e in essays if e['slug'] != slug and tag in _parse_tags(e.get('tag', ''), e)]
-        prev_sib, next_sib = _find_adjacent_siblings(essays, idx, siblings)
-        result[tag] = {
-            'prev': {'slug': prev_sib['slug'], 'title': prev_sib['title']} if prev_sib else None,
-            'next': {'slug': next_sib['slug'], 'title': next_sib['title']} if next_sib else None,
-        }
-    return json.dumps(result, ensure_ascii=False).replace('</', '<\\/')
-
 
 
 def _sync_essay_html(essay, raw_md_memory=None):
@@ -388,7 +367,6 @@ def _sync_essay_html(essay, raw_md_memory=None):
     # 3. 准备渲染模板所需的数据
     essays = load_json('essays.json')
     prev_nav, next_nav = _build_nav(essays, slug)
-    tag_nav_json = _build_tag_nav_json(essays, slug)
 
     tag_raw = essay.get('tag', '')
     tag_display = html_mod.escape(tag_raw.replace(', ', ' · ').replace(',', ' · '))
@@ -408,7 +386,6 @@ def _sync_essay_html(essay, raw_md_memory=None):
         body_html=Markup(body_html),
         prev_nav=Markup(prev_nav),
         next_nav=Markup(next_nav),
-        tag_nav_json=tag_nav_json,
         slug=slug,
         og_image=html_mod.escape(og_image),
         build_ts=int(datetime.now().timestamp()),
