@@ -1,4 +1,33 @@
 // ═══════════════════════════════════
+// Auth
+// ═══════════════════════════════════
+async function doLogin() {
+  var pw = document.getElementById('login-password').value;
+  var r = await fetch('/api/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
+  if (r.ok) {
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('login-error').style.display = 'none';
+    location.reload();
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+async function doLogout() {
+  await fetch('/api/logout', {method:'POST'});
+  location.reload();
+}
+
+async function checkAuth() {
+  var r = await fetch('/api/about');
+  if (r.status === 401) {
+    document.getElementById('login-overlay').style.display = 'flex';
+  }
+}
+
+checkAuth();
+
+// ═══════════════════════════════════
 // Globals
 // ═══════════════════════════════════
 let isDirty = false;
@@ -18,6 +47,10 @@ async function api(method, path, body) {
     opts.body = body;
   }
   const r = await fetch(path, opts);
+  if (r.status === 401) {
+    document.getElementById('login-overlay').style.display = 'flex';
+    throw new Error('Unauthorized — please login');
+  }
   if (!r.ok) {
     const err = await r.json().catch(() => ({ error: r.statusText }));
     throw new Error(err.error || r.statusText);

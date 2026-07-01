@@ -3,9 +3,23 @@
 import os
 from flask import Flask, send_from_directory
 
+from flask import jsonify, session
+
 from backend.data import BASE_DIR, DATA_DIR, ESSAYS_DIR, IMAGES_DIR
 
 app = Flask(__name__)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'e825e2d3814a072e831e22b0769be5b9d1ffa587a93ca975')
+
+
+# ── Auth guard: all /api/* requires login except /api/login (skipped in test mode) ──
+@app.before_request
+def _require_auth():
+    if app.config.get('TESTING'):
+        return None
+    if request.path == '/api/login':
+        return None
+    if request.path.startswith('/api/') and not session.get('authenticated'):
+        return jsonify({"error": "Unauthorized"}), 401
 
 
 # ── Admin UI ──
@@ -54,3 +68,4 @@ for _f in _ROOTS:
 
 # Register all /api/* routes (side-effect imports — must come after app creation)
 from backend import routes       # noqa: E402,F401
+from backend import auth         # noqa: E402,F401  — login/logout endpoints
