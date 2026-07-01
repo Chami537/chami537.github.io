@@ -113,12 +113,15 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
     from backend.ssg import _cache_bust_assets
     from backend.data import BASE_DIR
 
-    # Create temp copies of index.html, admin.html and CSS/JS files
-    for html_fn, css_fn, js_fn in [('index.html', 'index.css', 'index.js'),
-                                     ('admin.html', 'admin.css', 'admin.js')]:
+    # Create temp copies of all HTML, CSS, JS files
+    configs = [('index.html', 'index.css', ('index.js',)),
+               ('admin.html', 'admin.css', ('admin.js', 'admin-content.js', 'admin-essays.js', 'admin-photos.js'))]
+    for html_fn, css_fn, js_fns in configs:
         (tmp_path / css_fn).write_text('/* css */')
-        (tmp_path / js_fn).write_text('/* js */')
-        (tmp_path / html_fn).write_text(f'<link href="{css_fn}?v=999" rel="stylesheet">\n<script src="{js_fn}?v=999"></script>')
+        for js_fn in js_fns:
+            (tmp_path / js_fn).write_text('/* js */')
+        js_tags = '\n'.join(f'<script src="{js_fn}?v=999"></script>' for js_fn in js_fns)
+        (tmp_path / html_fn).write_text(f'<link href="{css_fn}?v=999" rel="stylesheet">\n{js_tags}')
 
     now = int(time.time())
     monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
@@ -127,9 +130,9 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
 
     _cache_bust_assets()
 
-    for html_fn, css_fn, js_fn in [('index.html', 'index.css', 'index.js'),
-                                     ('admin.html', 'admin.css', 'admin.js')]:
+    for html_fn, css_fn, js_fns in configs:
         result = (tmp_path / html_fn).read_text()
         assert f'{css_fn}?v={now}' in result
-        assert f'{js_fn}?v={now}' in result
-        assert '?v=999' not in result
+        for js_fn in js_fns:
+            assert f'{js_fn}?v={now}' in result
+            assert '?v=999' not in result
