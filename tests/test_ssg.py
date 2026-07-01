@@ -6,6 +6,7 @@ from PIL import Image
 from backend.ssg import (
     _extract_exif, _extract_gps, _calc_read_time, _parse_date,
     _parse_tags, _find_adjacent_siblings, _extract_first_image,
+    _cache_bust_assets,
 )
 from backend.data import load_json
 
@@ -102,3 +103,33 @@ def test_extract_exif_no_exif():
     img = Image.open(buf)
     result = _extract_exif(img)
     assert result == {}
+
+
+# ── _cache_bust_assets ──
+
+def test_cache_bust_assets(tmp_path, monkeypatch):
+    """Verify cache bust replaces ?v=old → ?v=new in CSS/JS links."""
+    import time
+    from backend.ssg import _cache_bust_assets
+    from backend.data import BASE_DIR
+
+    # Create temp copies of index.html, admin.html and CSS/JS files
+    for html_fn, css_fn, js_fn in [('index.html', 'index.css', 'index.js'),
+                                     ('admin.html', 'admin.css', 'admin.js')]:
+        (tmp_path / css_fn).write_text('/* css */')
+        (tmp_path / js_fn).write_text('/* js */')
+        (tmp_path / html_fn).write_text(f'<link href="{css_fn}?v=999" rel="stylesheet">\n<script src="{js_fn}?v=999"></script>')
+
+    now = int(time.time())
+    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
+    monkeypatch.setattr('os.path.getmtime', lambda p: now)
+    monkeypatch.setattr('os.path.exists', lambda p: True)
+
+    _cache_bust_assets()
+
+    for html_fn, css_fn, js_fn in [('index.html', 'index.css', 'index.js'),
+                                     ('admin.html', 'admin.css', 'admin.js')]:
+        result = (tmp_path / html_fn).read_text()
+        assert f'{css_fn}?v={now}' in result
+        assert f'{js_fn}?v={now}' in result
+        assert '?v=999' not in result

@@ -232,3 +232,38 @@ def test_photo_tags_set(client, data_backup):
 def test_photo_tags_not_found(client):
     r = client.put('/api/photo-tags', json={'filename': '__none__.jpg', 'tags': []})
     assert r.status_code == 404
+
+
+# ── toggle_pin ──
+
+def test_toggle_pin(client, data_backup):
+    # Create a test essay
+    r = client.post('/api/essays', json={
+        'slug': 'test-toggle-pin', 'title': 'Toggle Pin Test',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'pin test',
+        'tag': ''
+    })
+    slug = r.json.get('slug', 'test-toggle-pin')
+
+    # Default: not pinned
+    essays = client.get('/api/essays').json
+    essay = next((e for e in essays if e['slug'] == slug), None)
+    assert essay is not None
+    assert essay.get('pinned') != True
+
+    # Toggle: pin it
+    r2 = client.post(f'/api/essays/{slug}/pin')
+    assert r2.status_code == 200
+    essays2 = client.get('/api/essays').json
+    essay2 = next((e for e in essays2 if e['slug'] == slug), None)
+    assert essay2.get('pinned') == True
+
+    # Toggle again: unpin
+    r3 = client.post(f'/api/essays/{slug}/pin')
+    assert r3.status_code == 200
+    essays3 = client.get('/api/essays').json
+    essay3 = next((e for e in essays3 if e['slug'] == slug), None)
+    assert essay3.get('pinned') != True
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
