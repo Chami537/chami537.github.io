@@ -9,14 +9,17 @@ from markdown import markdown as md_to_html
 from backend.app import app
 from backend.data import load_json, atomic_write_json, DATA_DIR
 from backend.ssg import (
-    _calc_read_time, _parse_tags, _sync_essay_html, _generate_feeds,
+    _calc_read_time, _parse_date, _parse_tags, _sync_essay_html, _generate_feeds,
     ESSAYS_DIR, MD_DIR, IMAGES_DIR,
 )
 
 
 @app.route('/api/essays', methods=['GET'])
 def list_essays():
-    return jsonify(load_json('essays.json'))
+    essays = load_json('essays.json')
+    for e in essays:
+        e['date_display'] = _parse_date(e.get('date', ''))
+    return jsonify(essays)
 
 @app.route('/api/essays', methods=['POST'])
 def create_essay():

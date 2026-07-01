@@ -2,4 +2,5 @@ flask
 markdown
 Pillow
 pymdown-extensions
+python-multipart
 pytest
