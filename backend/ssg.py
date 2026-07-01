@@ -52,14 +52,18 @@ def _calc_read_time(text):
     return minutes
 
 
-def _parse_date(date_str):
-    """'2026-06' or '2026-06-25 14:30' → 'Jun 2026' or 'Jun 25, 2026'"""
+def _parse_date(date_str, include_time=False):
+    """'2026-06' or '2026-06-25 14:30' → 'Jun 2026' or 'Jun 25, 2026'
+    If include_time=True, '2026-06-25 14:30' → '14:30, Jun 25, 2026'"""
     if not isinstance(date_str, str) or not date_str.strip():
         return date_str if isinstance(date_str, str) else ''
     for fmt in ('%Y-%m-%d %H:%M', '%Y-%m'):
         try:
             dt = datetime.strptime(date_str.strip(), fmt)
-            return dt.strftime('%b %d, %Y') if fmt.endswith('%H:%M') else dt.strftime('%b %Y')
+            date_part = dt.strftime('%b %d, %Y') if fmt.endswith('%H:%M') else dt.strftime('%b %Y')
+            if include_time and fmt.endswith('%H:%M'):
+                return f"{dt.hour:02d}:{dt.minute:02d}, {date_part}"
+            return date_part
         except ValueError:
             continue
     return date_str
@@ -352,11 +356,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
 
     # 2. 将 Markdown 渲染为 HTML 正文
     rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}}) if raw_md else ""
-    date_str = essay.get('date', '')
-    last_edited = _parse_date(date_str)
-    time_part = date_str.split(' ')[1].split(':') if ' ' in date_str and len(date_str.split(' ')) > 1 else None
-    if time_part and len(time_part) >= 2:
-        last_edited = f"{time_part[0]}:{time_part[1]}, {last_edited}"
+    last_edited = _parse_date(essay.get('date', ''), include_time=True)
     body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
 
     # 2.5 写独立 .md 文件（正源）
