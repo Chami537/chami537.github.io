@@ -4,36 +4,28 @@ import uuid
 from flask import request, jsonify
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, BASE_DIR
+from backend.data import load_json, BASE_DIR
+from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id
 
 
 @app.route('/api/music', methods=['GET'])
 def list_music():
-    return jsonify(load_json('music.json'))
+    return list_all('music.json')
+
 
 @app.route('/api/music', methods=['POST'])
 def create_music():
     if not isinstance(request.json, dict):
         return jsonify({"error": "Expected a JSON object"}), 400
-    music = load_json('music.json')
-    item = request.json
-    item['id'] = max((m['id'] for m in music), default=0) + 1
-    music.append(item)
-    atomic_write_json('music.json', music)
-    return jsonify(item), 201
+    return create_item('music.json', request.json, auto_id=True)
+
 
 @app.route('/api/music/<int:id>', methods=['PUT'])
 def update_music(id):
     if not isinstance(request.json, dict):
         return jsonify({"error": "Expected a JSON object"}), 400
-    music = load_json('music.json')
-    for i, m in enumerate(music):
-        if m['id'] == id:
-            music[i].update(request.json)
-            music[i]['id'] = id
-            atomic_write_json('music.json', music)
-            return jsonify(music[i])
-    return jsonify({"error": "Not found"}), 404
+    return update_item_by_id('music.json', id, request.json)
+
 
 @app.route('/api/music/upload', methods=['POST'])
 def upload_music():
@@ -49,8 +41,10 @@ def upload_music():
     file.save(os.path.join(music_dir, filename))
     return jsonify({"filename": filename, "status": "uploaded"}), 201
 
+
 @app.route('/api/music/<int:id>', methods=['DELETE'])
 def delete_music(id):
+    # Clean up MP3 file before deleting JSON entry
     music = load_json('music.json')
     for m in music:
         if m['id'] == id:
@@ -59,6 +53,4 @@ def delete_music(id):
                 mp3_path = os.path.join(BASE_DIR, 'music', os.path.basename(fn))
                 if os.path.exists(mp3_path):
                     os.remove(mp3_path)
-    music = [m for m in music if m['id'] != id]
-    atomic_write_json('music.json', music)
-    return jsonify({"status": "deleted"})
+    return delete_item_by_id('music.json', id)
