@@ -103,7 +103,13 @@ function initMusicPlayer() {
   };
   musicEndHandler = () => {
     if (curRow) { curRow.classList.remove('playing'); curRow.style.removeProperty('--progress'); }
+    // Auto-play next track
+    var rows = document.querySelectorAll('.music-row');
+    var idx = Array.prototype.indexOf.call(rows, curRow);
     curRow = null;
+    if (idx >= 0 && idx + 1 < rows.length) {
+      rows[idx + 1].click();
+    }
   };
   player.addEventListener('timeupdate', musicTimeHandler);
   player.addEventListener('ended', musicEndHandler);
