@@ -15,7 +15,7 @@ _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
 
 # ═══════════════════════════════════════════
 
-def _cache_bust_index():
+def _cache_bust_assets():
     """Append ?v=<mtime> to CSS/JS links in index.html and admin.html.
     Uses regex to safely replace existing version strings — idempotent, no stacking.
     """
@@ -24,9 +24,11 @@ def _cache_bust_index():
         html_path = os.path.join(BASE_DIR, html_fn)
         if not os.path.exists(html_path):
             continue
+        css_path = os.path.join(BASE_DIR, css_fn)
+        js_path = os.path.join(BASE_DIR, js_fn)
         ts = int(max(
-            os.path.getmtime(os.path.join(BASE_DIR, css_fn)) if os.path.exists(os.path.join(BASE_DIR, css_fn)) else 0,
-            os.path.getmtime(os.path.join(BASE_DIR, js_fn)) if os.path.exists(os.path.join(BASE_DIR, js_fn)) else 0,
+            os.path.getmtime(css_path) if os.path.exists(css_path) else 0,
+            os.path.getmtime(js_path) if os.path.exists(js_path) else 0,
         ))
         if ts == 0:
             continue
@@ -54,21 +56,13 @@ def _parse_date(date_str):
     """'2026-06' or '2026-06-25 14:30' → 'Jun 2026' or 'Jun 25, 2026'"""
     if not isinstance(date_str, str) or not date_str.strip():
         return date_str if isinstance(date_str, str) else ''
-    try:
-        MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-        date_segments = date_str.split(' ')[0].split('-')
-
-        result = ''
-        if len(date_segments) >= 3 and date_segments[2] and date_segments[1]:
-            m = MONTHS[int(date_segments[1]) - 1]
-            result = f"{m} {int(date_segments[2])}, {date_segments[0]}"
-        elif len(date_segments) >= 2 and date_segments[1]:
-            m = MONTHS[int(date_segments[1]) - 1]
-            result = f"{m} {date_segments[0]}"
-
-        return result or date_str
-    except (ValueError, IndexError):
-        return date_str
+    for fmt in ('%Y-%m-%d %H:%M', '%Y-%m'):
+        try:
+            dt = datetime.strptime(date_str.strip(), fmt)
+            return dt.strftime('%b %d, %Y') if fmt.endswith('%H:%M') else dt.strftime('%b %Y')
+        except ValueError:
+            continue
+    return date_str
 
 
 def _extract_first_image(md_text):
@@ -168,8 +162,6 @@ def _generate_feeds():
 
 
 
-
-# format_shutter, format_aperture, format_focal — imported from backend.data
 
 
 def _extract_gps(exif_dict):

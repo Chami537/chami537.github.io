@@ -25,8 +25,9 @@ def load_json(name):
         return []
 
 
-def atomic_write(filepath, data):
-    """Atomically write JSON to *filepath*: .tmp → os.replace, prevents corruption on crash."""
+def atomic_write_json(filename, data):
+    """Atomically write JSON to DATA_DIR/<filename>: .tmp → os.replace, prevents corruption on crash."""
+    filepath = os.path.join(DATA_DIR, filename)
     tmp_filepath = filepath + '.tmp'
     try:
         with open(tmp_filepath, 'w', encoding='utf-8') as f:
@@ -36,11 +37,6 @@ def atomic_write(filepath, data):
         if os.path.exists(tmp_filepath):
             os.remove(tmp_filepath)
         raise
-
-
-def atomic_write_json(filename, data):
-    """Atomically write JSON to DATA_DIR/<filename>. Delegates to atomic_write()."""
-    atomic_write(os.path.join(DATA_DIR, filename), data)
 
 
 def decimal_to_dms(d):

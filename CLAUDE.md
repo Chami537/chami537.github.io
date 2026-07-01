@@ -14,15 +14,13 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - `manage.py` — CLI 入口（42 行），`python manage.py [build|sync-photos|set-gps]`
 - `manage.bat` — 一键启动脚本
 - `scripts/` — 辅助脚本（`gps_panel.bat`）
-- **后端** `backend/`（1842 行单体 → 6 文件包）：
+- **后端** `backend/`：
   - `data.py` — `load_json` / `atomic_write_json`
   - `app.py` — Flask 创建 + 静态文件路由
-  - `routes.py` — 全部 41 个 `/api/*` CRUD 端点
+  - `routes/` — 全部 41 个 `/api/*` CRUD 端点（10 个子模块，含 photos/ 照片标签日期 GPS）
   - `ssg.py` — Essay 辅助 + SSG 生成器（Jinja2 模板）
-  - `photo_api.py` — 照片标签/日期/GPS PUT 端点
-  - 导入链：`manage → backend.app → backend.routes → backend.ssg → backend.data`（单向无循环）
+  - 导入链：`manage → routes → ssg → data`（单向）；`routes/*` 子模块反向 `import app` 注册 `@app.route`，形成 Flask 模式三角引用（非循环依赖 bug）
 - `tools/` — 独立工具
-  - `gps_panel.py` — 可视化 GPS 标注面板（端口 5001）
   - `process_images.py` — 图像流水线（全量同步模式）
 - `templates/` — Jinja2 模板
   - `essay.html` — 随笔页模板

@@ -1,10 +1,1 @@
-from backend.routes.work import *
-from backend.routes.essays import *
-from backend.routes.photos import *
-from backend.routes.friends import *
-from backend.routes.about import *
-from backend.routes.contact import *
-from backend.routes.music import *
-from backend.routes.stack import *
-from backend.routes.git_api import *
-from backend.routes.readme import *
+from backend.routes import work, essays, photos, friends, about, contact, music, stack, git_api, readme  # noqa: F401 — side-effect imports for @app.route registration

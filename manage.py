@@ -4,28 +4,25 @@
 import sys
 
 if __name__ == '__main__':
+    import os
     from backend.app import app
-    from backend.data import load_json
+    from backend.data import load_json, ESSAYS_DIR, MD_DIR, DATA_DIR
 
     if len(sys.argv) > 1:
         if sys.argv[1] == 'build':
-            from backend.ssg import _sync_essay_html, _generate_feeds, _cache_bust_index
-            import os
+            from backend.ssg import _sync_essay_html, _generate_feeds, _cache_bust_assets
             force = '--force' in sys.argv
             print("Building static site..." + (" (incremental)" if not force else " (full)"))
 
             essays = load_json('essays.json')
-            essays_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'essays')
-            md_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'md')
-            data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
-            essays_json = os.path.join(data_dir, 'essays.json')
+            essays_json = os.path.join(DATA_DIR, 'essays.json')
 
             rebuilt = 0
             skipped = 0
             for e in essays:
                 slug = e['slug']
-                html_path = os.path.join(essays_dir, f'{slug}.html')
-                md_path = os.path.join(md_dir, f'{slug}.md')
+                html_path = os.path.join(ESSAYS_DIR, f'{slug}.html')
+                md_path = os.path.join(MD_DIR, f'{slug}.md')
 
                 if not force and os.path.exists(html_path):
                     html_mtime = os.path.getmtime(html_path)
@@ -40,9 +37,8 @@ if __name__ == '__main__':
 
             feeds_need_rebuild = force or rebuilt > 0 or skipped < len(essays)
             if feeds_need_rebuild:
-                archive_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'archive.html')
                 _generate_feeds()
-                _cache_bust_index()
+                _cache_bust_assets()
             else:
                 print("  (feeds unchanged — skipped)")
 
@@ -53,7 +49,7 @@ if __name__ == '__main__':
             print()
             print(f"Done: {rebuilt} rebuilt, {skipped} skipped — {len(essays)} essays + feeds + cache bust.")
         elif sys.argv[1] in ('process-images', 'sync-photos'):
-            import sys as _sys; _sys.path.insert(0, 'tools')
+            sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'tools'))
             import process_images
             process_images.process_all_images()
         elif sys.argv[1] == 'set-gps':

@@ -130,6 +130,11 @@ function _exifStr(ex, html) {
 
 function _exifCamera(ex) { return ex.model || ex.camera || ''; }
 
+function _gpsStr(lat, lng, decimals) {
+  decimals = decimals != null ? decimals : 4;
+  return Math.abs(lat).toFixed(decimals) + '\u00B0' + (lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(lng).toFixed(decimals) + '\u00B0' + (lng >= 0 ? 'E' : 'W');
+}
+
 const TS = Date.now(); // cache busting timestamp, fixed per page load
 
 
@@ -222,8 +227,8 @@ function renderPhotos(data) {
     var exifStr = (_exifCamera(ex) + ' ' + _exifStr(ex)).trim();
     var gpsText2 = '', gpsText4 = '';
     if (ex.gps) {
-      gpsText2 = Math.abs(ex.gps.lat).toFixed(2) + '°' + (ex.gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(ex.gps.lng).toFixed(2) + '°' + (ex.gps.lng >= 0 ? 'E' : 'W');
-      gpsText4 = Math.abs(ex.gps.lat).toFixed(4) + '°' + (ex.gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(ex.gps.lng).toFixed(4) + '°' + (ex.gps.lng >= 0 ? 'E' : 'W');
+      gpsText2 = _gpsStr(ex.gps.lat, ex.gps.lng, 2);
+      gpsText4 = _gpsStr(ex.gps.lat, ex.gps.lng, 4);
     }
     var gpsHtml = gpsText2 ? ' · <span style="cursor:pointer;text-decoration:underline" class="gps-link" onclick="event.stopPropagation();flyToPhoto(\'' + encodeURIComponent(p.filename) + '\',' + ex.gps.lat + ',' + ex.gps.lng + ')">' + gpsText2 + '</span>' : '';
     var dateHtml = p.date ? '<span class="photo-date">' + p.date + '</span>' : '';
@@ -357,7 +362,7 @@ function initPhotoMap() {
         '<b>' + (camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b>';
       var exifHtml = _exifStr(ex, true);
       if (exifHtml) html += '<br><span class="popup-exif">' + exifHtml + '</span>';
-      html += '<br><span class="popup-exif">' + Math.abs(gps.lat).toFixed(4) + '°' + (gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(gps.lng).toFixed(4) + '°' + (gps.lng >= 0 ? 'E' : 'W') + '</span>';
+      html += '<br><span class="popup-exif">' + _gpsStr(gps.lat, gps.lng) + '</span>';
       var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
       L.marker([gps.lat, gps.lng], {icon: icon}).addTo(_markerGroup).bindPopup(html);
     });
