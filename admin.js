@@ -5,8 +5,7 @@ async function doLogin() {
   var pw = document.getElementById('login-password').value;
   var r = await fetch('/api/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
   if (r.ok) {
-    document.getElementById('login-overlay').style.display = 'none';
-    document.getElementById('login-error').style.display = 'none';
+    isDirty = false;
     location.reload();
   } else {
     document.getElementById('login-error').style.display = 'block';
