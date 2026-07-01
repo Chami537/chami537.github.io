@@ -49,6 +49,10 @@ def update_photo_gps():
     d = request.json
     if not isinstance(d, dict) or 'filename' not in d or 'lat' not in d or 'lng' not in d:
         return jsonify({"error": "Expected {filename, lat, lng}"}), 400
+    if not isinstance(d['lat'], (int, float)) or not isinstance(d['lng'], (int, float)):
+        return jsonify({"error": "lat and lng must be numbers"}), 400
+    if not (-90 <= d['lat'] <= 90) or not (-180 <= d['lng'] <= 180):
+        return jsonify({"error": "lat must be -90..90, lng must be -180..180"}), 400
     lat, lng = float(d['lat']), float(d['lng'])
     p, photos_lock = _find_photo(d['filename'])
     if not p:

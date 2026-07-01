@@ -186,7 +186,14 @@ function renderEssayList() {
     var M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     var dp = (e.date || '').split(' ')[0].split('-');
     var mi = +dp[1] - 1;
-    var dateDisplay = dp.length >= 2 && mi >= 0 && mi < 12 ? M[mi] + ' ' + dp[0] : (e.date || '');
+    var dateDisplay;
+    if (dp.length >= 3 && mi >= 0 && mi < 12) {
+      dateDisplay = M[mi] + ' ' + parseInt(dp[2]) + ', ' + dp[0];
+    } else if (dp.length >= 2 && mi >= 0 && mi < 12) {
+      dateDisplay = M[mi] + ' ' + dp[0];
+    } else {
+      dateDisplay = e.date || '';
+    }
     var tagParam = '?tag=' + encodeURIComponent(_essayFilter || '置顶');
     html += '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html' + tagParam + '">' +
       '<div class="essay-left">' +

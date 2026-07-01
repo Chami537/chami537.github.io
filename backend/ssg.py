@@ -16,26 +16,26 @@ _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
 # ═══════════════════════════════════════════
 
 def _cache_bust_index():
-    """Append ?v=<mtime> to index.css and index.js links in index.html.
+    """Append ?v=<mtime> to CSS/JS links in index.html and admin.html.
     Uses regex to safely replace existing version strings — idempotent, no stacking.
     """
-    index_path = os.path.join(BASE_DIR, 'index.html')
-    css_path = os.path.join(BASE_DIR, 'index.css')
-    js_path = os.path.join(BASE_DIR, 'index.js')
-    if not os.path.exists(index_path):
-        return
-    ts = int(max(
-        os.path.getmtime(css_path) if os.path.exists(css_path) else 0,
-        os.path.getmtime(js_path) if os.path.exists(js_path) else 0,
-    ))
-    if ts == 0:
-        return
-    with open(index_path, 'r', encoding='utf-8') as f:
-        html = f.read()
-    html = re.sub(r'href="index\.css(\?v=\d+)?"', f'href="index.css?v={ts}"', html)
-    html = re.sub(r'src="index\.js(\?v=\d+)?"', f'src="index.js?v={ts}"', html)
-    with open(index_path, 'w', encoding='utf-8') as f:
-        f.write(html)
+    for html_fn, css_fn, js_fn in [('index.html', 'index.css', 'index.js'),
+                                     ('admin.html', 'admin.css', 'admin.js')]:
+        html_path = os.path.join(BASE_DIR, html_fn)
+        if not os.path.exists(html_path):
+            continue
+        ts = int(max(
+            os.path.getmtime(os.path.join(BASE_DIR, css_fn)) if os.path.exists(os.path.join(BASE_DIR, css_fn)) else 0,
+            os.path.getmtime(os.path.join(BASE_DIR, js_fn)) if os.path.exists(os.path.join(BASE_DIR, js_fn)) else 0,
+        ))
+        if ts == 0:
+            continue
+        with open(html_path, 'r', encoding='utf-8') as f:
+            html = f.read()
+        html = re.sub(rf'href="{css_fn}(\?v=\d+)?"', f'href="{css_fn}?v={ts}"', html)
+        html = re.sub(rf'src="{js_fn}(\?v=\d+)?"', f'src="{js_fn}?v={ts}"', html)
+        with open(html_path, 'w', encoding='utf-8') as f:
+            f.write(html)
 
 
 def _calc_read_time(text):
@@ -94,9 +94,13 @@ def _generate_rss():
         item['pub_date'] = ''
         try:
             dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M')
-            item['pub_date'] = dt.strftime('%a, %d %b %Y %H:%M:%S +0800')
         except ValueError:
-            pass
+            try:
+                dt = datetime.strptime(date_str, '%Y-%m-%d')
+            except ValueError:
+                dt = None
+        if dt:
+            item['pub_date'] = dt.strftime('%a, %d %b %Y %H:%M:%S +0800')
         enriched.append(item)
     last_build = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0800')
     html = _env.get_template('rss.xml').render(essays=enriched, last_build=last_build)
@@ -193,7 +197,12 @@ def _extract_exif(img):
     exif_raw = img._getexif()
     if not exif_raw:
         return exif_data
-    tags = {ExifTags.TAGS.get(k, k): str(v) for k, v in exif_raw.items()}
+    tags = {}
+    for k, v in exif_raw.items():
+        name = ExifTags.TAGS.get(k, k)
+        if hasattr(v, 'numerator') and hasattr(v, 'denominator'):
+            v = float(v)
+        tags[name] = str(v)
     if 'Make' in tags:
         exif_data['camera'] = tags['Make']
     if 'Model' in tags:
@@ -220,23 +229,22 @@ def _set_gps(filename, lat, lng):
         print(f"文件不存在: {path}")
         return
 
-    img = Image.open(path)
-    exif = img.getexif()
+    with Image.open(path) as img:
+        exif = img.getexif()
 
-    # 十进制 → 度分秒（始终正值，方向由 N/S/E/W tag 承载，见 backend/data.py）
-    lat_dms = decimal_to_dms(lat)
-    lng_dms = decimal_to_dms(lng)
+        # 十进制 → 度分秒（始终正值，方向由 N/S/E/W tag 承载，见 backend/data.py）
+        lat_dms = decimal_to_dms(lat)
+        lng_dms = decimal_to_dms(lng)
 
-    gps_ifd = {
-        1: 'N' if lat >= 0 else 'S',
-        2: lat_dms,
-        3: 'E' if lng >= 0 else 'W',
-        4: lng_dms,
-    }
-    exif[34853] = gps_ifd
+        gps_ifd = {
+            1: 'N' if lat >= 0 else 'S',
+            2: lat_dms,
+            3: 'E' if lng >= 0 else 'W',
+            4: lng_dms,
+        }
+        exif[34853] = gps_ifd
 
-    img.save(path, 'JPEG', quality=95, exif=exif.tobytes())
-    img.close()
+        img.save(path, 'JPEG', quality=95, exif=exif.tobytes())
 
     # 同步更新 photos.json
     photos_json_path = os.path.join(DATA_DIR, 'photos.json')
@@ -450,6 +458,9 @@ def _fetch_stars():
             with urllib.request.urlopen(req, timeout=10) as resp:
                 if resp.status == 304:
                     continue
+                if resp.status != 200:
+                    print(f"  WARNING: GitHub API returned {resp.status} for {repo}")
+                    continue
                 data = json.loads(resp.read().decode())
                 stars = data.get('stargazers_count', 0)
                 if w.get('stars') != stars:
@@ -458,7 +469,8 @@ def _fetch_stars():
                 new_etag = resp.headers.get('ETag', '')
                 if new_etag:
                     etags[repo] = new_etag
-        except Exception:
+        except Exception as exc:
+            print(f"  WARNING: failed to fetch stars for {repo}: {exc}")
             continue
 
     if updated:

@@ -40,16 +40,15 @@ def list_photos():
             path = os.path.join(RAW_DIR, fn)
             info = {'filename': fn}
             try:
-                img = Image.open(path)
-                info['size'] = img.size
-                for pe in photos_json:
-                    if pe.get('filename') == fn and pe.get('date'):
-                        info['date'] = pe['date']
-                        break
-                gps_data = _extract_gps(img._getexif())
-                if gps_data:
-                    info['gps'] = gps_data
-                img.close()
+                with Image.open(path) as img:
+                    info['size'] = img.size
+                    for pe in photos_json:
+                        if pe.get('filename') == fn and pe.get('date'):
+                            info['date'] = pe['date']
+                            break
+                    gps_data = _extract_gps(img._getexif())
+                    if gps_data:
+                        info['gps'] = gps_data
             except Exception as e:
                 info['error'] = str(e)
             photos.append(info)

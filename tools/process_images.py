@@ -12,8 +12,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from backend.data import load_json, atomic_write_json
 from backend.ssg import _extract_exif
 
-RAW_DIR = 'raw_photos'
-IMG_DIR = 'images'
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RAW_DIR = os.path.join(BASE_DIR, 'raw_photos')
+IMG_DIR = os.path.join(BASE_DIR, 'images')
 SIZES = {'sm': 400, 'md': 800, 'lg': 1920}
 
 
