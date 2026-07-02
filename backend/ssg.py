@@ -133,7 +133,7 @@ def _extract_first_image(md_text):
 def _generate_rss():
     """Generate rss.xml from essays.json (Jinja2 template)."""
     essays = load_json('essays.json')
-    visible = [e for e in essays if not e.get('hidden')]
+    visible = [e for e in essays if not e.get('password')]
     enriched = []
     for e in visible[:20]:
         item = dict(e)
@@ -160,7 +160,7 @@ def _generate_sitemap():
     essays = load_json('essays.json')
     enriched = []
     for e in essays:
-        if e.get('hidden'):
+        if e.get('password'):
             continue
         item = dict(e)
         date_str = e.get('date', '')
@@ -179,7 +179,7 @@ def _generate_sitemap():
 def _generate_archive():
     """Generate archive.html — timeline grouped by year (Jinja2 template)."""
     essays = load_json('essays.json')
-    visible = [e for e in essays if not e.get('hidden')]
+    visible = [e for e in essays if not e.get('password')]
     for e in visible:
         e.pop('password', None)
     essays_sorted = sorted(visible, key=lambda e: e.get('date', ''), reverse=True)
@@ -216,7 +216,7 @@ def _generate_public_essays():
     essays = load_json('essays.json')
     visible = []
     for e in essays:
-        if e.get('hidden'):
+        if e.get('password'):
             continue
         item = {k: v for k, v in e.items() if k != 'password'}
         visible.append(item)
@@ -444,38 +444,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
     last_edited = _parse_date(essay.get('date', ''), include_time=True)
     body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
 
-    # 2.5 Hidden essays: encrypt .md, generate placeholder page
-    if essay.get('hidden', False):
-        if raw_md and password:
-            os.makedirs(MD_DIR, exist_ok=True)
-            with open(md_file, 'w', encoding='utf-8') as f:
-                f.write(_encrypt_content(raw_md, password))
-        elif raw_md:
-            os.makedirs(MD_DIR, exist_ok=True)
-            with open(md_file, 'w', encoding='utf-8') as f:
-                f.write(raw_md)
-        # Render placeholder page
-        tag_raw = essay.get('tag', '')
-        tag_display = html_mod.escape(tag_raw.replace(', ', ' · ').replace(',', ' · '))
-        date_display = html_mod.escape(_parse_date(essay.get('date', '')))
-        template = _env.get_template('essay.html')
-        html = template.render(
-            title=html_mod.escape(essay.get('title', '')),
-            excerpt='', epigraph='', tag=tag_display,
-            date_display=date_display,
-            read_time=essay.get('readTime', 1),
-            body_html=Markup(''), encrypted_body='',
-            password_protected=False,
-            hidden_page=True,
-            prev_nav=Markup(''), next_nav=Markup(''),
-            slug=slug, og_image='',
-            build_ts=int(datetime.now().timestamp()),
-        )
-        with open(html_file, 'w', encoding='utf-8') as f:
-            f.write(html)
-        return
-
-    # 2.6 Write .md file — re-encrypt if password-protected and not hidden
+    # 2.5 Write .md file — encrypt if password-protected
     if raw_md:
         os.makedirs(MD_DIR, exist_ok=True)
         if password:
@@ -486,7 +455,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
                 f.write(raw_md)
 
     # 3. 准备渲染模板所需的数据
-    essays = [e for e in load_json('essays.json') if not e.get('hidden')]
+    essays = [e for e in load_json('essays.json') if not e.get('password')]
     prev_nav, next_nav = _build_nav(essays, slug)
 
     tag_raw = essay.get('tag', '')
@@ -513,7 +482,6 @@ def _sync_essay_html(essay, raw_md_memory=None):
         body_html=Markup(body_html),
         encrypted_body=encrypted_body,
         password_protected=password_protected,
-        hidden_page=False,
         prev_nav=Markup(prev_nav),
         next_nav=Markup(next_nav),
         slug=slug,

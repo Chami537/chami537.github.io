@@ -269,30 +269,31 @@ def test_toggle_pin(client, data_backup):
     client.delete(f'/api/essays/{slug}')
 
 
-# ── Hidden toggle ──
+# ── Password = hidden ──
 
-def test_toggle_hidden(client, data_backup):
+def test_password_hides_essay(client, data_backup):
+    """Setting a password hides the essay from public; clearing restores it."""
     r = client.post('/api/essays', json={
-        'slug': 'test-toggle-hidden', 'title': 'Hidden Test',
-        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'hidden test', 'tag': ''
+        'slug': 'test-pw-hide', 'title': 'Password Hide Test',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'pw hide test', 'tag': ''
     })
-    slug = r.json.get('slug', 'test-toggle-hidden')
+    slug = r.json.get('slug', 'test-pw-hide')
 
-    # Default: not hidden
+    # Set password
+    r2 = client.post(f'/api/essays/{slug}/password', json={'password': 'secret123'})
+    assert r2.status_code == 200
+    assert r2.json['password_set'] == True
+
+    # Essay still in admin API
     essays = client.get('/api/essays').json
     essay = next((e for e in essays if e['slug'] == slug), None)
     assert essay is not None
-    assert not essay.get('hidden')
+    assert essay['password_set'] == True
 
-    # Toggle: hide
-    r2 = client.post(f'/api/essays/{slug}/hidden')
-    assert r2.status_code == 200
-    assert r2.json['hidden'] == True
-
-    # Toggle again: unhide
-    r3 = client.post(f'/api/essays/{slug}/hidden')
+    # Clear password
+    r3 = client.post(f'/api/essays/{slug}/password', json={'password': ''})
     assert r3.status_code == 200
-    assert r3.json['hidden'] == False
+    assert r3.json['password_set'] == False
 
     # Cleanup
     client.delete(f'/api/essays/{slug}')
