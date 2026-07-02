@@ -157,13 +157,16 @@ function renderWork(data) {
 }
 
 var _essayData = [];
+var _allTags = [];
 var _essayFilter = '';
 
 function buildEssayFilter() {
-  var tags = new Set();
-  _essayData.forEach(function(e) {
-    (e.tag || '').split(/[,，]/).forEach(function(t) { t = t.trim(); if (t) tags.add(t); });
-  });
+  var tags = new Set(_allTags);
+  if (!tags.size) {
+    _essayData.forEach(function(e) {
+      (e.tag || '').split(/[,，]/).forEach(function(t) { t = t.trim(); if (t) tags.add(t); });
+    });
+  }
   var html = '<span class="ef-chip' + (!_essayFilter ? ' active' : '') + '" onclick="filterEssays(\'\')">置顶</span>';
   tags.forEach(function(t) {
     html += '<span class="ef-chip' + (_essayFilter === t ? ' active' : '') + '" data-tag="' + htmlEncode(t) + '" onclick="filterEssays(this.getAttribute(\'data-tag\'))">' + htmlEncode(t) + '</span>';
@@ -571,7 +574,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
   // Essays
   if (results.essays) {
-    _essayData = results.essays;
+    var essaysData = Array.isArray(results.essays) ? results.essays : results.essays.essays;
+    _allTags = Array.isArray(results.essays) ? [] : (results.essays._tags || []);
+    _essayData = essaysData;
     buildEssayFilter();
     renderEssayList();
   }

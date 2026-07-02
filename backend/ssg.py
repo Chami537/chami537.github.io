@@ -212,17 +212,25 @@ def _generate_map():
 
 
 def _generate_public_essays():
-    """Write data/essays_public.json — only non-hidden essays, no password field."""
+    """Write data/essays_public.json — only public essays, plus _tags from all essays."""
     essays = load_json('essays.json')
     visible = []
+    all_tags = set()
     for e in essays:
+        tag_str = e.get('tag', '')
+        if tag_str:
+            for t in tag_str.replace(',', '，').split('，'):
+                t = t.strip()
+                if t:
+                    all_tags.add(t)
         if e.get('password'):
             continue
         item = {k: v for k, v in e.items() if k != 'password'}
         visible.append(item)
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
+    public_data = {'_tags': sorted(all_tags), 'essays': visible}
     with open(public_path, 'w', encoding='utf-8') as f:
-        json.dump(visible, f, ensure_ascii=False, indent=2)
+        json.dump(public_data, f, ensure_ascii=False, indent=2)
 
 
 def _generate_feeds():
