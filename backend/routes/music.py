@@ -5,7 +5,7 @@ from flask import request, jsonify
 
 from backend.app import app
 from backend.data import load_json, BASE_DIR
-from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id
+from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id, require_json
 
 
 @app.route('/api/music', methods=['GET'])
@@ -14,16 +14,14 @@ def list_music():
 
 
 @app.route('/api/music', methods=['POST'])
+@require_json
 def create_music():
-    if not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
     return create_item('music.json', request.json, auto_id=True)
 
 
 @app.route('/api/music/<int:id>', methods=['PUT'])
+@require_json
 def update_music(id):
-    if not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
     return update_item_by_id('music.json', id, request.json)
 
 

@@ -4,8 +4,10 @@ import html as html_mod
 import os
 import json
 import re
+import urllib.request
 from datetime import datetime
 from markdown import markdown as md_to_html
+from markupsafe import Markup
 from PIL import Image, ExifTags
 
 from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, format_shutter, format_aperture, format_focal, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR
@@ -378,7 +380,6 @@ def _sync_essay_html(essay, raw_md_memory=None):
     # 4. 全量重新渲染 HTML
     og_image = _extract_first_image(raw_md)
     template = _env.get_template('essay.html')
-    from markupsafe import Markup
     html = template.render(
         title=html_mod.escape(essay.get('title', '')),
         excerpt=html_mod.escape(essay.get('excerpt', '')),
@@ -405,7 +406,6 @@ def _fetch_stars():
     Uses conditional GET (If-None-Match) to avoid hitting rate limits on repeat runs.
     Writes an _stars_etag key to track last-seen ETags.
     """
-    import urllib.request
     work = load_json('work.json')
     # Load cached ETags from a sidecar file (avoids polluting work.json)
     etag_path = os.path.join(DATA_DIR, '_stars_etag.json')
