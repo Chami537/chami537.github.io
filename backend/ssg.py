@@ -7,7 +7,6 @@ import html as html_mod
 import os
 import json
 import re
-import string
 import urllib.request
 from datetime import datetime
 from markdown import markdown as md_to_html

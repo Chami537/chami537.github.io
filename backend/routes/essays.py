@@ -34,8 +34,6 @@ def save_tag_order():
     order = request.json.get('order', [])
     if not isinstance(order, list):
         return jsonify({"error": "order must be a list"}), 400
-    from backend.data import atomic_write_json
-    tag_order_path = os.path.join(DATA_DIR, 'tags_order.json')
     atomic_write_json('tags_order.json', order)
     _generate_feeds()
     return jsonify({"status": "saved"})
