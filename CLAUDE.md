@@ -93,6 +93,10 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - 抽 `@require_json` 装饰器到 crud.py，8 文件 15 处重复 → 14 行装饰器（-16 行样板）
 - 4 处内联 import 移到文件顶部（essays.py / ssg.py）
 - feat: 随笔隐藏系统（hidden toggle + PBKDF2 加密 + Web Crypto 解密 + MD 源文件加密 + GitHub 仓库防窥）
+- feat: hidden+password 合并为单一密码系统，设密码=隐藏+加密+🕶️密码门
+- feat: 标签拖拽排序 + 前后端统一 tags_order.json
+- refactor: 加密升级 v2（HMAC-SHA256 完整性校验、向后兼容旧格式）
+- fix: 二轮审计 10 项修完（旧密码错误保护、死代码清理、原子写入等）
 
 ### 2026-06-29
 - `index.css` / `index.js` — index.html 的 CSS/JS 已拆分到独立文件
