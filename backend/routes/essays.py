@@ -133,46 +133,6 @@ def toggle_pin(slug):
     return jsonify({"pinned": target['pinned'], "count": pinned_count})
 
 
-@app.route('/api/essays/<slug>/hidden', methods=['POST'])
-def toggle_hidden(slug):
-    essays = load_json('essays.json')
-    target = next((e for e in essays if e['slug'] == slug), None)
-    if not target:
-        return jsonify({"error": "Not found"}), 404
-
-    target['hidden'] = not target.get('hidden', False)
-    password = target.get('password', '')
-    md_file = os.path.join(MD_DIR, f"{slug}.md")
-
-    if target['hidden']:
-        # Encrypt .md if password is set
-        if password and os.path.exists(md_file):
-            with open(md_file, 'r', encoding='utf-8') as f:
-                raw_md = f.read()
-            if raw_md:
-                with open(md_file, 'w', encoding='utf-8') as f:
-                    f.write(_encrypt_content(raw_md, password))
-        # Generate placeholder page
-        _sync_essay_html(target)
-        _generate_feeds()
-    else:
-        # Unhide: decrypt .md if encrypted, then regenerate HTML
-        if password and os.path.exists(md_file):
-            with open(md_file, 'r', encoding='utf-8') as f:
-                raw_md = f.read()
-            try:
-                raw_md = _decrypt_content(raw_md, password)
-                with open(md_file, 'w', encoding='utf-8') as f:
-                    f.write(raw_md)
-            except (ValueError, UnicodeDecodeError):
-                pass  # already plaintext or legacy format
-        _sync_essay_html(target)
-        _generate_feeds()
-
-    atomic_write_json('essays.json', essays)
-    return jsonify({"hidden": target['hidden']})
-
-
 @app.route('/api/essays/<slug>/password', methods=['POST'])
 @require_json
 def set_essay_password(slug):
@@ -184,14 +144,14 @@ def set_essay_password(slug):
     new_password = request.json.get('password', '')
     old_password = target.get('password', '')
     md_file = os.path.join(MD_DIR, f"{slug}.md")
-    is_hidden = target.get('hidden', False)
+    had_password = bool(old_password)
 
     if new_password:
-        # Setting password: re-encrypt .md if already hidden
-        if is_hidden and os.path.exists(md_file):
+        # Setting password: re-encrypt .md if already encrypted
+        if had_password and os.path.exists(md_file):
             with open(md_file, 'r', encoding='utf-8') as f:
                 raw_md = f.read()
-            # Decrypt with old password first (HMAC validates correctness — raises if wrong)
+            # Decrypt with old password first (HMAC validates correctness)
             if old_password:
                 try:
                     raw_md = _decrypt_content(raw_md, old_password)
@@ -215,10 +175,9 @@ def set_essay_password(slug):
 
     atomic_write_json('essays.json', essays)
 
-    # Regenerate HTML if not hidden
-    if not is_hidden:
-        _sync_essay_html(target)
-        _generate_feeds()
+    # Regenerate HTML (password gate or normal)
+    _sync_essay_html(target)
+    _generate_feeds()
 
     return jsonify({"password_set": bool(new_password)})
 

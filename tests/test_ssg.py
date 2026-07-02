@@ -164,12 +164,12 @@ def test_decrypt_wrong_password():
 
 # ── Public essays generation ──
 
-def test_generate_public_essays_filters_hidden(tmp_path, monkeypatch):
-    """Verify _generate_public_essays skips hidden essays and strips passwords."""
+def test_generate_public_essays_filters_protected(tmp_path, monkeypatch):
+    """Verify _generate_public_essays skips password-protected essays."""
     test_essays = [
-        {'slug': 'a', 'title': 'Visible', 'hidden': False, 'password': 'secret123'},
-        {'slug': 'b', 'title': 'Hidden One', 'hidden': True},
-        {'slug': 'c', 'title': 'Also Visible', 'hidden': False},
+        {'slug': 'a', 'title': 'Visible'},
+        {'slug': 'b', 'title': 'Protected', 'password': 'top'},
+        {'slug': 'c', 'title': 'Also Visible'},
     ]
     monkeypatch.setattr('backend.ssg.load_json', lambda f: test_essays)
     public_path = tmp_path / 'essays_public.json'
@@ -179,7 +179,7 @@ def test_generate_public_essays_filters_hidden(tmp_path, monkeypatch):
 
     with open(public_path, 'r', encoding='utf-8') as f:
         result = json.load(f)
-    assert len(result) == 2
+    assert len(result) == 2  # a and c visible, b filtered
     slugs = [e['slug'] for e in result]
     assert 'b' not in slugs
     assert 'a' in slugs and 'c' in slugs
