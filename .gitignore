@@ -8,3 +8,4 @@ __pycache__/
 raw_photos/
 _stars_etag.json
 /graphify-out/
+.git-rewrite/
