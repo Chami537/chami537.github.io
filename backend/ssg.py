@@ -222,6 +222,7 @@ def _generate_public_essays():
                 if t:
                     all_tags.add(t)
         item = {k: v for k, v in e.items() if k != 'password'}
+        item['date_display'] = _parse_date(e.get('date', ''))
         visible.append(item)
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
     # Use saved order from tags_order.json, filter to only tags that exist in essays
