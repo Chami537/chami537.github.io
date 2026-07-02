@@ -545,7 +545,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   var results = {};
   try {
     var fetched = await Promise.all(sections.map(function(s) {
-      return fetch('data/' + s + '.json?v=' + TS).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
+      var url = s === 'essays' ? 'data/essays_public.json' : 'data/' + s + '.json';
+      return fetch(url + '?v=' + TS).then(function(r) { return r.ok ? r.json() : null; }).catch(function() { return null; });
     }));
     sections.forEach(function(s, i) { results[s] = fetched[i]; });
   } catch(e) {}

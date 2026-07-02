@@ -269,6 +269,84 @@ def test_toggle_pin(client, data_backup):
     client.delete(f'/api/essays/{slug}')
 
 
+# ── Hidden toggle ──
+
+def test_toggle_hidden(client, data_backup):
+    r = client.post('/api/essays', json={
+        'slug': 'test-toggle-hidden', 'title': 'Hidden Test',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'hidden test', 'tag': ''
+    })
+    slug = r.json.get('slug', 'test-toggle-hidden')
+
+    # Default: not hidden
+    essays = client.get('/api/essays').json
+    essay = next((e for e in essays if e['slug'] == slug), None)
+    assert essay is not None
+    assert not essay.get('hidden')
+
+    # Toggle: hide
+    r2 = client.post(f'/api/essays/{slug}/hidden')
+    assert r2.status_code == 200
+    assert r2.json['hidden'] == True
+
+    # Toggle again: unhide
+    r3 = client.post(f'/api/essays/{slug}/hidden')
+    assert r3.status_code == 200
+    assert r3.json['hidden'] == False
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
+def test_set_password(client, data_backup):
+    r = client.post('/api/essays', json={
+        'slug': 'test-set-password', 'title': 'Password Test',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'password test', 'tag': ''
+    })
+    slug = r.json.get('slug', 'test-set-password')
+
+    # Set password
+    r2 = client.post(f'/api/essays/{slug}/password', json={'password': 'secret123'})
+    assert r2.status_code == 200
+    assert r2.json['password_set'] == True
+
+    # Verify password_set is exposed, but password itself is NOT
+    essays = client.get('/api/essays').json
+    essay = next((e for e in essays if e['slug'] == slug), None)
+    assert essay.get('password_set') == True
+    assert 'password' not in essay
+
+    # Clear password
+    r3 = client.post(f'/api/essays/{slug}/password', json={'password': ''})
+    assert r3.status_code == 200
+    assert r3.json['password_set'] == False
+
+    # Verify password_set is now false
+    essays2 = client.get('/api/essays').json
+    essay2 = next((e for e in essays2 if e['slug'] == slug), None)
+    assert essay2.get('password_set') == False
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
+def test_password_not_in_list(client, data_backup):
+    r = client.post('/api/essays', json={
+        'slug': 'test-no-pwd-leak', 'title': 'No Leak Test',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'no leak', 'tag': ''
+    })
+    slug = r.json.get('slug', 'test-no-pwd-leak')
+    client.post(f'/api/essays/{slug}/password', json={'password': 'topsecret'})
+
+    # API must not expose password
+    essays = client.get('/api/essays').json
+    for e in essays:
+        assert 'password' not in e, f'password leaked for {e.get("slug")}'
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
 # ── Auth ──
 
 def test_login_success(client_no_auth):

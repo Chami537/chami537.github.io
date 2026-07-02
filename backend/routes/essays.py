@@ -13,6 +13,7 @@ from backend.data import load_json, atomic_write_json, DATA_DIR
 from backend.crud import require_json
 from backend.ssg import (
     _calc_read_time, _parse_date, _parse_tags, _sync_essay_html, _generate_feeds,
+    _encrypt_content, _decrypt_content,
     ESSAYS_DIR, MD_DIR, IMAGES_DIR,
 )
 
@@ -22,6 +23,8 @@ def list_essays():
     essays = load_json('essays.json')
     for e in essays:
         e['date_display'] = _parse_date(e.get('date', ''))
+        e['password_set'] = bool(e.get('password', ''))
+        e.pop('password', None)
     return jsonify(essays)
 
 @app.route('/api/essays', methods=['POST'])
@@ -59,6 +62,7 @@ def update_essay_meta(slug):
             if new_slug != slug and any(e2['slug'] == new_slug for e2 in essays):
                 return jsonify({"error": "slug 已存在"}), 409
             essays[i].update(request.json)
+            essays[i].pop('password', None)  # password must be set via dedicated endpoint
             essays[i]['slug'] = new_slug
             atomic_write_json('essays.json', essays)
             # Rename HTML + MD files if slug changed
@@ -129,13 +133,113 @@ def toggle_pin(slug):
     pinned_count = sum(1 for e in essays if e.get('pinned'))
     return jsonify({"pinned": target['pinned'], "count": pinned_count})
 
+
+@app.route('/api/essays/<slug>/hidden', methods=['POST'])
+def toggle_hidden(slug):
+    essays = load_json('essays.json')
+    target = next((e for e in essays if e['slug'] == slug), None)
+    if not target:
+        return jsonify({"error": "Not found"}), 404
+
+    target['hidden'] = not target.get('hidden', False)
+    password = target.get('password', '')
+    md_file = os.path.join(MD_DIR, f"{slug}.md")
+
+    if target['hidden']:
+        # Delete public HTML
+        html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
+        if os.path.exists(html_file):
+            os.remove(html_file)
+        # Encrypt .md if password is set
+        if password and os.path.exists(md_file):
+            with open(md_file, 'r', encoding='utf-8') as f:
+                raw_md = f.read()
+            if raw_md:
+                with open(md_file, 'w', encoding='utf-8') as f:
+                    f.write(_encrypt_content(raw_md, password))
+    else:
+        # Unhide: decrypt .md if encrypted, then regenerate HTML
+        if password and os.path.exists(md_file):
+            with open(md_file, 'r', encoding='utf-8') as f:
+                raw_md = f.read()
+            try:
+                raw_md = _decrypt_content(raw_md, password)
+                with open(md_file, 'w', encoding='utf-8') as f:
+                    f.write(raw_md)
+            except Exception:
+                pass  # already plaintext
+        _sync_essay_html(target)
+        _generate_feeds()
+
+    atomic_write_json('essays.json', essays)
+    return jsonify({"hidden": target['hidden']})
+
+
+@app.route('/api/essays/<slug>/password', methods=['POST'])
+@require_json
+def set_essay_password(slug):
+    essays = load_json('essays.json')
+    target = next((e for e in essays if e['slug'] == slug), None)
+    if not target:
+        return jsonify({"error": "Not found"}), 404
+
+    new_password = request.json.get('password', '')
+    old_password = target.get('password', '')
+    md_file = os.path.join(MD_DIR, f"{slug}.md")
+    is_hidden = target.get('hidden', False)
+
+    if new_password:
+        # Setting password: re-encrypt .md if already hidden
+        if is_hidden and os.path.exists(md_file):
+            with open(md_file, 'r', encoding='utf-8') as f:
+                raw_md = f.read()
+            if old_password:
+                try:
+                    raw_md = _decrypt_content(raw_md, old_password)
+                except Exception:
+                    pass  # already plaintext
+            with open(md_file, 'w', encoding='utf-8') as f:
+                f.write(_encrypt_content(raw_md, new_password))
+        target['password'] = new_password
+    else:
+        # Clearing password: decrypt .md if hidden, remove password field
+        if is_hidden and os.path.exists(md_file) and old_password:
+            with open(md_file, 'r', encoding='utf-8') as f:
+                raw_md = f.read()
+            try:
+                raw_md = _decrypt_content(raw_md, old_password)
+                with open(md_file, 'w', encoding='utf-8') as f:
+                    f.write(raw_md)
+            except Exception:
+                pass
+        target.pop('password', None)
+
+    atomic_write_json('essays.json', essays)
+
+    # Regenerate HTML if not hidden
+    if not is_hidden:
+        _sync_essay_html(target)
+        _generate_feeds()
+
+    return jsonify({"password_set": bool(new_password)})
+
+
 @app.route('/api/essays/<slug>/content', methods=['GET'])
 def get_essay_content(slug):
+    essays = load_json('essays.json')
+    target = next((e for e in essays if e['slug'] == slug), None)
     # 优先读 .md 文件
     md_file = os.path.join(MD_DIR, f"{slug}.md")
     if os.path.exists(md_file):
         with open(md_file, 'r', encoding='utf-8') as f:
-            return jsonify({"content": f.read(), "format": "markdown"})
+            content = f.read()
+        # Decrypt if essay is password-protected
+        if target and target.get('password'):
+            try:
+                content = _decrypt_content(content, target['password'])
+            except Exception:
+                pass  # already decrypted
+        return jsonify({"content": content, "format": "markdown"})
 
     # Fallback: 从 HTML 注释提取（兼容旧格式）
     html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
