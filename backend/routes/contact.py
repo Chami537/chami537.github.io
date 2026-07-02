@@ -2,7 +2,7 @@ from flask import request, jsonify
 
 from backend.app import app
 from backend.data import atomic_write_json
-from backend.crud import list_all, create_item, update_item_by_index, delete_item_by_index
+from backend.crud import list_all, create_item, update_item_by_index, delete_item_by_index, require_json
 
 
 @app.route('/api/contact', methods=['GET'])
@@ -19,16 +19,14 @@ def update_contact():
 
 
 @app.route('/api/contact', methods=['POST'])
+@require_json
 def add_contact():
-    if not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
     return create_item('contact.json', request.json)
 
 
 @app.route('/api/contact/<int:index>', methods=['PUT'])
+@require_json
 def update_contact_item(index):
-    if not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
     return update_item_by_index('contact.json', index, request.json)
 
 

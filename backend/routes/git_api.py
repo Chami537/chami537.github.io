@@ -4,6 +4,7 @@ from flask import request, jsonify
 
 from backend.app import app
 from backend.data import BASE_DIR
+from backend.crud import require_json
 
 
 def _run_git(args):
@@ -23,9 +24,8 @@ def git_status():
     })
 
 @app.route('/api/git/commit', methods=['POST'])
+@require_json
 def git_commit():
-    if not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
     msg = request.json.get('message', '').strip()
     if not msg:
         return jsonify({"error": "Commit message required"}), 400

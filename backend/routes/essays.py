@@ -1,13 +1,16 @@
 import html
 import os
 import re
+import shutil
 import uuid
+from datetime import datetime
 
 from flask import request, jsonify
 from markdown import markdown as md_to_html
 
 from backend.app import app
 from backend.data import load_json, atomic_write_json, DATA_DIR
+from backend.crud import require_json
 from backend.ssg import (
     _calc_read_time, _parse_date, _parse_tags, _sync_essay_html, _generate_feeds,
     ESSAYS_DIR, MD_DIR, IMAGES_DIR,
@@ -22,9 +25,8 @@ def list_essays():
     return jsonify(essays)
 
 @app.route('/api/essays', methods=['POST'])
+@require_json
 def create_essay():
-    if not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
     essays = load_json('essays.json')
     item = request.json
     slug = item.get('slug', '')
@@ -46,9 +48,8 @@ def create_essay():
     return jsonify(item), 201
 
 @app.route('/api/essays/<slug>', methods=['PUT'])
+@require_json
 def update_essay_meta(slug):
-    if not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
     essays = load_json('essays.json')
     for i, e in enumerate(essays):
         if e['slug'] == slug:
@@ -99,7 +100,6 @@ def delete_essay(slug):
     img_dir = os.path.join(IMAGES_DIR, 'essays', title_folder)
     essays_img_dir = os.path.realpath(os.path.join(IMAGES_DIR, 'essays'))
     if os.path.realpath(img_dir).startswith(essays_img_dir + os.sep) and os.path.exists(img_dir):
-        import shutil
         shutil.rmtree(img_dir)
     # Re-sync all remaining essays' nav links
     for e in essays:
@@ -149,9 +149,8 @@ def get_essay_content(slug):
     return jsonify({"content": "", "format": "markdown"})
 
 @app.route('/api/essays/<slug>/content', methods=['PUT'])
+@require_json
 def update_essay_content(slug):
-    if not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
     md_content = request.json.get('content', '')
 
     # 1. 自动计算阅读时间
@@ -160,7 +159,6 @@ def update_essay_content(slug):
     # 2. 更新 JSON 数据
     essays = load_json('essays.json')
     target_essay = None
-    from datetime import datetime
     now = datetime.now().strftime('%Y-%m-%d %H:%M')
     for e in essays:
         if e['slug'] == slug:
@@ -209,9 +207,12 @@ def upload_essay_image():
 
 @app.route('/api/essays/<slug>/html', methods=['GET', 'POST'])
 def preview_essay_html(slug):
-    """Preview Markdown → HTML (no save). `slug` from URL path — required by Flask routing."""
-    if request.method == 'POST' and not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
-    md_content = request.args.get('md', '') if request.method == 'GET' else request.json.get('md', '')
+    """Preview Markdown to HTML (no save). `slug` from URL path - required by Flask routing."""
+    if request.method == 'POST':
+        if not isinstance(request.json, dict):
+            return jsonify({"error": "Expected a JSON object"}), 400
+        md_content = request.json.get('md', '')
+    else:
+        md_content = request.args.get('md', '')
     html_content = md_to_html(md_content, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}})
     return jsonify({"html": html_content})

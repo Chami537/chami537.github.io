@@ -5,6 +5,7 @@ from flask import request, jsonify
 
 from backend.app import app
 from backend.data import load_json, atomic_write_json, BASE_DIR
+from backend.crud import require_json
 
 
 @app.route('/api/about', methods=['GET'])
@@ -34,8 +35,7 @@ def upload_avatar():
     return jsonify({"url": "images/" + filename}), 201
 
 @app.route('/api/about', methods=['PUT'])
+@require_json
 def update_about():
-    if not isinstance(request.json, dict):
-        return jsonify({"error": "Expected a JSON object"}), 400
     atomic_write_json('about.json', request.json)
     return jsonify({"status": "updated"})

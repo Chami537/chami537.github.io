@@ -1,8 +1,20 @@
 """Shared CRUD helpers for JSON array endpoints — index-based and id-based."""
 
-from flask import jsonify
+from functools import wraps
+
+from flask import jsonify, request
 
 from backend.data import load_json, atomic_write_json
+
+
+def require_json(f):
+    """Decorator: reject requests without a JSON object body."""
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        if not isinstance(request.json, dict):
+            return jsonify({"error": "Expected a JSON object"}), 400
+        return f(*args, **kwargs)
+    return wrapper
 
 
 def list_all(filename):

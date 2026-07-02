@@ -90,6 +90,8 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - `_cache_bust_index()` → `_cache_bust_assets()`（支持多 JS 文件）
 - 音乐播放器自动连续播放（`musicEndHandler` 播完自动 click 下一首）
 - 补 auth 测试 5 条 + Music/Work CRUD 测试 2 条（测试 46→53）
+- 抽 `@require_json` 装饰器到 crud.py，8 文件 15 处重复 → 14 行装饰器（-16 行样板）
+- 4 处内联 import 移到文件顶部（essays.py / ssg.py）
 
 ### 2026-06-29
 - `index.css` / `index.js` — index.html 的 CSS/JS 已拆分到独立文件
