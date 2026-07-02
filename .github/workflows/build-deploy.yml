@@ -1,3 +1,4 @@
+
 name: Build & Deploy
 
 on:
@@ -33,7 +34,7 @@ jobs:
 
       - uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: './graphify-out'
 
       - id: deploy
         uses: actions/deploy-pages@v4
