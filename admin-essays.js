@@ -1,6 +1,15 @@
 // ═══════════════════════════════════
 // Essays
 // ═══════════════════════════════════
+var _showHiddenEssays = false;
+
+function toggleShowHidden() {
+  _showHiddenEssays = !_showHiddenEssays;
+  var btn = document.getElementById('toggle-hidden-btn');
+  if (btn) btn.textContent = _showHiddenEssays ? '隐藏已隐藏' : '显示已隐藏';
+  loadEssays();
+}
+
 async function loadEssays() {
   try {
     const data = await api('GET', '/api/essays');
@@ -34,11 +43,15 @@ async function loadEssays() {
     });
     document.getElementById('essay-tag-tabs').innerHTML = tabsHtml;
 
-    const filteredData = data.filter(e => {
+    var filteredData = data.filter(e => {
        if (!e.tag) return currentEssayTag === '随笔';
        let essayTags = e.tag.split(/[,，]/).map(function(s) { return s.trim(); }).filter(Boolean);
        return essayTags.includes(currentEssayTag);
     });
+
+    if (!_showHiddenEssays) {
+      filteredData = filteredData.filter(function(e) { return !e.hidden; });
+    }
 
     if (filteredData.length === 0) {
        document.getElementById('essay-list').innerHTML = '<div class="empty-state">该标签下暂无文章，点击右上角新建</div>';

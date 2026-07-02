@@ -111,7 +111,10 @@
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
       <div id="essay-tag-tabs" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; flex:1;"></div>
-      <span id="pin-count" style="font-size:12px;color:var(--muted);white-space:nowrap;padding-bottom:12px;padding-left:16px;"></span>
+      <span style="display:flex;align-items:center;gap:8px;padding-bottom:12px;padding-left:16px;">
+        <button class="btn btn-sm" id="toggle-hidden-btn" onclick="toggleShowHidden()" style="font-size:11px;">显示已隐藏</button>
+        <span id="pin-count" style="font-size:12px;color:var(--muted);white-space:nowrap;"></span>
+      </span>
     </div>
     <div style="border-bottom:1px solid var(--border);margin-bottom:20px;"></div>
     <div id="essay-list"></div>
