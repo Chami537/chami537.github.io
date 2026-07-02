@@ -1,4 +1,5 @@
 import html
+import json
 import os
 import re
 import shutil
@@ -16,6 +17,25 @@ from backend.ssg import (
     _encrypt_content, _decrypt_content,
     ESSAYS_DIR, MD_DIR, IMAGES_DIR,
 )
+
+
+@app.route('/api/tags/order', methods=['GET'])
+def get_tag_order():
+    tag_order_path = os.path.join(DATA_DIR, 'tags_order.json')
+    if os.path.exists(tag_order_path):
+        with open(tag_order_path, 'r', encoding='utf-8') as f:
+            return jsonify(json.load(f))
+    return jsonify([])
+
+
+@app.route('/api/tags/order', methods=['PUT'])
+@require_json
+def save_tag_order():
+    order = request.json.get('order', [])
+    tag_order_path = os.path.join(DATA_DIR, 'tags_order.json')
+    with open(tag_order_path, 'w', encoding='utf-8') as f:
+        json.dump(order, f, ensure_ascii=False)
+    return jsonify({"status": "saved"})
 
 
 @app.route('/api/essays', methods=['GET'])
