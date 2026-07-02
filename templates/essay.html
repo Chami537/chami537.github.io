@@ -335,7 +335,11 @@ div.arithmatex {
     <p id="gate-error" class="gate-error" style="display:none;">密码错误，请重试</p>
   </div>
   <!-- Decrypted content container (hidden until unlocked) -->
-  <div id="essay-content" class="essay-body" style="display:none;"></div>
+  <div id="essay-content" class="essay-body" style="display:none;">
+    <div style="text-align:right;margin-bottom:8px;">
+      <button id="essay-lock-btn" onclick="lockEssay()" style="display:none;background:none;border:1px solid var(--line);padding:4px 10px;border-radius:4px;cursor:pointer;font-size:12px;color:var(--muted);" title="重新锁定">&#x1F512; 锁定</button>
+    </div>
+  </div>
 
   <script>
     var _encryptedBody = {{ encrypted_body | tojson }};
@@ -387,8 +391,9 @@ div.arithmatex {
         content.querySelectorAll('p, h2, img, blockquote').forEach(function(el) {
           el.classList.add('reveal'); observer.observe(el);
         });
-        // Store password in session storage for this session
-        sessionStorage.setItem('essay_pwd_' + _essaySlug, pwd);
+        // Show lock button
+        var lockBtn = document.getElementById('essay-lock-btn');
+        if (lockBtn) lockBtn.style.display = 'inline-block';
         // Update progress bar
         if (typeof pageHeight !== 'undefined') {
           pageHeight = document.documentElement.scrollHeight - innerHeight;
@@ -398,14 +403,15 @@ div.arithmatex {
       }
     }
 
-    // Auto-unlock if session has password
-    (function() {
-      var savedPwd = sessionStorage.getItem('essay_pwd_' + _essaySlug);
-      if (savedPwd) {
-        document.getElementById('essay-password-input').value = savedPwd;
-        unlockEssay();
-      }
-    })();
+    function lockEssay() {
+      document.getElementById('essay-content').style.display = 'none';
+      document.getElementById('essay-content').innerHTML = '';
+      document.getElementById('essay-gate').style.display = 'block';
+      document.getElementById('essay-password-input').value = '';
+      document.getElementById('essay-password-input').focus();
+      document.getElementById('essay-lock-btn').style.display = 'none';
+      document.getElementById('gate-error').style.display = 'none';
+    }
   </script>
 {% else %}
   <div class="essay-body">
