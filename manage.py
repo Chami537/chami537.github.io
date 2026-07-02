@@ -6,7 +6,7 @@ import sys
 if __name__ == '__main__':
     import os
     from backend.app import app
-    from backend.data import load_json, ESSAYS_DIR, MD_DIR, DATA_DIR
+    from backend.data import load_json, ESSAYS_DIR, MD_DIR, DATA_DIR, BASE_DIR
 
     if len(sys.argv) > 1:
         if sys.argv[1] == 'build':
@@ -16,6 +16,8 @@ if __name__ == '__main__':
 
             essays = load_json('essays.json')
             essays_json = os.path.join(DATA_DIR, 'essays.json')
+            essay_template = os.path.join(BASE_DIR, 'templates', 'essay.html')
+            template_mtime = os.path.getmtime(essay_template)
 
             rebuilt = 0
             skipped = 0
@@ -27,7 +29,7 @@ if __name__ == '__main__':
                 if not force and os.path.exists(html_path):
                     html_mtime = os.path.getmtime(html_path)
                     md_mtime = os.path.getmtime(md_path) if os.path.exists(md_path) else 0
-                    if html_mtime >= md_mtime and html_mtime >= os.path.getmtime(essays_json):
+                    if html_mtime >= md_mtime and html_mtime >= os.path.getmtime(essays_json) and html_mtime >= template_mtime:
                         skipped += 1
                         continue
 

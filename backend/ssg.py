@@ -428,11 +428,15 @@ def _sync_essay_html(essay, raw_md_memory=None):
                 f.write(raw_md)
         return
 
-    # 2.6 Write .md file (plaintext, unless hidden — but we already returned above)
+    # 2.6 Write .md file — re-encrypt if password-protected and not hidden
     if raw_md:
         os.makedirs(MD_DIR, exist_ok=True)
-        with open(md_file, 'w', encoding='utf-8') as f:
-            f.write(raw_md)
+        if password:
+            with open(md_file, 'w', encoding='utf-8') as f:
+                f.write(_encrypt_content(raw_md, password))
+        else:
+            with open(md_file, 'w', encoding='utf-8') as f:
+                f.write(raw_md)
 
     # 3. 准备渲染模板所需的数据
     essays = [e for e in load_json('essays.json') if not e.get('hidden')]
