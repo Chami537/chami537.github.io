@@ -32,9 +32,11 @@ def get_tag_order():
 @require_json
 def save_tag_order():
     order = request.json.get('order', [])
+    if not isinstance(order, list):
+        return jsonify({"error": "order must be a list"}), 400
+    from backend.data import atomic_write_json
     tag_order_path = os.path.join(DATA_DIR, 'tags_order.json')
-    with open(tag_order_path, 'w', encoding='utf-8') as f:
-        json.dump(order, f, ensure_ascii=False)
+    atomic_write_json('tags_order.json', order)
     _generate_feeds()
     return jsonify({"status": "saved"})
 
@@ -174,12 +176,13 @@ def set_essay_password(slug):
         if had_password and os.path.exists(md_file):
             with open(md_file, 'r', encoding='utf-8') as f:
                 raw_md = f.read()
-            # Decrypt with old password first (HMAC validates correctness)
             if old_password:
                 try:
                     raw_md = _decrypt_content(raw_md, old_password)
-                except (ValueError, UnicodeDecodeError):
-                    pass  # v1 format or already plaintext
+                except ValueError:
+                    return jsonify({"error": "旧密码错误，无法重新加密内容"}), 400
+                except UnicodeDecodeError:
+                    pass  # plaintext or legacy ciphertext → already readable
             with open(md_file, 'w', encoding='utf-8') as f:
                 f.write(_encrypt_content(raw_md, new_password))
         target['password'] = new_password
@@ -192,8 +195,10 @@ def set_essay_password(slug):
                 raw_md = _decrypt_content(raw_md, old_password)
                 with open(md_file, 'w', encoding='utf-8') as f:
                     f.write(raw_md)
-            except (ValueError, UnicodeDecodeError):
-                pass  # v1 format or already plaintext
+            except ValueError:
+                return jsonify({"error": "旧密码错误，无法解密内容"}), 400
+            except UnicodeDecodeError:
+                pass  # plaintext or legacy ciphertext → already readable
         target.pop('password', None)
 
     atomic_write_json('essays.json', essays)

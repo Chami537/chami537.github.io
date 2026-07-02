@@ -133,10 +133,9 @@ def _extract_first_image(md_text):
 def _generate_rss():
     """Generate rss.xml from essays.json (Jinja2 template)."""
     essays = load_json('essays.json')
-    visible = list(essays)
     enriched = []
-    for e in visible[:20]:
-        item = dict(e)
+    for e in essays[:20]:
+        item = {k: v for k, v in e.items() if k != 'password'}
         date_str = e.get('date', '')
         item['pub_date'] = ''
         try:
@@ -177,12 +176,10 @@ def _generate_sitemap():
 def _generate_archive():
     """Generate archive.html — timeline grouped by year (Jinja2 template)."""
     essays = load_json('essays.json')
-    visible = list(essays)
-    for e in visible:
-        e.pop('password', None)
-    essays_sorted = sorted(visible, key=lambda e: e.get('date', ''), reverse=True)
+    cleaned = [{k: v for k, v in e.items() if k != 'password'} for e in essays]
+    essays_sorted = sorted(cleaned, key=lambda e: e.get('date', ''), reverse=True)
     essays_json = json.dumps(essays_sorted, ensure_ascii=False).replace('</', '<\\/')
-    total = len(visible)
+    total = len(cleaned)
     html = _env.get_template('archive.html').render(
         total=total, essays_json=essays_json,
         build_ts=int(datetime.now().timestamp()))
@@ -446,13 +443,13 @@ def _sync_essay_html(essay, raw_md_memory=None):
         except (ValueError, UnicodeDecodeError, base64.binascii.Error):
             pass  # may already be plaintext or old-format with wrong key
     elif not password and raw_md and len(raw_md) > 32:
-        # Safety: detect orphan ciphertext (no password available) → empty to avoid rendering garbage
-        # Check if content looks like base64 (not Markdown with punctuation)
-        first_line = raw_md.split('\n')[0][:80]
-        has_md_markers = any(c in first_line for c in '#*>-[]()')
-        looks_base64 = all(c in string.ascii_letters + string.digits + '+/=' for c in first_line) and len(first_line) > 40
-        if looks_base64 and not has_md_markers:
-            raw_md = ''  # ciphertext without password = unrecoverable, don't render
+        # Safety: detect orphan ciphertext → don't render garbage. Check for v2 version byte.
+        try:
+            raw_bytes = base64.b64decode(raw_md.split('\n')[0])
+            if raw_bytes and raw_bytes[0] == 1:  # _ENCRYPT_V2
+                raw_md = ''
+        except Exception:
+            pass  # not valid base64 = likely plaintext
 
     # 2. 将 Markdown 渲染为 HTML 正文
     rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}}) if raw_md else ""
@@ -470,7 +467,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
                 f.write(raw_md)
 
     # 3. 准备渲染模板所需的数据
-    essays = [e for e in load_json('essays.json') if True]
+    essays = load_json('essays.json')
     prev_nav, next_nav = _build_nav(essays, slug)
 
     tag_raw = essay.get('tag', '')
