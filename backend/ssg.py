@@ -455,15 +455,26 @@ def _sync_essay_html(essay, raw_md_memory=None):
     last_edited = _parse_date(essay.get('date', ''), include_time=True)
     body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
 
-    # 2.5 Write .md file — encrypt if password-protected
+    # 2.5 Write .md file — encrypt if password-protected, skip if content unchanged
     if raw_md:
-        os.makedirs(MD_DIR, exist_ok=True)
-        if password:
-            with open(md_file, 'w', encoding='utf-8') as f:
-                f.write(_encrypt_content(raw_md, password))
-        else:
-            with open(md_file, 'w', encoding='utf-8') as f:
-                f.write(raw_md)
+        # Check if content actually changed (avoid re-encrypting with new salt on every build)
+        existing = ''
+        if os.path.exists(md_file):
+            with open(md_file, 'r', encoding='utf-8') as f:
+                existing = f.read()
+            if password:
+                try:
+                    existing = _decrypt_content(existing, password)
+                except Exception:
+                    existing = ''  # force write if decrypt fails
+        if existing != raw_md:
+            os.makedirs(MD_DIR, exist_ok=True)
+            if password:
+                with open(md_file, 'w', encoding='utf-8') as f:
+                    f.write(_encrypt_content(raw_md, password))
+            else:
+                with open(md_file, 'w', encoding='utf-8') as f:
+                    f.write(raw_md)
 
     # 3. 准备渲染模板所需的数据
     essays = load_json('essays.json')
