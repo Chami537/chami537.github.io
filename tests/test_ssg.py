@@ -158,7 +158,7 @@ def test_encrypt_different_salts():
 
 def test_decrypt_wrong_password():
     encrypted = _encrypt_content("secret", "correct")
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError, match='Wrong password'):
         _decrypt_content(encrypted, "wrong")
 
 

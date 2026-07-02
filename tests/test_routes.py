@@ -331,7 +331,7 @@ def test_set_password(client, data_backup):
     client.delete(f'/api/essays/{slug}')
 
 
-def test_password_not_in_list(client, data_backup):
+def test_password_visible_in_admin_api(client, data_backup):
     r = client.post('/api/essays', json={
         'slug': 'test-no-pwd-leak', 'title': 'No Leak Test',
         'date': '2026-01-01', 'epigraph': '', 'excerpt': 'no leak', 'tag': ''
