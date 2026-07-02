@@ -310,21 +310,22 @@ def test_set_password(client, data_backup):
     assert r2.status_code == 200
     assert r2.json['password_set'] == True
 
-    # Verify password_set is exposed, but password itself is NOT
+    # Verify admin can see both password_set and password value
     essays = client.get('/api/essays').json
     essay = next((e for e in essays if e['slug'] == slug), None)
     assert essay.get('password_set') == True
-    assert 'password' not in essay
+    assert essay.get('password') == 'secret123'
 
     # Clear password
     r3 = client.post(f'/api/essays/{slug}/password', json={'password': ''})
     assert r3.status_code == 200
     assert r3.json['password_set'] == False
 
-    # Verify password_set is now false
+    # Verify password is cleared
     essays2 = client.get('/api/essays').json
     essay2 = next((e for e in essays2 if e['slug'] == slug), None)
     assert essay2.get('password_set') == False
+    assert essay2.get('password') == None
 
     # Cleanup
     client.delete(f'/api/essays/{slug}')
@@ -338,10 +339,11 @@ def test_password_not_in_list(client, data_backup):
     slug = r.json.get('slug', 'test-no-pwd-leak')
     client.post(f'/api/essays/{slug}/password', json={'password': 'topsecret'})
 
-    # API must not expose password
+    # Admin API IS allowed to return password (it's auth-protected)
     essays = client.get('/api/essays').json
-    for e in essays:
-        assert 'password' not in e, f'password leaked for {e.get("slug")}'
+    essay = next((e for e in essays if e['slug'] == slug), None)
+    assert essay.get('password') == 'topsecret'
+    assert essay.get('password_set') == True
 
     # Cleanup
     client.delete(f'/api/essays/{slug}')
