@@ -350,6 +350,72 @@ def test_password_visible_in_admin_api(client, data_backup):
     client.delete(f'/api/essays/{slug}')
 
 
+# ── Tag order API ──
+
+def test_tag_order_crud(client, data_backup):
+    """PUT and GET tag order; order persists in essays_public.json."""
+    order = ['摄影', '随笔', '生活']
+    r = client.put('/api/tags/order', json={'order': order})
+    assert r.status_code == 200
+    r2 = client.get('/api/tags/order')
+    assert r2.status_code == 200
+    assert r2.json == order
+
+
+# ── Pin regenerates public data ──
+
+def test_pin_toggle_regenerates_public(client, data_backup):
+    r = client.post('/api/essays', json={
+        'slug': 'test-pin-public', 'title': 'Pin Public Test',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'pin public', 'tag': ''
+    })
+    slug = r.json.get('slug', 'test-pin-public')
+
+    # Pin it → triggers _generate_feeds
+    client.post(f'/api/essays/{slug}/pin')
+    # Verify essays_public.json was regenerated (has date_display)
+    import json, os
+    from backend.data import DATA_DIR
+    public = json.load(open(os.path.join(DATA_DIR, 'essays_public.json')))
+    pinned = [e for e in public['essays'] if e['slug'] == slug]
+    assert len(pinned) == 1
+    assert pinned[0].get('pinned') == True
+    assert 'date_display' in pinned[0]
+
+    # Unpin
+    client.post(f'/api/essays/{slug}/pin')
+    public2 = json.load(open(os.path.join(DATA_DIR, 'essays_public.json')))
+    pinned2 = [e for e in public2['essays'] if e['slug'] == slug]
+    assert pinned2[0].get('pinned') != True
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
+# ── Content API handles encrypted .md ──
+
+def test_content_api_decrypts_encrypted_md(client, data_backup):
+    r = client.post('/api/essays', json={
+        'slug': 'test-content-crypt', 'title': 'Crypto Content Test',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'crypto content',
+        'tag': ''
+    })
+    slug = r.json.get('slug', 'test-content-crypt')
+
+    # Write content first (creates .md file)
+    client.put(f'/api/essays/{slug}/content', json={'content': '秘密内容在这里'})
+    # Set password → encrypts .md
+    client.post(f'/api/essays/{slug}/password', json={'password': 'secret'})
+
+    # Read content → should return decrypted plaintext
+    r2 = client.get(f'/api/essays/{slug}/content')
+    assert r2.status_code == 200
+    assert '秘密内容在这里' in r2.json['content']
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
 # ── Auth ──
 
 def test_login_success(client_no_auth):

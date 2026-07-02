@@ -63,7 +63,8 @@ def create_essay():
     essays.append(item)
     atomic_write_json('essays.json', essays)
 
-    _sync_essay_html(item)
+    body_md = item.get('body', '')
+    _sync_essay_html(item, raw_md_memory=body_md if body_md else None)
     if len(essays) > 1:
         _sync_essay_html(essays[-2])
     _generate_feeds()
