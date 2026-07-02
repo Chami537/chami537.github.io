@@ -31,11 +31,21 @@ async function loadEssays() {
           '</span>';
       } else {
         tabsHtml += '<span class="tag-tab-btn' + (isActive ? ' active' : '') + '" draggable="true" ' +
-          'ondragstart="tagDragStart(event)" ondragover="tagDragOver(event)" ondrop="tagDrop(event)" ' +
-          'onclick="switchEssayTag(\'' + esc(tag) + '\')" data-tag="' + esc(tag) + '">' + esc(tag) + '</span>';
+          'data-tag="' + esc(tag) + '">' + esc(tag) + '</span>';
       }
     });
     document.getElementById('essay-tag-tabs').innerHTML = tabsHtml;
+    // Attach drag + click handlers via DOM (more reliable than inline)
+    document.querySelectorAll('#essay-tag-tabs .tag-tab-btn').forEach(function(el) {
+      el.addEventListener('dragstart', tagDragStart);
+      el.addEventListener('dragover', tagDragOver);
+      el.addEventListener('drop', tagDrop);
+      el.addEventListener('dragend', function() { _tagDragSrc = null; });
+      el.addEventListener('click', function() {
+        if (_tagJustDragged) return;
+        switchEssayTag(el.getAttribute('data-tag'));
+      });
+    });
 
     var filteredData = data.filter(e => {
        if (!e.tag) return currentEssayTag === ordered[0] || ordered.indexOf('随笔') >= 0;
@@ -107,6 +117,7 @@ function saveTags(tags) { _saveTagLib('essay-tags', tags); }
 // ── Tag drag-to-reorder ──
 
 var _tagDragSrc = null;
+var _tagJustDragged = false;
 
 function tagDragStart(e) {
   _tagDragSrc = e.currentTarget;
@@ -122,6 +133,8 @@ function tagDragOver(e) {
 async function tagDrop(e) {
   e.preventDefault();
   e.stopPropagation();
+  _tagJustDragged = true;
+  setTimeout(function() { _tagJustDragged = false; }, 200);
   var src = _tagDragSrc;
   var dst = e.currentTarget;
   if (!src || !dst || src === dst) return;
