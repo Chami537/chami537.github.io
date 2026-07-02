@@ -224,7 +224,16 @@ def _generate_public_essays():
         item = {k: v for k, v in e.items() if k != 'password'}
         visible.append(item)
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
-    public_data = {'_tags': sorted(all_tags), 'essays': visible}
+    # Use saved tag order, append any new tags not yet in the list
+    tag_order_path = os.path.join(DATA_DIR, 'tags_order.json')
+    ordered = []
+    if os.path.exists(tag_order_path):
+        with open(tag_order_path, 'r', encoding='utf-8') as f:
+            ordered = json.load(f)
+    for t in ordered:
+        all_tags.discard(t)
+    ordered.extend(sorted(all_tags))  # new tags at end, alphabetical
+    public_data = {'_tags': ordered, 'essays': visible}
     with open(public_path, 'w', encoding='utf-8') as f:
         json.dump(public_data, f, ensure_ascii=False, indent=2)
 

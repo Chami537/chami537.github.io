@@ -29,7 +29,9 @@ async function loadEssays() {
           '<span onclick="event.stopPropagation();deleteTagFromTabs(\'' + esc(tag) + '\')" class="tag-tab-del" title="删除标签">\u00D7</span>' +
           '</span>';
       } else {
-        tabsHtml += '<button class="tag-tab-btn' + (isActive ? ' active' : '') + '" onclick="switchEssayTag(\'' + esc(tag) + '\')">' + esc(tag) + '</button>';
+        tabsHtml += '<span class="tag-tab-btn' + (isActive ? ' active' : '') + '" draggable="true" ' +
+          'ondragstart="tagDragStart(event)" ondragover="tagDragOver(event)" ondrop="tagDrop(event)" ' +
+          'onclick="switchEssayTag(\'' + esc(tag) + '\')" data-tag="' + esc(tag) + '">' + esc(tag) + '</span>';
       }
     });
     document.getElementById('essay-tag-tabs').innerHTML = tabsHtml;
@@ -100,6 +102,43 @@ function _toggleDeleteTagMode(btnId, flag, onDone) {
 // 初始化标签库
 function getTags() { return _tagLib('essay-tags', '["随笔","摄影","剪辑","骑行","投资"]'); }
 function saveTags(tags) { _saveTagLib('essay-tags', tags); }
+
+// ── Tag drag-to-reorder ──
+
+var _tagDragSrc = null;
+
+function tagDragStart(e) {
+  _tagDragSrc = e.target;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', '');
+}
+
+function tagDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+function tagDrop(e) {
+  e.preventDefault();
+  var src = _tagDragSrc;
+  var dst = e.target.closest ? e.target.closest('.tag-tab-btn') : null;
+  if (!src || !dst || src === dst) return;
+  var tags = getTags();
+  var srcTag = src.getAttribute('data-tag');
+  var dstTag = dst.getAttribute('data-tag');
+  var srcIdx = tags.indexOf(srcTag);
+  var dstIdx = tags.indexOf(dstTag);
+  if (srcIdx < 0 || dstIdx < 0) return;
+  tags.splice(srcIdx, 1);
+  tags.splice(dstIdx, 0, srcTag);
+  saveTags(tags);
+  saveTagOrder(tags);
+  loadEssays();
+}
+
+async function saveTagOrder(order) {
+  try { await api('PUT', '/api/tags/order', { order: order }); } catch(e) {}
+}
 
 function switchEssayTag(tag) {
   hidePanel('essay-form');
