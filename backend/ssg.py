@@ -24,15 +24,15 @@ def _encrypt_content(plaintext, password):
 
 
 def _decrypt_content(encrypted_b64, password):
-    """Reverse of _encrypt_content. Returns original plaintext (without magic prefix)."""
+    """Reverse of _encrypt_content. Backward-compatible: returns plaintext, stripping magic prefix if present."""
     raw = base64.b64decode(encrypted_b64)
     salt, cipher = raw[:16], raw[16:]
     key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=32)
     plain_bytes = bytes(c ^ key[i % 32] for i, c in enumerate(cipher))
     text = plain_bytes.decode('utf-8')
-    if not text.startswith('CHAMI_OK:'):
-        raise ValueError('Wrong password')
-    return text[9:]  # strip magic prefix
+    if text.startswith('CHAMI_OK:'):
+        return text[9:]
+    return text  # old format — no prefix
 
 from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, format_shutter, format_aperture, format_focal, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR
 from jinja2 import Environment, FileSystemLoader
