@@ -31,7 +31,7 @@ async function loadEssays() {
           '</span>';
       } else {
         tabsHtml += '<span class="tag-tab-btn' + (isActive ? ' active' : '') + '" draggable="true" ' +
-          'ondragstart="tagDragStart(event)" ondragover="event.preventDefault()" ondrop="tagDrop(event)" ' +
+          'ondragstart="tagDragStart(event)" ondragover="tagDragOver(event)" ondrop="tagDrop(event)" ' +
           'onclick="switchEssayTag(\'' + esc(tag) + '\')" data-tag="' + esc(tag) + '">' + esc(tag) + '</span>';
       }
     });
@@ -111,10 +111,17 @@ var _tagDragSrc = null;
 function tagDragStart(e) {
   _tagDragSrc = e.currentTarget;
   e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', e.currentTarget.getAttribute('data-tag'));
 }
 
-function tagDrop(e) {
+function tagDragOver(e) {
   e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+}
+
+async function tagDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
   var src = _tagDragSrc;
   var dst = e.currentTarget;
   if (!src || !dst || src === dst) return;
@@ -129,8 +136,7 @@ function tagDrop(e) {
   if (srcIdx < 0 || dstIdx < 0) return;
   ordered.splice(srcIdx, 1);
   ordered.splice(dstIdx, 0, srcTag);
-  saveTagOrder(ordered);
-  // Update current tag to maintain active state
+  await saveTagOrder(ordered);
   currentEssayTag = ordered[Math.min(dstIdx, ordered.length - 1)] || currentEssayTag;
   loadEssays();
 }
