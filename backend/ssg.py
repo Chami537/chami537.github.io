@@ -133,7 +133,7 @@ def _extract_first_image(md_text):
 def _generate_rss():
     """Generate rss.xml from essays.json (Jinja2 template)."""
     essays = load_json('essays.json')
-    visible = [e for e in essays if not e.get('password')]
+    visible = list(essays)
     enriched = []
     for e in visible[:20]:
         item = dict(e)
@@ -160,8 +160,6 @@ def _generate_sitemap():
     essays = load_json('essays.json')
     enriched = []
     for e in essays:
-        if e.get('password'):
-            continue
         item = dict(e)
         date_str = e.get('date', '')
         item['lastmod'] = ''
@@ -179,7 +177,7 @@ def _generate_sitemap():
 def _generate_archive():
     """Generate archive.html — timeline grouped by year (Jinja2 template)."""
     essays = load_json('essays.json')
-    visible = [e for e in essays if not e.get('password')]
+    visible = list(essays)
     for e in visible:
         e.pop('password', None)
     essays_sorted = sorted(visible, key=lambda e: e.get('date', ''), reverse=True)
@@ -212,7 +210,7 @@ def _generate_map():
 
 
 def _generate_public_essays():
-    """Write data/essays_public.json — only public essays, plus _tags from all essays."""
+    """Write data/essays_public.json — all essays visible, passwords stripped, plus _tags."""
     essays = load_json('essays.json')
     visible = []
     all_tags = set()
@@ -223,8 +221,6 @@ def _generate_public_essays():
                 t = t.strip()
                 if t:
                     all_tags.add(t)
-        if e.get('password'):
-            continue
         item = {k: v for k, v in e.items() if k != 'password'}
         visible.append(item)
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
@@ -463,7 +459,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
                 f.write(raw_md)
 
     # 3. 准备渲染模板所需的数据
-    essays = [e for e in load_json('essays.json') if not e.get('password')]
+    essays = [e for e in load_json('essays.json') if True]
     prev_nav, next_nav = _build_nav(essays, slug)
 
     tag_raw = essay.get('tag', '')

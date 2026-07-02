@@ -165,10 +165,10 @@ def test_decrypt_wrong_password():
 
 # ── Public essays generation ──
 
-def test_generate_public_essays_filters_protected(tmp_path, monkeypatch):
-    """Verify _generate_public_essays skips password-protected essays."""
+def test_generate_public_essays_strips_passwords(tmp_path, monkeypatch):
+    """Verify _generate_public_essays includes all essays but strips password field."""
     test_essays = [
-        {'slug': 'a', 'title': 'Visible'},
+        {'slug': 'a', 'title': 'Visible', 'password': 'secret123'},
         {'slug': 'b', 'title': 'Protected', 'password': 'top'},
         {'slug': 'c', 'title': 'Also Visible'},
     ]
@@ -182,15 +182,12 @@ def test_generate_public_essays_filters_protected(tmp_path, monkeypatch):
         data = json.load(f)
     # New format: {_tags: [...], essays: [...]}
     visible = data['essays']
-    assert len(visible) == 2  # a and c visible, b filtered
+    assert len(visible) == 3  # all visible
     slugs = [e['slug'] for e in visible]
-    assert 'b' not in slugs
-    assert 'a' in slugs and 'c' in slugs
+    assert 'a' in slugs and 'b' in slugs and 'c' in slugs
     # Password must be stripped
     for e in visible:
         assert 'password' not in e
-    # _tags includes all tags (including from hidden)
-    assert '随笔' in data.get('_tags', []) or len(data.get('_tags', [])) >= 0
 
 
 # ── _sync_essay_html password / no-password output ──
