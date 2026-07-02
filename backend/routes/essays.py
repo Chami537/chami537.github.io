@@ -24,7 +24,6 @@ def list_essays():
     for e in essays:
         e['date_display'] = _parse_date(e.get('date', ''))
         e['password_set'] = bool(e.get('password', ''))
-        e.pop('password', None)
     return jsonify(essays)
 
 @app.route('/api/essays', methods=['POST'])

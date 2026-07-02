@@ -186,12 +186,14 @@ async function toggleHidden(slug) {
 
 function passwordBtn(e) {
   var hasPwd = e.password_set || false;
+  var current = e.password || '';
   var label = hasPwd ? '&#x1F512; 密码' : '&#x1F511; 设密码';
-  return '<button class="password-btn' + (hasPwd ? ' active' : '') + '" onclick="setPassword(\'' + esc(e.slug) + '\')" title="' + (hasPwd ? '修改/清除密码' : '设置密码保护') + '">' + label + '</button>';
+  var title = hasPwd ? '当前: ' + esc(current) + '（点击修改）' : '设置密码保护';
+  return '<button class="password-btn' + (hasPwd ? ' active' : '') + '" onclick="setPassword(\'' + esc(e.slug) + '\', \'' + esc(current) + '\')" title="' + title + '">' + label + '</button>';
 }
 
-async function setPassword(slug) {
-  var pwd = prompt('请输入密码保护（留空则清除密码）：');
+async function setPassword(slug, current) {
+  var pwd = prompt('请输入密码保护（留空清除）：', current || '');
   if (pwd === null) return;
   try {
     var r = await api('POST', '/api/essays/' + slug + '/password', { password: pwd });
