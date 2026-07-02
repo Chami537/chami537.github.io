@@ -5,23 +5,24 @@ async function loadEssays() {
   try {
     const data = await api('GET', '/api/essays');
     _essayAllData = data;
-    let tags = getTags();
 
+    // Load saved tag order from server; merge any new essay tags at end
+    let ordered = [];
+    try { ordered = await api('GET', '/api/tags/order'); } catch(e) {}
     data.forEach(e => {
       if (e.tag) {
         e.tag.split(/[,，]/).map(function(s) { return s.trim(); }).filter(Boolean).forEach(function(pt) {
-          if (!tags.includes(pt)) tags.push(pt);
+          if (!ordered.includes(pt)) ordered.push(pt);
         });
       }
     });
-    saveTags(tags);
 
-    if (!currentEssayTag && tags.length > 0) {
-      currentEssayTag = tags[0];
+    if (!currentEssayTag && ordered.length > 0) {
+      currentEssayTag = ordered[0];
     }
 
     let tabsHtml = '';
-    tags.forEach(tag => {
+    ordered.forEach(tag => {
       let isActive = tag === currentEssayTag;
       if (essayDeleteTagMode) {
         tabsHtml += '<span class="tag-tab-btn' + (isActive ? ' active' : '') + '" style="display:inline-flex;align-items:center;gap:4px">' +
@@ -30,14 +31,14 @@ async function loadEssays() {
           '</span>';
       } else {
         tabsHtml += '<span class="tag-tab-btn' + (isActive ? ' active' : '') + '" draggable="true" ' +
-          'ondragstart="tagDragStart(event)" ondragover="tagDragOver(event)" ondrop="tagDrop(event)" ' +
+          'ondragstart="tagDragStart(event)" ondragover="event.preventDefault()" ondrop="tagDrop(event)" ' +
           'onclick="switchEssayTag(\'' + esc(tag) + '\')" data-tag="' + esc(tag) + '">' + esc(tag) + '</span>';
       }
     });
     document.getElementById('essay-tag-tabs').innerHTML = tabsHtml;
 
     var filteredData = data.filter(e => {
-       if (!e.tag) return currentEssayTag === '随笔';
+       if (!e.tag) return currentEssayTag === ordered[0] || ordered.indexOf('随笔') >= 0;
        let essayTags = e.tag.split(/[,，]/).map(function(s) { return s.trim(); }).filter(Boolean);
        return essayTags.includes(currentEssayTag);
     });
@@ -108,31 +109,29 @@ function saveTags(tags) { _saveTagLib('essay-tags', tags); }
 var _tagDragSrc = null;
 
 function tagDragStart(e) {
-  _tagDragSrc = e.target;
+  _tagDragSrc = e.currentTarget;
   e.dataTransfer.effectAllowed = 'move';
-  e.dataTransfer.setData('text/plain', '');
-}
-
-function tagDragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
 }
 
 function tagDrop(e) {
   e.preventDefault();
   var src = _tagDragSrc;
-  var dst = e.target.closest ? e.target.closest('.tag-tab-btn') : null;
+  var dst = e.currentTarget;
   if (!src || !dst || src === dst) return;
-  var tags = getTags();
   var srcTag = src.getAttribute('data-tag');
   var dstTag = dst.getAttribute('data-tag');
-  var srcIdx = tags.indexOf(srcTag);
-  var dstIdx = tags.indexOf(dstTag);
+  // Read all visible tag chips in order (the displayed order)
+  var chips = document.querySelectorAll('#essay-tag-tabs .tag-tab-btn');
+  var ordered = [];
+  chips.forEach(function(c) { var t = c.getAttribute('data-tag'); if (t) ordered.push(t); });
+  var srcIdx = ordered.indexOf(srcTag);
+  var dstIdx = ordered.indexOf(dstTag);
   if (srcIdx < 0 || dstIdx < 0) return;
-  tags.splice(srcIdx, 1);
-  tags.splice(dstIdx, 0, srcTag);
-  saveTags(tags);
-  saveTagOrder(tags);
+  ordered.splice(srcIdx, 1);
+  ordered.splice(dstIdx, 0, srcTag);
+  saveTagOrder(ordered);
+  // Update current tag to maintain active state
+  currentEssayTag = ordered[Math.min(dstIdx, ordered.length - 1)] || currentEssayTag;
   loadEssays();
 }
 
