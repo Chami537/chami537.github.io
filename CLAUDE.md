@@ -88,6 +88,8 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - 补 `test_toggle_pin` + `test_cache_bust_assets`（测试 41→46）
 - 加 `.editorconfig`
 - `_cache_bust_index()` → `_cache_bust_assets()`（支持多 JS 文件）
+- 音乐播放器自动连续播放（`musicEndHandler` 播完自动 click 下一首）
+- 补 auth 测试 5 条 + Music/Work CRUD 测试 2 条（测试 46→53）
 
 ### 2026-06-29
 - `index.css` / `index.js` — index.html 的 CSS/JS 已拆分到独立文件
@@ -113,3 +115,6 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - 以破坏架构为耻，以遵循规范为荣
 - 以假装理解为耻，以诚实无知为荣
 - 以盲目修改为耻，以谨慎重构为荣
+
+
+
