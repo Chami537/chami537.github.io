@@ -35,6 +35,7 @@ def save_tag_order():
     tag_order_path = os.path.join(DATA_DIR, 'tags_order.json')
     with open(tag_order_path, 'w', encoding='utf-8') as f:
         json.dump(order, f, ensure_ascii=False)
+    _generate_feeds()
     return jsonify({"status": "saved"})
 
 
