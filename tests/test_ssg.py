@@ -6,7 +6,8 @@ from PIL import Image
 from backend.ssg import (
     _extract_exif, _extract_gps, _calc_read_time, _parse_date,
     _parse_tags, _find_adjacent_siblings, _extract_first_image,
-    _cache_bust_assets,
+    _cache_bust_assets, _encrypt_content, _decrypt_content,
+    _generate_public_essays,
 )
 from backend.data import load_json
 
@@ -136,3 +137,52 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
         for js_fn in js_fns:
             assert f'{js_fn}?v={now}' in result
             assert '?v=999' not in result
+
+
+# ── Encryption roundtrip ──
+
+def test_encrypt_decrypt_roundtrip():
+    plaintext = "Hello, this is a test essay content with Unicode: 你好世界!"
+    password = "test-password-123"
+    encrypted = _encrypt_content(plaintext, password)
+    # Encrypted should be a base64 string, not plaintext
+    assert plaintext not in encrypted
+    decrypted = _decrypt_content(encrypted, password)
+    assert decrypted == plaintext
+
+def test_encrypt_different_salts():
+    """Same plaintext + password should produce different ciphertext each time."""
+    encrypted1 = _encrypt_content("test", "pw")
+    encrypted2 = _encrypt_content("test", "pw")
+    assert encrypted1 != encrypted2  # different salts
+
+def test_decrypt_wrong_password():
+    encrypted = _encrypt_content("secret", "correct")
+    with pytest.raises(Exception):
+        _decrypt_content(encrypted, "wrong")
+
+
+# ── Public essays generation ──
+
+def test_generate_public_essays_filters_hidden(tmp_path, monkeypatch):
+    """Verify _generate_public_essays skips hidden essays and strips passwords."""
+    test_essays = [
+        {'slug': 'a', 'title': 'Visible', 'hidden': False, 'password': 'secret123'},
+        {'slug': 'b', 'title': 'Hidden One', 'hidden': True},
+        {'slug': 'c', 'title': 'Also Visible', 'hidden': False},
+    ]
+    monkeypatch.setattr('backend.ssg.load_json', lambda f: test_essays)
+    public_path = tmp_path / 'essays_public.json'
+    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path))
+
+    _generate_public_essays()
+
+    with open(public_path, 'r', encoding='utf-8') as f:
+        result = json.load(f)
+    assert len(result) == 2
+    slugs = [e['slug'] for e in result]
+    assert 'b' not in slugs
+    assert 'a' in slugs and 'c' in slugs
+    # Password must be stripped
+    for e in result:
+        assert 'password' not in e

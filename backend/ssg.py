@@ -1,5 +1,7 @@
 """SSG generators and essay helpers for the Chami CMS."""
 
+import base64
+import hashlib
 import html as html_mod
 import os
 import json
@@ -9,6 +11,25 @@ from datetime import datetime
 from markdown import markdown as md_to_html
 from markupsafe import Markup
 from PIL import Image, ExifTags
+
+# ── Encryption helpers (zero new dependencies) ──
+
+def _encrypt_content(plaintext, password):
+    """PBKDF2 + XOR encrypt plaintext with password. Returns base64(salt + ciphertext)."""
+    salt = os.urandom(16)
+    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=32)
+    plain_bytes = plaintext.encode('utf-8')
+    cipher = bytes(p ^ key[i % 32] for i, p in enumerate(plain_bytes))
+    return base64.b64encode(salt + cipher).decode('ascii')
+
+
+def _decrypt_content(encrypted_b64, password):
+    """Reverse of _encrypt_content. Returns original plaintext."""
+    raw = base64.b64decode(encrypted_b64)
+    salt, cipher = raw[:16], raw[16:]
+    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=32)
+    plain_bytes = bytes(c ^ key[i % 32] for i, c in enumerate(cipher))
+    return plain_bytes.decode('utf-8')
 
 from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, format_shutter, format_aperture, format_focal, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR
 from jinja2 import Environment, FileSystemLoader
@@ -90,8 +111,9 @@ def _extract_first_image(md_text):
 def _generate_rss():
     """Generate rss.xml from essays.json (Jinja2 template)."""
     essays = load_json('essays.json')
+    visible = [e for e in essays if not e.get('hidden')]
     enriched = []
-    for e in essays[:20]:
+    for e in visible[:20]:
         item = dict(e)
         date_str = e.get('date', '')
         item['pub_date'] = ''
@@ -116,6 +138,8 @@ def _generate_sitemap():
     essays = load_json('essays.json')
     enriched = []
     for e in essays:
+        if e.get('hidden'):
+            continue
         item = dict(e)
         date_str = e.get('date', '')
         item['lastmod'] = ''
@@ -133,9 +157,12 @@ def _generate_sitemap():
 def _generate_archive():
     """Generate archive.html — timeline grouped by year (Jinja2 template)."""
     essays = load_json('essays.json')
-    essays_sorted = sorted(essays, key=lambda e: e.get('date', ''), reverse=True)
+    visible = [e for e in essays if not e.get('hidden')]
+    for e in visible:
+        e.pop('password', None)
+    essays_sorted = sorted(visible, key=lambda e: e.get('date', ''), reverse=True)
     essays_json = json.dumps(essays_sorted, ensure_ascii=False).replace('</', '<\\/')
-    total = len(essays)
+    total = len(visible)
     html = _env.get_template('archive.html').render(
         total=total, essays_json=essays_json,
         build_ts=int(datetime.now().timestamp()))
@@ -162,8 +189,23 @@ def _generate_map():
         f.write(html)
 
 
+def _generate_public_essays():
+    """Write data/essays_public.json — only non-hidden essays, no password field."""
+    essays = load_json('essays.json')
+    visible = []
+    for e in essays:
+        if e.get('hidden'):
+            continue
+        item = {k: v for k, v in e.items() if k != 'password'}
+        visible.append(item)
+    public_path = os.path.join(DATA_DIR, 'essays_public.json')
+    with open(public_path, 'w', encoding='utf-8') as f:
+        json.dump(visible, f, ensure_ascii=False, indent=2)
+
+
 def _generate_feeds():
-    """Regenerate all auto-generated files: RSS, sitemap, archive, map."""
+    """Regenerate all auto-generated files: RSS, sitemap, archive, map + public essays."""
+    _generate_public_essays()
     _generate_rss()
     _generate_sitemap()
     _generate_archive()
@@ -343,10 +385,10 @@ def _sync_essay_html(essay, raw_md_memory=None):
     """
     slug = essay['slug']
     html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
+    md_file = os.path.join(MD_DIR, f"{slug}.md")
 
     # 1. 提取正文 Markdown（优先 .md 文件，其次内存传入，最后回退 HTML 注释）
     raw_md = ""
-    md_file = os.path.join(MD_DIR, f"{slug}.md")
     if raw_md_memory is not None:
         raw_md = raw_md_memory
     elif os.path.exists(md_file):
@@ -359,23 +401,53 @@ def _sync_essay_html(essay, raw_md_memory=None):
         if md_match:
             raw_md = md_match.group(1)
 
+    # 1.5 Decrypt .md if the essay is password-protected (content at rest is encrypted)
+    password = essay.get('password', '')
+    if password and raw_md:
+        try:
+            raw_md = _decrypt_content(raw_md, password)
+        except Exception:
+            pass  # may already be plaintext (just saved by editor)
+
     # 2. 将 Markdown 渲染为 HTML 正文
     rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}}) if raw_md else ""
     last_edited = _parse_date(essay.get('date', ''), include_time=True)
     body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
 
-    # 2.5 写独立 .md 文件（正源）
+    # 2.5 Hidden essays: delete HTML, save .md (possibly re-encrypted), skip generation
+    if essay.get('hidden', False):
+        if os.path.exists(html_file):
+            os.remove(html_file)
+        if raw_md and password:
+            os.makedirs(MD_DIR, exist_ok=True)
+            with open(md_file, 'w', encoding='utf-8') as f:
+                f.write(_encrypt_content(raw_md, password))
+        elif raw_md:
+            os.makedirs(MD_DIR, exist_ok=True)
+            with open(md_file, 'w', encoding='utf-8') as f:
+                f.write(raw_md)
+        return
+
+    # 2.6 Write .md file (plaintext, unless hidden — but we already returned above)
     if raw_md:
+        os.makedirs(MD_DIR, exist_ok=True)
         with open(md_file, 'w', encoding='utf-8') as f:
             f.write(raw_md)
 
     # 3. 准备渲染模板所需的数据
-    essays = load_json('essays.json')
+    essays = [e for e in load_json('essays.json') if not e.get('hidden')]
     prev_nav, next_nav = _build_nav(essays, slug)
 
     tag_raw = essay.get('tag', '')
     tag_display = html_mod.escape(tag_raw.replace(', ', ' · ').replace(',', ' · '))
     date_display = html_mod.escape(_parse_date(essay.get('date', '')))
+
+    # 3.5 Handle password protection for the HTML output
+    password_protected = bool(password)
+    encrypted_body = ''
+    if password_protected:
+        encrypted_body = _encrypt_content(body_html, password)
+        body_html = ''  # don't embed plaintext in the template
 
     # 4. 全量重新渲染 HTML
     og_image = _extract_first_image(raw_md)
@@ -388,6 +460,8 @@ def _sync_essay_html(essay, raw_md_memory=None):
         date_display=date_display,
         read_time=essay.get('readTime', 1),
         body_html=Markup(body_html),
+        encrypted_body=encrypted_body,
+        password_protected=password_protected,
         prev_nav=Markup(prev_nav),
         next_nav=Markup(next_nav),
         slug=slug,

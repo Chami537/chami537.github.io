@@ -249,6 +249,31 @@ div.arithmatex {
 .essay-end .prev-arr, .essay-end .next-arr { transition: transform .2s; display: inline-block; }
 .essay-end .prev-link:hover .prev-arr { transform: translateX(-4px); }
 .essay-end .next-link:hover .next-arr { transform: translateX(4px); }
+
+/* Password gate */
+.essay-gate {
+  text-align: center; padding: 80px 20px;
+  max-width: 420px; margin: 0 auto;
+}
+.gate-icon { font-size: 56px; margin-bottom: 16px; line-height: 1.2; }
+.gate-title { font-size: 24px; font-weight: 700; margin-bottom: 8px; color: var(--fg); }
+.gate-desc { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+.gate-input-wrap { display: flex; gap: 8px; justify-content: center; }
+.gate-input-wrap input {
+  padding: 10px 14px; border: 1px solid var(--line);
+  border-radius: 6px; background: var(--bg); color: var(--fg);
+  font-size: 14px; width: 200px; outline: none;
+}
+.gate-input-wrap input:focus { border-color: var(--c3); }
+.dark .gate-input-wrap input { background: #1a1a2e; color: #eee; }
+.gate-btn {
+  padding: 10px 20px; background: var(--c3); color: #fff;
+  border: none; border-radius: 6px; cursor: pointer;
+  font-size: 14px; font-weight: 600; transition: opacity .2s;
+}
+.gate-btn:hover { opacity: 0.85; }
+.gate-error { color: var(--danger); font-size: 13px; margin-top: 12px; }
+
 @media (max-width: 768px) {
   nav { padding: 0 16px; }
   .reading { padding: 100px 24px 80px; }
@@ -297,11 +322,94 @@ div.arithmatex {
 
 <!-- CONTENT_START -->
 
+{% if password_protected %}
+  <!-- Password gate -->
+  <div id="essay-gate" class="essay-gate">
+    <div class="gate-icon">&#x1F512;</div>
+    <h2 class="gate-title">此文章受密码保护</h2>
+    <p class="gate-desc">请输入密码以查看内容</p>
+    <div class="gate-input-wrap">
+      <input type="password" id="essay-password-input" placeholder="输入密码" onkeydown="if(event.key==='Enter')unlockEssay()" autocomplete="off">
+      <button onclick="unlockEssay()" class="gate-btn">解锁</button>
+    </div>
+    <p id="gate-error" class="gate-error" style="display:none;">密码错误，请重试</p>
+  </div>
+  <!-- Decrypted content container (hidden until unlocked) -->
+  <div id="essay-content" class="essay-body" style="display:none;"></div>
+
+  <script>
+    var _encryptedBody = {{ encrypted_body | tojson }};
+    var _essaySlug = {{ slug | tojson }};
+
+    function base64ToBytes(b64) {
+      var binary = atob(b64);
+      var bytes = new Uint8Array(binary.length);
+      for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      return bytes;
+    }
+
+    async function unlockEssay() {
+      var pwd = document.getElementById('essay-password-input').value;
+      if (!pwd) return;
+      try {
+        var combined = base64ToBytes(_encryptedBody);
+        var salt = combined.slice(0, 16);
+        var ciphertext = combined.slice(16);
+        var enc = new TextEncoder();
+        var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pwd), 'PBKDF2', false, ['deriveBits']);
+        var keyBits = await crypto.subtle.deriveBits({
+          name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256'
+        }, keyMaterial, ciphertext.length * 8);
+        var key = new Uint8Array(keyBits);
+        var plaintext = new Uint8Array(ciphertext.length);
+        for (var i = 0; i < ciphertext.length; i++) {
+          plaintext[i] = ciphertext[i] ^ key[i];
+        }
+        var html = new TextDecoder().decode(plaintext);
+        document.getElementById('essay-gate').style.display = 'none';
+        var content = document.getElementById('essay-content');
+        content.innerHTML = html;
+        content.style.display = 'block';
+        // Re-render KaTeX in decrypted content
+        if (typeof renderMathInElement === 'function') {
+          renderMathInElement(content);
+        }
+        // Trigger scroll reveal on decrypted elements
+        var observer = new IntersectionObserver(function(entries) {
+          entries.forEach(function(e) {
+            if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
+          });
+        }, { threshold: 0.15 });
+        content.querySelectorAll('p, h2, img, blockquote').forEach(function(el) {
+          el.classList.add('reveal'); observer.observe(el);
+        });
+        // Store password in session storage for this session
+        sessionStorage.setItem('essay_pwd_' + _essaySlug, pwd);
+        // Update progress bar
+        if (typeof pageHeight !== 'undefined') {
+          pageHeight = document.documentElement.scrollHeight - innerHeight;
+        }
+      } catch(e) {
+        document.getElementById('gate-error').style.display = 'block';
+      }
+    }
+
+    // Auto-unlock if session has password
+    (function() {
+      var savedPwd = sessionStorage.getItem('essay_pwd_' + _essaySlug);
+      if (savedPwd) {
+        document.getElementById('essay-password-input').value = savedPwd;
+        unlockEssay();
+      }
+    })();
+  </script>
+{% else %}
   <div class="essay-body">
 
 {{ body_html }}
 
   </div>
+{% endif %}
 
 <!-- CONTENT_END -->
 

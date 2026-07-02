@@ -46,7 +46,7 @@ async function loadEssays() {
     }
 
     document.getElementById('essay-list').innerHTML = filteredData.map(e => `
-    <div class="card">
+    <div class="card${e.hidden ? ' card-hidden' : ''}">
       <div class="card-header">
         <div class="essay-header-row">
           ${pinBtn(e)}
@@ -57,6 +57,8 @@ async function loadEssays() {
           </div>
         </div>
         <div class="card-actions">
+          ${hiddenBtn(e)}
+          ${passwordBtn(e)}
           <button class="btn btn-sm" onclick="editEssayMeta('${esc(e.slug)}')">元数据</button>
           <button class="btn btn-sm" onclick="editEssayContent('${esc(e.slug)}')">编辑正文</button>
           <button class="btn btn-sm btn-danger" onclick="deleteEssay('${esc(e.slug)}')">删除</button>
@@ -164,6 +166,36 @@ async function togglePin(slug) {
     // Update local state
     var e = _essayAllData.find(function(x) { return x.slug === slug; });
     if (e) e.pinned = r.pinned;
+    loadEssays();
+  } catch(e) { toast(e.message, true); }
+}
+
+function hiddenBtn(e) {
+  var hidden = e.hidden || false;
+  var label = hidden ? '&#x1F576; 已隐藏' : '&#x1F441; 隐藏';
+  return '<button class="hidden-btn' + (hidden ? ' active' : '') + '" onclick="toggleHidden(\'' + esc(e.slug) + '\')" title="' + (hidden ? '取消隐藏' : '隐藏文章') + '">' + label + '</button>';
+}
+
+async function toggleHidden(slug) {
+  try {
+    var r = await api('POST', '/api/essays/' + slug + '/hidden');
+    toast(r.hidden ? '文章已隐藏' : '文章已取消隐藏');
+    loadEssays();
+  } catch(e) { toast(e.message, true); }
+}
+
+function passwordBtn(e) {
+  var hasPwd = e.password_set || false;
+  var label = hasPwd ? '&#x1F512; 密码' : '&#x1F511; 设密码';
+  return '<button class="password-btn' + (hasPwd ? ' active' : '') + '" onclick="setPassword(\'' + esc(e.slug) + '\')" title="' + (hasPwd ? '修改/清除密码' : '设置密码保护') + '">' + label + '</button>';
+}
+
+async function setPassword(slug) {
+  var pwd = prompt('请输入密码保护（留空则清除密码）：');
+  if (pwd === null) return;
+  try {
+    var r = await api('POST', '/api/essays/' + slug + '/password', { password: pwd });
+    toast(r.password_set ? '密码已设置' : '密码已清除');
     loadEssays();
   } catch(e) { toast(e.message, true); }
 }

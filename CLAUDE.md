@@ -92,6 +92,7 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - 补 auth 测试 5 条 + Music/Work CRUD 测试 2 条（测试 46→53）
 - 抽 `@require_json` 装饰器到 crud.py，8 文件 15 处重复 → 14 行装饰器（-16 行样板）
 - 4 处内联 import 移到文件顶部（essays.py / ssg.py）
+- feat: 随笔隐藏系统（hidden toggle + PBKDF2 加密 + Web Crypto 解密 + MD 源文件加密 + GitHub 仓库防窥）
 
 ### 2026-06-29
 - `index.css` / `index.js` — index.html 的 CSS/JS 已拆分到独立文件
