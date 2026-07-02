@@ -1,8 +1,6 @@
 """Test fixtures for the Chami CMS."""
-import json
 import os
 import pytest
-import tempfile
 
 from backend.app import app
 from backend.data import DATA_DIR
@@ -10,10 +8,20 @@ from backend.data import DATA_DIR
 
 @pytest.fixture
 def client():
-    """Flask test client."""
+    """Flask test client with auth bypassed (TESTING=True)."""
     app.config['TESTING'] = True
     with app.test_client() as c:
         yield c
+
+
+@pytest.fixture
+def client_no_auth():
+    """Flask test client with auth enforced (TESTING=False)."""
+    was_testing = app.config.get('TESTING')
+    app.config['TESTING'] = False
+    with app.test_client() as c:
+        yield c
+    app.config['TESTING'] = was_testing
 
 
 @pytest.fixture

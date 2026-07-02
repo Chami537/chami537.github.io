@@ -267,3 +267,75 @@ def test_toggle_pin(client, data_backup):
 
     # Cleanup
     client.delete(f'/api/essays/{slug}')
+
+
+# ── Auth ──
+
+def test_login_success(client_no_auth):
+    r = client_no_auth.post('/api/login', json={'password': 'chami'})
+    assert r.status_code == 200
+    assert r.json == {"status": "ok"}
+
+def test_login_wrong_password(client_no_auth):
+    r = client_no_auth.post('/api/login', json={'password': 'wrong'})
+    assert r.status_code == 401
+
+def test_logout(client_no_auth):
+    client_no_auth.post('/api/login', json={'password': 'chami'})
+    r = client_no_auth.post('/api/logout')
+    assert r.status_code == 200
+    assert r.json == {"status": "logged out"}
+
+def test_api_unauthorized_without_login(client_no_auth):
+    r = client_no_auth.get('/api/work')
+    assert r.status_code == 401
+    assert 'Unauthorized' in r.json.get('error', '')
+
+def test_api_ok_after_login(client_no_auth):
+    client_no_auth.post('/api/login', json={'password': 'chami'})
+    r = client_no_auth.get('/api/work')
+    assert r.status_code == 200
+
+
+# ── Music CRUD ──
+
+def test_music_crud(client, data_backup):
+    # Create
+    r = client.post('/api/music', json={'title': 'Test Song', 'artist': 'Test Artist', 'filename': 'test.mp3'})
+    assert r.status_code == 201
+    music_id = r.json['id']
+
+    # List & verify
+    r = client.get('/api/music')
+    assert any(m['id'] == music_id for m in r.json)
+
+    # Update
+    r = client.put(f'/api/music/{music_id}', json={'title': 'Updated Song', 'artist': 'Updated Artist', 'filename': 'test.mp3'})
+    assert r.status_code == 200
+    assert r.json['title'] == 'Updated Song'
+
+    # Delete
+    r = client.delete(f'/api/music/{music_id}')
+    assert r.status_code == 200
+
+
+# ── Work CRUD ──
+
+def test_work_crud(client, data_backup):
+    # Create
+    r = client.post('/api/work', json={'name': 'Test Project', 'description': 'desc', 'repo': 'user/repo'})
+    assert r.status_code == 201
+    work_id = r.json['id']
+
+    # List & verify
+    r = client.get('/api/work')
+    assert any(w['id'] == work_id for w in r.json)
+
+    # Update
+    r = client.put(f'/api/work/{work_id}', json={'name': 'Updated Project', 'description': 'desc', 'repo': 'user/repo'})
+    assert r.status_code == 200
+    assert r.json['name'] == 'Updated Project'
+
+    # Delete
+    r = client.delete(f'/api/work/{work_id}')
+    assert r.status_code == 200
