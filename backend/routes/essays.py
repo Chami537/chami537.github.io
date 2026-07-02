@@ -149,6 +149,7 @@ def toggle_pin(slug):
         target['pinned'] = False
 
     atomic_write_json('essays.json', essays)
+    _generate_feeds()
     pinned_count = sum(1 for e in essays if e.get('pinned'))
     return jsonify({"pinned": target['pinned'], "count": pinned_count})
 
@@ -297,4 +298,5 @@ def preview_essay_html(slug):
     else:
         md_content = request.args.get('md', '')
     html_content = md_to_html(md_content, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}})
+    html_content += '\n<p class=\"essay-updated\">Last edited at ' + datetime.now().strftime('%Y-%m-%d %H:%M') + '</p>'
     return jsonify({"html": html_content})
