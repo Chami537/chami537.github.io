@@ -192,14 +192,37 @@ function passwordBtn(e) {
   return '<button class="password-btn' + (hasPwd ? ' active' : '') + '" onclick="setPassword(\'' + esc(e.slug) + '\', \'' + esc(current) + '\')" title="' + title + '">' + label + '</button>';
 }
 
-async function setPassword(slug, current) {
-  var pwd = prompt('请输入密码保护（留空清除）：', current || '');
-  if (pwd === null) return;
-  try {
-    var r = await api('POST', '/api/essays/' + slug + '/password', { password: pwd });
-    toast(r.password_set ? '密码已设置' : '密码已清除');
-    loadEssays();
-  } catch(e) { toast(e.message, true); }
+function setPassword(slug, current) {
+  document.getElementById('pwd-current').textContent = current || '(未设置)';
+  document.getElementById('pwd-new').value = '';
+  document.getElementById('pwd-confirm').value = '';
+  document.getElementById('pwd-error').style.display = 'none';
+  var dialog = document.getElementById('password-dialog');
+  var form = document.getElementById('password-form');
+  var done = false;
+  form.onsubmit = async function() {
+    if (done) return false; done = true;
+    var pwd = document.getElementById('pwd-new').value;
+    var confirm = document.getElementById('pwd-confirm').value;
+    if (pwd && pwd !== confirm) {
+      document.getElementById('pwd-error').textContent = '两次输入的密码不一致';
+      document.getElementById('pwd-error').style.display = 'block';
+      done = false;
+      return false;
+    }
+    try {
+      var r = await api('POST', '/api/essays/' + slug + '/password', { password: pwd });
+      toast(r.password_set ? '密码已设置' : '密码已清除');
+      dialog.close();
+      loadEssays();
+    } catch(e) { toast(e.message, true); dialog.close(); }
+    return false;
+  };
+  dialog.showModal();
+}
+
+function closePwdDialog() {
+  document.getElementById('password-dialog').close();
 }
 
 function updatePinCount(data) {
