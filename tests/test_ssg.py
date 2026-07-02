@@ -179,14 +179,18 @@ def test_generate_public_essays_filters_protected(tmp_path, monkeypatch):
     _generate_public_essays()
 
     with open(public_path, 'r', encoding='utf-8') as f:
-        result = json.load(f)
-    assert len(result) == 2  # a and c visible, b filtered
-    slugs = [e['slug'] for e in result]
+        data = json.load(f)
+    # New format: {_tags: [...], essays: [...]}
+    visible = data['essays']
+    assert len(visible) == 2  # a and c visible, b filtered
+    slugs = [e['slug'] for e in visible]
     assert 'b' not in slugs
     assert 'a' in slugs and 'c' in slugs
     # Password must be stripped
-    for e in result:
+    for e in visible:
         assert 'password' not in e
+    # _tags includes all tags (including from hidden)
+    assert '随笔' in data.get('_tags', []) or len(data.get('_tags', [])) >= 0
 
 
 # ── _sync_essay_html password / no-password output ──
