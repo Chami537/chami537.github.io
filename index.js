@@ -205,7 +205,7 @@ function renderEssayList() {
       '</div>' +
       '<div class="essay-right">' +
       '<span class="essay-tag">' + htmlEncode((e.tag || '').replace(/, ?/g, ' · ')) + '</span>' +
-      '<span class="essay-meta">' + (e.readTime || 1) + ' min read</span>' +
+      '<span class="essay-meta">' + (e.date_display || '') + ' · ' + (e.readTime || 1) + ' min read</span>' +
       '<span class="essay-arr">→</span>' +
       '</div>' +
       '</a>';
