@@ -377,7 +377,7 @@
 
 <!-- Password Dialog -->
 <dialog id="password-dialog">
-  <form method="dialog" id="password-form">
+  <form id="password-form">
     <div class="dlg-header">密码保护</div>
     <div class="dlg-body">
       <div style="margin-bottom:12px;">
@@ -388,7 +388,7 @@
       <input type="password" id="pwd-new" placeholder="留空则清除密码" style="width:100%;" autocomplete="off">
       <label style="font-size:12px;color:var(--muted);margin-top:8px;display:block;">确认密码</label>
       <input type="password" id="pwd-confirm" placeholder="再次输入新密码" style="width:100%;" autocomplete="off">
-      <p id="pwd-error" style="color:var(--danger);font-size:12px;margin-top:8px;display:none;"></p>
+      <p id="pwd-error" style="color:#e53935;font-size:12px;margin-top:8px;display:none;"></p>
     </div>
     <div class="dlg-footer">
       <button value="cancel" type="button" onclick="closePwdDialog()">取消</button>

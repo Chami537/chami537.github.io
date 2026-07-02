@@ -223,7 +223,8 @@ function setPassword(slug, current) {
   var dialog = document.getElementById('password-dialog');
   var form = document.getElementById('password-form');
   var done = false;
-  form.onsubmit = async function() {
+  form.onsubmit = async function(e) {
+    e.preventDefault();
     if (done) return false; done = true;
     var pwd = document.getElementById('pwd-new').value;
     var confirm = document.getElementById('pwd-confirm').value;
