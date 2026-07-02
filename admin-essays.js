@@ -155,7 +155,7 @@ async function tagDrop(e) {
 }
 
 async function saveTagOrder(order) {
-  try { await api('PUT', '/api/tags/order', { order: order }); } catch(e) {}
+  try { await api('PUT', '/api/tags/order', { order: order }); } catch(e) { toast('保存标签顺序失败', true); }
 }
 
 function switchEssayTag(tag) {

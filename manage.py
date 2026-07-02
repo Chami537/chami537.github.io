@@ -37,7 +37,7 @@ if __name__ == '__main__':
                 print(f"  ✓ essays/{slug}.html")
                 rebuilt += 1
 
-            feeds_need_rebuild = force or rebuilt > 0 or skipped < len(essays)
+            feeds_need_rebuild = force or rebuilt > 0
             if feeds_need_rebuild:
                 _generate_feeds()
                 _cache_bust_assets()
