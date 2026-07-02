@@ -411,6 +411,11 @@ def _sync_essay_html(essay, raw_md_memory=None):
             raw_md = _decrypt_content(raw_md, password)
         except Exception:
             pass  # may already be plaintext (just saved by editor)
+    elif not password and raw_md and len(raw_md) > 32:
+        # Safety: detect encrypted .md with no password → use empty content instead of rendering ciphertext
+        import string
+        if all(c in string.ascii_letters + string.digits + '+/=\n' for c in raw_md[:100]):
+            raw_md = ''  # ciphertext without password = unrecoverable, don't render
 
     # 2. 将 Markdown 渲染为 HTML 正文
     rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}}) if raw_md else ""

@@ -201,8 +201,8 @@ def set_essay_password(slug):
                 f.write(_encrypt_content(raw_md, new_password))
         target['password'] = new_password
     else:
-        # Clearing password: decrypt .md if hidden, remove password field
-        if is_hidden and os.path.exists(md_file) and old_password:
+        # Clearing password: decrypt .md, remove password field
+        if os.path.exists(md_file) and old_password:
             with open(md_file, 'r', encoding='utf-8') as f:
                 raw_md = f.read()
             try:
