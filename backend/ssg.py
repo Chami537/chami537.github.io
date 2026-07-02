@@ -2,10 +2,12 @@
 
 import base64
 import hashlib
+import hmac
 import html as html_mod
 import os
 import json
 import re
+import string
 import urllib.request
 from datetime import datetime
 from markdown import markdown as md_to_html
@@ -14,25 +16,42 @@ from PIL import Image, ExifTags
 
 # ── Encryption helpers (zero new dependencies) ──
 
+_ENCRYPT_V2 = b'\x01'  # version byte for HMAC-protected format
+
+
 def _encrypt_content(plaintext, password):
-    """PBKDF2 + XOR encrypt with magic prefix for wrong-password detection. Returns base64(salt + ciphertext)."""
+    """PBKDF2 + XOR + HMAC-SHA256 (v2). Returns base64(version + salt + hmac + ciphertext)."""
     salt = os.urandom(16)
     key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=32)
-    plain_bytes = ("CHAMI_OK:" + plaintext).encode('utf-8')
+    plain_bytes = plaintext.encode('utf-8')
     cipher = bytes(p ^ key[i % 32] for i, p in enumerate(plain_bytes))
-    return base64.b64encode(salt + cipher).decode('ascii')
+    tag = hmac.new(key, cipher, 'sha256').digest()
+    return base64.b64encode(_ENCRYPT_V2 + salt + tag + cipher).decode('ascii')
 
 
 def _decrypt_content(encrypted_b64, password):
-    """Reverse of _encrypt_content. Backward-compatible: returns plaintext, stripping magic prefix if present."""
+    """Decrypt v2 (HMAC) or v1 (legacy) format. Raises ValueError on wrong password."""
     raw = base64.b64decode(encrypted_b64)
-    salt, cipher = raw[:16], raw[16:]
+    if len(raw) > 49 and raw[0] == 1:
+        # v2: version(1) + salt(16) + hmac(32) + ciphertext
+        salt = raw[1:17]
+        tag_stored = raw[17:49]
+        cipher = raw[49:]
+        key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=32)
+        tag_check = hmac.new(key, cipher, 'sha256').digest()
+        if not hmac.compare_digest(tag_check, tag_stored):
+            raise ValueError('Wrong password or corrupted data')
+        plain_bytes = bytes(c ^ key[i % 32] for i, c in enumerate(cipher))
+        return plain_bytes.decode('utf-8')
+    # v1 (legacy): salt(16) + ciphertext, optional CHAMI_OK: prefix
+    salt = raw[:16]
+    cipher = raw[16:]
     key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=32)
     plain_bytes = bytes(c ^ key[i % 32] for i, c in enumerate(cipher))
     text = plain_bytes.decode('utf-8')
     if text.startswith('CHAMI_OK:'):
         return text[9:]
-    return text  # old format — no prefix
+    return text
 
 from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, format_shutter, format_aperture, format_focal, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR
 from jinja2 import Environment, FileSystemLoader
@@ -409,12 +428,15 @@ def _sync_essay_html(essay, raw_md_memory=None):
     if password and raw_md:
         try:
             raw_md = _decrypt_content(raw_md, password)
-        except Exception:
-            pass  # may already be plaintext (just saved by editor)
+        except (ValueError, UnicodeDecodeError, base64.binascii.Error):
+            pass  # may already be plaintext or old-format with wrong key
     elif not password and raw_md and len(raw_md) > 32:
-        # Safety: detect encrypted .md with no password → use empty content instead of rendering ciphertext
-        import string
-        if all(c in string.ascii_letters + string.digits + '+/=\n' for c in raw_md[:100]):
+        # Safety: detect orphan ciphertext (no password available) → empty to avoid rendering garbage
+        # Check if content looks like base64 (not Markdown with punctuation)
+        first_line = raw_md.split('\n')[0][:80]
+        has_md_markers = any(c in first_line for c in '#*>-[]()')
+        looks_base64 = all(c in string.ascii_letters + string.digits + '+/=' for c in first_line) and len(first_line) > 40
+        if looks_base64 and not has_md_markers:
             raw_md = ''  # ciphertext without password = unrecoverable, don't render
 
     # 2. 将 Markdown 渲染为 HTML 正文

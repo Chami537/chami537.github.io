@@ -149,9 +149,7 @@ def toggle_hidden(slug):
         if password and os.path.exists(md_file):
             with open(md_file, 'r', encoding='utf-8') as f:
                 raw_md = f.read()
-            if raw_md and not password:
-                pass  # no password, keep plaintext
-            elif raw_md:
+            if raw_md:
                 with open(md_file, 'w', encoding='utf-8') as f:
                     f.write(_encrypt_content(raw_md, password))
         # Generate placeholder page
@@ -166,8 +164,8 @@ def toggle_hidden(slug):
                 raw_md = _decrypt_content(raw_md, password)
                 with open(md_file, 'w', encoding='utf-8') as f:
                     f.write(raw_md)
-            except Exception:
-                pass  # already plaintext
+            except (ValueError, UnicodeDecodeError):
+                pass  # already plaintext or legacy format
         _sync_essay_html(target)
         _generate_feeds()
 
@@ -193,11 +191,12 @@ def set_essay_password(slug):
         if is_hidden and os.path.exists(md_file):
             with open(md_file, 'r', encoding='utf-8') as f:
                 raw_md = f.read()
+            # Decrypt with old password first (HMAC validates correctness — raises if wrong)
             if old_password:
                 try:
                     raw_md = _decrypt_content(raw_md, old_password)
-                except Exception:
-                    pass  # already plaintext
+                except (ValueError, UnicodeDecodeError):
+                    pass  # v1 format or already plaintext
             with open(md_file, 'w', encoding='utf-8') as f:
                 f.write(_encrypt_content(raw_md, new_password))
         target['password'] = new_password
@@ -210,8 +209,8 @@ def set_essay_password(slug):
                 raw_md = _decrypt_content(raw_md, old_password)
                 with open(md_file, 'w', encoding='utf-8') as f:
                     f.write(raw_md)
-            except Exception:
-                pass
+            except (ValueError, UnicodeDecodeError):
+                pass  # v1 format or already plaintext
         target.pop('password', None)
 
     atomic_write_json('essays.json', essays)
@@ -237,8 +236,8 @@ def get_essay_content(slug):
         if target and target.get('password'):
             try:
                 content = _decrypt_content(content, target['password'])
-            except Exception:
-                pass  # already decrypted
+            except (ValueError, UnicodeDecodeError):
+                pass  # v1 format or already plaintext
         return jsonify({"content": content, "format": "markdown"})
 
     # Fallback: 从 HTML 注释提取（兼容旧格式）

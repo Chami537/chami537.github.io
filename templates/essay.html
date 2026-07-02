@@ -349,7 +349,6 @@ div.arithmatex {
 
   <script>
     var _encryptedBody = {{ encrypted_body | tojson }};
-    var _essaySlug = {{ slug | tojson }};
 
     function base64ToBytes(b64) {
       var binary = atob(b64);
@@ -363,23 +362,28 @@ div.arithmatex {
       if (!pwd) return;
       try {
         var combined = base64ToBytes(_encryptedBody);
-        var salt = combined.slice(0, 16);
-        var ciphertext = combined.slice(16);
+        // v2: version(1) + salt(16) + hmac(32) + ciphertext
+        var salt = combined.slice(1, 17);
+        var hmacStored = combined.slice(17, 49);
+        var ciphertext = combined.slice(49);
         var enc = new TextEncoder();
         var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pwd), 'PBKDF2', false, ['deriveBits']);
         var keyBits = await crypto.subtle.deriveBits({
           name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256'
         }, keyMaterial, 256);
         var key = new Uint8Array(keyBits);
+        // Verify HMAC (catches wrong password without decryption garbage)
+        var hmacKey = await crypto.subtle.importKey('raw', key, {name: 'HMAC', hash: 'SHA-256'}, false, ['sign']);
+        var hmacSig = new Uint8Array(await crypto.subtle.sign('HMAC', hmacKey, ciphertext));
+        for (var i = 0; i < 32; i++) {
+          if (hmacSig[i] !== hmacStored[i]) throw new Error('wrong password');
+        }
+        // XOR decrypt
         var plaintext = new Uint8Array(ciphertext.length);
         for (var i = 0; i < ciphertext.length; i++) {
           plaintext[i] = ciphertext[i] ^ key[i % 32];
         }
-        var text = new TextDecoder().decode(plaintext);
-        if (!text.startsWith('CHAMI_OK:')) {
-          throw new Error('wrong password');
-        }
-        var html = text.substring(9);
+        var html = new TextDecoder().decode(plaintext);
         document.getElementById('essay-gate').style.display = 'none';
         var content = document.getElementById('essay-content');
         content.innerHTML = html;

@@ -201,7 +201,7 @@ function passwordBtn(e) {
   var hasPwd = e.password_set || false;
   var current = e.password || '';
   var label = hasPwd ? '&#x1F512; 密码' : '&#x1F511; 设密码';
-  var title = hasPwd ? '当前: ' + esc(current) + '（点击修改）' : '设置密码保护';
+  var title = hasPwd ? '点击修改或清除密码' : '设置密码保护';
   return '<button class="password-btn' + (hasPwd ? ' active' : '') + '" onclick="setPassword(\'' + esc(e.slug) + '\', \'' + esc(current) + '\')" title="' + title + '">' + label + '</button>';
 }
 
