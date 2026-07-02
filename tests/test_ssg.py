@@ -7,7 +7,8 @@ from backend.ssg import (
     _extract_exif, _extract_gps, _calc_read_time, _parse_date,
     _parse_tags, _find_adjacent_siblings, _extract_first_image,
     _cache_bust_assets, _encrypt_content, _decrypt_content,
-    _generate_public_essays,
+    _generate_public_essays, _sync_essay_html,
+    ESSAYS_DIR, MD_DIR,
 )
 from backend.data import load_json
 
@@ -186,3 +187,118 @@ def test_generate_public_essays_filters_protected(tmp_path, monkeypatch):
     # Password must be stripped
     for e in result:
         assert 'password' not in e
+
+
+# ── _sync_essay_html password / no-password output ──
+
+def test_sync_essay_html_without_password(tmp_path, monkeypatch):
+    """No password → generated HTML has normal body without gate."""
+    md_dir = tmp_path / 'md'
+    essays_dir = tmp_path / 'essays'
+    md_dir.mkdir()
+    essays_dir.mkdir()
+    monkeypatch.setattr('backend.ssg.MD_DIR', str(md_dir))
+    monkeypatch.setattr('backend.ssg.ESSAYS_DIR', str(essays_dir))
+    monkeypatch.setattr('backend.ssg.IMAGES_DIR', str(tmp_path / 'images'))
+    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
+
+    # Create essays.json with one essay
+    (tmp_path / 'data').mkdir()
+    essay = {'slug': 'test', 'title': 'Test', 'date': '2026-01-01',
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1}
+    with open(tmp_path / 'data' / 'essays.json', 'w') as f:
+        json.dump([essay], f)
+
+    # Save markdown
+    with open(md_dir / 'test.md', 'w') as f:
+        f.write('Hello World')
+
+    _sync_essay_html(essay)
+
+    html = (essays_dir / 'test.html').read_text()
+    assert 'id="essay-gate"' not in html
+    assert 'essay-body' in html
+    assert 'Hello World' in html
+    assert '_encryptedBody' not in html
+
+
+def test_sync_essay_html_with_password(tmp_path, monkeypatch):
+    """Password set → generated HTML has gate with encrypted body."""
+    md_dir = tmp_path / 'md'
+    essays_dir = tmp_path / 'essays'
+    md_dir.mkdir()
+    essays_dir.mkdir()
+    monkeypatch.setattr('backend.ssg.MD_DIR', str(md_dir))
+    monkeypatch.setattr('backend.ssg.ESSAYS_DIR', str(essays_dir))
+    monkeypatch.setattr('backend.ssg.IMAGES_DIR', str(tmp_path / 'images'))
+    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
+
+    (tmp_path / 'data').mkdir()
+    essay = {'slug': 'test', 'title': 'Test', 'date': '2026-01-01',
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1,
+             'password': 'secret'}
+    with open(tmp_path / 'data' / 'essays.json', 'w') as f:
+        json.dump([essay], f)
+
+    with open(md_dir / 'test.md', 'w') as f:
+        f.write('Hello World')
+
+    _sync_essay_html(essay)
+
+    html = (essays_dir / 'test.html').read_text()
+    assert 'id="essay-gate"' in html
+    assert '_encryptedBody' in html
+    assert '此内容已隐藏' in html
+    # Plaintext body must NOT be in the HTML
+    assert 'Hello World' not in html
+    # MD file must be encrypted
+    md_content = (md_dir / 'test.md').read_text()
+    assert 'Hello' not in md_content  # encrypted
+
+
+def test_password_roundtrip(tmp_path, monkeypatch):
+    """Set password → build → clear password → back to normal."""
+    md_dir = tmp_path / 'md'
+    essays_dir = tmp_path / 'essays'
+    md_dir.mkdir()
+    essays_dir.mkdir()
+    monkeypatch.setattr('backend.ssg.MD_DIR', str(md_dir))
+    monkeypatch.setattr('backend.ssg.ESSAYS_DIR', str(essays_dir))
+    monkeypatch.setattr('backend.ssg.IMAGES_DIR', str(tmp_path / 'images'))
+    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
+
+    (tmp_path / 'data').mkdir()
+
+    # Phase 1: set password, build
+    essay = {'slug': 'test', 'title': 'Test', 'date': '2026-01-01',
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1,
+             'password': 'secret'}
+    with open(tmp_path / 'data' / 'essays.json', 'w') as f:
+        json.dump([essay], f)
+    with open(md_dir / 'test.md', 'w') as f:
+        f.write('Hello World')
+
+    _sync_essay_html(essay)
+    html1 = (essays_dir / 'test.html').read_text()
+    assert 'id="essay-gate"' in html1
+    assert 'Hello World' not in html1
+
+    # Phase 2: clear password, rebuild (decrypt .md first — like set_essay_password does)
+    essay.pop('password')
+    with open(tmp_path / 'data' / 'essays.json', 'w') as f:
+        json.dump([essay], f)
+    # Decrypt .md before rebuilding (simulates what set_essay_password does)
+    encrypted_md = (md_dir / 'test.md').read_text()
+    (md_dir / 'test.md').write_text(_decrypt_content(encrypted_md, 'secret'))
+
+    _sync_essay_html(essay)
+    html2 = (essays_dir / 'test.html').read_text()
+    assert 'id="essay-gate"' not in html2
+    assert 'Hello World' in html2
+
+    # MD must be decrypted
+    md_content = (md_dir / 'test.md').read_text()
+    assert 'Hello World' in md_content
