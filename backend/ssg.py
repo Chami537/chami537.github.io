@@ -422,10 +422,8 @@ def _sync_essay_html(essay, raw_md_memory=None):
     last_edited = _parse_date(essay.get('date', ''), include_time=True)
     body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
 
-    # 2.5 Hidden essays: delete HTML, save .md (possibly re-encrypted), skip generation
+    # 2.5 Hidden essays: encrypt .md, generate placeholder page
     if essay.get('hidden', False):
-        if os.path.exists(html_file):
-            os.remove(html_file)
         if raw_md and password:
             os.makedirs(MD_DIR, exist_ok=True)
             with open(md_file, 'w', encoding='utf-8') as f:
@@ -434,6 +432,25 @@ def _sync_essay_html(essay, raw_md_memory=None):
             os.makedirs(MD_DIR, exist_ok=True)
             with open(md_file, 'w', encoding='utf-8') as f:
                 f.write(raw_md)
+        # Render placeholder page
+        tag_raw = essay.get('tag', '')
+        tag_display = html_mod.escape(tag_raw.replace(', ', ' · ').replace(',', ' · '))
+        date_display = html_mod.escape(_parse_date(essay.get('date', '')))
+        template = _env.get_template('essay.html')
+        html = template.render(
+            title=html_mod.escape(essay.get('title', '')),
+            excerpt='', epigraph='', tag=tag_display,
+            date_display=date_display,
+            read_time=essay.get('readTime', 1),
+            body_html=Markup(''), encrypted_body='',
+            password_protected=False,
+            hidden_page=True,
+            prev_nav=Markup(''), next_nav=Markup(''),
+            slug=slug, og_image='',
+            build_ts=int(datetime.now().timestamp()),
+        )
+        with open(html_file, 'w', encoding='utf-8') as f:
+            f.write(html)
         return
 
     # 2.6 Write .md file — re-encrypt if password-protected and not hidden
@@ -474,6 +491,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
         body_html=Markup(body_html),
         encrypted_body=encrypted_body,
         password_protected=password_protected,
+        hidden_page=False,
         prev_nav=Markup(prev_nav),
         next_nav=Markup(next_nav),
         slug=slug,

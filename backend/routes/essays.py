@@ -145,17 +145,18 @@ def toggle_hidden(slug):
     md_file = os.path.join(MD_DIR, f"{slug}.md")
 
     if target['hidden']:
-        # Delete public HTML
-        html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
-        if os.path.exists(html_file):
-            os.remove(html_file)
         # Encrypt .md if password is set
         if password and os.path.exists(md_file):
             with open(md_file, 'r', encoding='utf-8') as f:
                 raw_md = f.read()
-            if raw_md:
+            if raw_md and not password:
+                pass  # no password, keep plaintext
+            elif raw_md:
                 with open(md_file, 'w', encoding='utf-8') as f:
                     f.write(_encrypt_content(raw_md, password))
+        # Generate placeholder page
+        _sync_essay_html(target)
+        _generate_feeds()
     else:
         # Unhide: decrypt .md if encrypted, then regenerate HTML
         if password and os.path.exists(md_file):
