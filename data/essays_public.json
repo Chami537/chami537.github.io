@@ -3,7 +3,8 @@
     "生活",
     "随笔",
     "感悟",
-    "阅读"
+    "阅读",
+    "技术"
   ],
   "essays": [
     {
@@ -49,6 +50,16 @@
       "readTime": 6,
       "pinned": false,
       "date_display": "Jun 30, 2026"
+    },
+    {
+      "slug": "essay-47430450",
+      "title": "Agent时代怎么学CS?",
+      "tag": "技术",
+      "date": "2026-07-04 00:34",
+      "epigraph": "占位",
+      "excerpt": "占位",
+      "readTime": 1,
+      "date_display": "Jul 04, 2026"
     }
   ]
 }
