@@ -9,3 +9,5 @@ raw_photos/
 _stars_etag.json
 /graphify-out/
 .git-rewrite/
+/data/essay_passwords.json
+.env

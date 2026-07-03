@@ -10,7 +10,7 @@ from flask import request, jsonify
 from markdown import markdown as md_to_html
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, DATA_DIR
+from backend.data import load_json, atomic_write_json, DATA_DIR, get_essay_password, set_essay_password as store_password, has_essay_password
 from backend.crud import require_json
 from backend.ssg import (
     _calc_read_time, _parse_date, _parse_tags, _sync_essay_html, _generate_feeds,
@@ -44,7 +44,7 @@ def list_essays():
     essays = load_json('essays.json')
     for e in essays:
         e['date_display'] = _parse_date(e.get('date', ''))
-        e['password_set'] = bool(e.get('password', ''))
+        e['password_set'] = has_essay_password(e['slug'])
     return jsonify(essays)
 
 @app.route('/api/essays', methods=['POST'])
@@ -57,6 +57,11 @@ def create_essay():
         return jsonify({"error": "slug 只能包含小写字母、数字和连字符"}), 400
     if any(e['slug'] == slug for e in essays):
         return jsonify({"error": "slug 已存在"}), 409
+
+    # Extract password to local store, never persist in essays.json
+    password = item.pop('password', '')
+    if password:
+        store_password(slug, password)
 
     read_time = _calc_read_time(item.get('body', '') or item.get('content', ''))
     item['readTime'] = read_time
@@ -83,7 +88,7 @@ def update_essay_meta(slug):
             if new_slug != slug and any(e2['slug'] == new_slug for e2 in essays):
                 return jsonify({"error": "slug 已存在"}), 409
             essays[i].update(request.json)
-            essays[i].pop('password', None)  # password must be set via dedicated endpoint
+            essays[i].pop('password', None)  # password never stored in essays.json
             essays[i]['slug'] = new_slug
             atomic_write_json('essays.json', essays)
             # Rename HTML + MD files if slug changed
@@ -165,12 +170,12 @@ def set_essay_password(slug):
         return jsonify({"error": "Not found"}), 404
 
     new_password = request.json.get('password', '')
-    old_password = target.get('password', '')
+    old_password = get_essay_password(slug)
     md_file = os.path.join(MD_DIR, f"{slug}.md")
     had_password = bool(old_password)
 
     if new_password:
-        # Setting password: re-encrypt .md if already encrypted
+        # Re-encrypt .md if already encrypted
         if had_password and os.path.exists(md_file):
             with open(md_file, 'r', encoding='utf-8') as f:
                 raw_md = f.read()
@@ -180,12 +185,12 @@ def set_essay_password(slug):
                 except ValueError:
                     return jsonify({"error": "旧密码错误，无法重新加密内容"}), 400
                 except UnicodeDecodeError:
-                    pass  # plaintext or legacy ciphertext → already readable
+                    pass
             with open(md_file, 'w', encoding='utf-8') as f:
                 f.write(_encrypt_content(raw_md, new_password))
-        target['password'] = new_password
+        store_password(slug, new_password)
     else:
-        # Clearing password: decrypt .md, remove password field
+        # Clearing password: decrypt .md, remove from store
         if os.path.exists(md_file) and old_password:
             with open(md_file, 'r', encoding='utf-8') as f:
                 raw_md = f.read()
@@ -196,9 +201,12 @@ def set_essay_password(slug):
             except ValueError:
                 return jsonify({"error": "旧密码错误，无法解密内容"}), 400
             except UnicodeDecodeError:
-                pass  # plaintext or legacy ciphertext → already readable
-        target.pop('password', None)
+                pass
+        store_password(slug, '')
 
+    # Strip password from essays.json (safety net)
+    for e in essays:
+        e.pop('password', None)
     atomic_write_json('essays.json', essays)
 
     # Regenerate HTML (password gate or normal)
@@ -218,11 +226,12 @@ def get_essay_content(slug):
         with open(md_file, 'r', encoding='utf-8') as f:
             content = f.read()
         # Decrypt if essay is password-protected
-        if target and target.get('password'):
+        if target and has_essay_password(slug):
             try:
-                content = _decrypt_content(content, target['password'])
+                password = get_essay_password(slug)
+                content = _decrypt_content(content, password)
             except (ValueError, UnicodeDecodeError):
-                pass  # v1 format or already plaintext
+                pass
         return jsonify({"content": content, "format": "markdown"})
 
     # Fallback: 从 HTML 注释提取（兼容旧格式）

@@ -1,6 +1,8 @@
+cryptography
 flask
 markdown
 Pillow
 pymdown-extensions
+python-dotenv
 python-multipart
 pytest

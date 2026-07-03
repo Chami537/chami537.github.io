@@ -237,9 +237,9 @@ def test_sync_essay_html_with_password(tmp_path, monkeypatch):
     monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
 
     (tmp_path / 'data').mkdir()
+    monkeypatch.setattr('backend.ssg.get_essay_password', lambda slug: 'secret' if slug == 'test' else '')
     essay = {'slug': 'test', 'title': 'Test', 'date': '2026-01-01',
-             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1,
-             'password': 'secret'}
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1}
     with open(tmp_path / 'data' / 'essays.json', 'w') as f:
         json.dump([essay], f)
 
@@ -273,10 +273,13 @@ def test_password_roundtrip(tmp_path, monkeypatch):
 
     (tmp_path / 'data').mkdir()
 
+    # Password stored in local gitignored store, not in essays.json
+    _passwords = {'test': 'secret'}
+    monkeypatch.setattr('backend.ssg.get_essay_password', lambda slug: _passwords.get(slug, ''))
+
     # Phase 1: set password, build
     essay = {'slug': 'test', 'title': 'Test', 'date': '2026-01-01',
-             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1,
-             'password': 'secret'}
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1}
     with open(tmp_path / 'data' / 'essays.json', 'w') as f:
         json.dump([essay], f)
     with open(md_dir / 'test.md', 'w') as f:
@@ -288,7 +291,7 @@ def test_password_roundtrip(tmp_path, monkeypatch):
     assert 'Hello World' not in html1
 
     # Phase 2: clear password, rebuild (decrypt .md first — like set_essay_password does)
-    essay.pop('password')
+    _passwords.pop('test')
     with open(tmp_path / 'data' / 'essays.json', 'w') as f:
         json.dump([essay], f)
     # Decrypt .md before rebuilding (simulates what set_essay_password does)

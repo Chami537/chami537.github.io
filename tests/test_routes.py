@@ -311,11 +311,11 @@ def test_set_password(client, data_backup):
     assert r2.status_code == 200
     assert r2.json['password_set'] == True
 
-    # Verify admin can see both password_set and password value
+    # Verify admin can see password_set flag (password value never exposed via API)
     essays = client.get('/api/essays').json
     essay = next((e for e in essays if e['slug'] == slug), None)
     assert essay.get('password_set') == True
-    assert essay.get('password') == 'secret123'
+    assert 'password' not in essay
 
     # Clear password
     r3 = client.post(f'/api/essays/{slug}/password', json={'password': ''})
@@ -340,10 +340,10 @@ def test_password_visible_in_admin_api(client, data_backup):
     slug = r.json.get('slug', 'test-no-pwd-leak')
     client.post(f'/api/essays/{slug}/password', json={'password': 'topsecret'})
 
-    # Admin API IS allowed to return password (it's auth-protected)
+    # Admin API returns password_set flag but never the actual password value
     essays = client.get('/api/essays').json
     essay = next((e for e in essays if e['slug'] == slug), None)
-    assert essay.get('password') == 'topsecret'
+    assert 'password' not in essay
     assert essay.get('password_set') == True
 
     # Cleanup
