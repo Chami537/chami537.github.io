@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' cdn.staticfile.net; script-src 'self' 'unsafe-inline'; font-src 'self' cdn.staticfile.net; img-src 'self' data: blob:; connect-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' cdn.staticfile.net; script-src 'self' 'unsafe-inline' cdn.staticfile.net; font-src 'self' cdn.staticfile.net; img-src 'self' data: blob:; connect-src 'self'">
 <title>Chami — Site Admin</title>
-<link rel="stylesheet" href="admin.css?v=1783004901">
+<link rel="stylesheet" href="admin.css?v=1783095508">
 <link rel="stylesheet" href="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.css">
 <script>
   if (localStorage.getItem('theme') === 'dark') {
-    document.body.classList.add('dark');
+    document.documentElement.classList.add('dark');
   }
 </script>
 </head>
@@ -213,6 +213,14 @@
     </div>
 
     <div id="photo-grid" class="photo-grid-admin"></div>
+
+    <!-- Story editor -->
+    <div style="margin-top:24px;border-top:1px solid var(--border);padding-top:16px;">
+      <h3 style="font-size:14px;margin-bottom:8px;">📖 故事线编辑</h3>
+      <p style="font-size:11px;color:var(--muted);margin-bottom:12px;">封面和简介覆盖算法的默认值。留空则使用算法自动生成的结果。</p>
+      <div id="story-editor-list"></div>
+      <button class="btn btn-primary btn-sm" onclick="saveStoryOverrides()" style="margin-top:12px;">保存故事线覆盖</button>
+    </div>
   </div>
 
   <!-- ═══ CONTACT ═══ -->
@@ -370,10 +378,10 @@
 </dialog>
 
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
-<script src="admin.js?v=1783004901"></script>
-<script src="admin-content.js?v=1783004901"></script>
-<script src="admin-essays.js?v=1783004901"></script>
-<script src="admin-photos.js?v=1783004901"></script>
+<script src="admin.js?v=1783095508"></script>
+<script src="admin-content.js?v=1783095508"></script>
+<script src="admin-essays.js?v=1783095508"></script>
+<script src="admin-photos.js?v=1783095508"></script>
 <script>refreshGitStatus();loadWork();</script>
 
 <!-- Password Dialog -->

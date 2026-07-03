@@ -70,6 +70,13 @@ if (window.ResizeObserver) {
 var player, curRow;
 var musicTimeHandler, musicEndHandler;
 
+function _fmtTime(sec) {
+  if (!sec || !isFinite(sec)) return '0:00';
+  var m = Math.floor(sec / 60);
+  var s = Math.floor(sec % 60);
+  return m + ':' + (s < 10 ? '0' : '') + s;
+}
+
 function initMusicPlayer() {
   player = document.getElementById('player');
   if (!player) return;
@@ -78,9 +85,18 @@ function initMusicPlayer() {
   if (musicEndHandler) player.removeEventListener('ended', musicEndHandler);
 
   document.querySelectorAll('.music-row').forEach(row => {
-    row.addEventListener('click', () => {
-      const src = row.dataset.src;
+    row.addEventListener('click', function(e) {
+      var src = row.dataset.src;
       if (!src) return;
+      // If clicking on a playing row, seek to position
+      if (curRow === row && player.duration) {
+        var rect = row.getBoundingClientRect();
+        var pct = (e.clientX - rect.left) / rect.width;
+        player.currentTime = pct * player.duration;
+        if (player.paused) { player.play(); row.classList.remove('paused'); }
+        else { player.pause(); row.classList.add('paused'); }
+        return;
+      }
       if (curRow === row) {
         if (player.paused) { player.play(); row.classList.remove('paused'); }
         else { player.pause(); row.classList.add('paused'); }
@@ -96,14 +112,17 @@ function initMusicPlayer() {
     });
   });
 
-  musicTimeHandler = () => {
+  musicTimeHandler = function() {
     if (curRow && player.duration) {
-      curRow.style.setProperty('--progress', (player.currentTime / player.duration * 100).toFixed(2) + '%');
+      var pct = (player.currentTime / player.duration * 100).toFixed(2);
+      curRow.style.setProperty('--progress', pct + '%');
+      var t = curRow.querySelector('.time');
+      if (t) t.textContent = _fmtTime(player.currentTime) + ' / ' + _fmtTime(player.duration);
     }
   };
-  musicEndHandler = () => {
-    if (curRow) { curRow.classList.remove('playing'); curRow.style.removeProperty('--progress'); }
-    // Auto-play next track
+  musicEndHandler = function() {
+    if (curRow) { curRow.classList.remove('playing'); curRow.style.removeProperty('--progress');
+      var t = curRow.querySelector('.time'); if (t) t.textContent = ''; }
     var rows = document.querySelectorAll('.music-row');
     var idx = Array.prototype.indexOf.call(rows, curRow);
     curRow = null;
@@ -244,6 +263,49 @@ var _photoMap = null;
 var _photoMapLoaded = false;
 var _markerGroup = null;
 var _currentPhotoTag = '';
+var _photoStories = [];
+var _currentStory = -1;
+
+function renderPhotoStories(data) {
+  _photoStories = data || [];
+  var el = document.getElementById('photo-stories');
+  if (!el || !_photoStories.length) { if (el) el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  var html = '';
+  _photoStories.forEach(function(story, i) {
+    var loc = story.gps ? _gpsStr(story.gps.lat, story.gps.lng, 2) : '';
+    html += '<div class="story-card' + (_currentStory === i ? ' active' : '') + '" onclick="filterByStory(' + i + ')">' +
+      '<img src="images/sm/' + story.cover + '" alt="" loading="lazy">' +
+      '<div class="story-info">' +
+      '<span class="story-name">' + htmlEncode(story.name) + '</span>' +
+      (story.caption ? '<span class="story-caption">' + htmlEncode(story.caption) + '</span>' : '') +
+      '<span class="story-meta">' + story.photos.length + ' photos' + (story.date ? ' · ' + story.date : '') + '</span>' +
+      (loc ? '<span class="story-loc">' + loc + '</span>' : '') +
+      '</div></div>';
+  });
+  el.innerHTML = html;
+}
+
+function filterByStory(idx) {
+  // Toggle active story card
+  var wasActive = _currentStory === idx;
+  _currentStory = wasActive ? -1 : idx;
+  document.querySelectorAll('.story-card').forEach(function(c, i) { c.classList.toggle('active', i === _currentStory); });
+  if (wasActive || _currentStory < 0) return;
+  // Scroll to first photo in story and briefly highlight
+  var story = _photoStories[_currentStory];
+  if (!story || !story.photos.length) return;
+  var firstFn = story.photos[0];
+  var target = document.querySelector('.photo-item img[src*="' + firstFn + '"]');
+  if (target) {
+    target.closest('.photo-item').scrollIntoView({behavior: 'smooth', block: 'center'});
+    target.closest('.photo-item').style.transition = 'box-shadow 0.4s';
+    target.closest('.photo-item').style.boxShadow = '0 0 0 4px #0066ff';
+    setTimeout(function() {
+      target.closest('.photo-item').style.boxShadow = '';
+    }, 2000);
+  }
+}
 
 function buildPhotoTagFilter() {
   var tags = new Set();
@@ -260,48 +322,49 @@ function buildPhotoTagFilter() {
   el.innerHTML = html;
 }
 
+function openMapPhotoLB(filename) {
+  var pool = _getFilteredPhotos().filter(function(p) { return p.exif && p.exif.gps; });
+  lbPhotos = pool.map(function(p) {
+    var ex = p.exif || {};
+    var parts = [_exifCamera(ex), _exifStr(ex, true), _gpsStr(ex.gps.lat, ex.gps.lng, 4), p.date].filter(Boolean);
+    return { src: 'images/lg/' + p.filename, alt: '', exif: parts.join(' · ') };
+  });
+  lbIndex = lbPhotos.findIndex(function(p) { return p.src.endsWith('/' + filename); });
+  if (lbIndex < 0) lbIndex = 0;
+  openLB();
+}
+
+function _syncMapMarkers() {
+  if (!_markerGroup || !window._photoData) return;
+  _markerGroup.clearLayers();
+  var pool = _getFilteredPhotos();
+  var gpsPhotos = pool.filter(function(p) { return p.exif && p.exif.gps; });
+  gpsPhotos.forEach(function(p) {
+    var g = p.exif.gps;
+    var ex = p.exif || {};
+    var camera = (ex.model || ex.camera || 'Photo');
+    var exifHtml = _exifStr(ex, true);
+    var gpsHtml = _gpsStr(g.lat, g.lng);
+    var html = '<img src=\"images/lg/' + encodeURIComponent(p.filename) + '\" onclick=\"openMapPhotoLB(\'' + encodeURIComponent(p.filename) + '\')\" style=\"cursor:zoom-in\" title=\"点击查看大图\"><b>' + camera + '</b>';
+    if (exifHtml) html += '<br><span class=\"popup-exif\">' + exifHtml + '</span>';
+    html += '<br><span class=\"popup-exif\">' + gpsHtml + '</span>';
+    var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
+    var popup = L.popup({maxWidth: 340}).setContent(html);
+    L.marker([g.lat, g.lng], {icon: icon}).addTo(_markerGroup).bindPopup(popup);
+  });
+  if (_markerGroup.getLayers().length > 0) {
+    _photoMap.fitBounds(_markerGroup.getBounds(), {padding: [50, 50], maxZoom: 14});
+  }
+}
+
 function filterPhotosByTag(tag) {
   _currentPhotoTag = tag;
-  // Grid: toggle display
-  document.querySelectorAll('.photo-item').forEach(function(el) {
-    var itemTags = (el.dataset.tags || '').split(',').filter(Boolean);
-    el.style.display = (!tag || itemTags.indexOf(tag) >= 0) ? '' : 'none';
-  });
-  // Reset paging + re-render initial batch from filtered pool
-  _photoPage = 0; _photoExpanded = false;
-  document.querySelectorAll('.photo-batch').forEach(function(el) { el.remove(); });
-  var pool = _getFilteredPhotos();
-  var masonry = document.getElementById('photo-masonry');
-  var shown = pool.slice(0, _photoPageSize);
-  masonry.innerHTML = renderPhotos(shown);
-  var hidden = pool.length - _photoPageSize;
-  var lm = document.getElementById('photo-load-more');
-  if (hidden > 0) {
-    lm.innerHTML = '<button class="load-more-btn" onclick="loadMorePhotos()">Load (' + hidden + ' more)</button>';
-    lm.style.display = 'block';
-  } else { lm.style.display = 'none'; }
-  // Update filter chip active state
   document.querySelectorAll('#photo-tag-filter .ef-chip').forEach(function(c) {
     c.classList.toggle('active', c.textContent === (tag || '全部'));
   });
-  // Map: rebuild markers
-  if (_markerGroup && window._photoData) {
-    _markerGroup.clearLayers();
-    var filtered = window._photoData.filter(function(p) {
-      return !tag || (p.tags || []).indexOf(tag) >= 0;
-    });
-    filtered.forEach(function(p) {
-      var gps = p.exif && p.exif.gps;
-      if (!gps) return;
-      var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
-      var html = '<img src="images/lg/' + encodeURIComponent(p.filename) + '"><b>' + (p.exif.model || p.exif.camera || 'Photo') + '</b>';
-      L.marker([gps.lat, gps.lng], {icon: icon}).addTo(_markerGroup).bindPopup(html);
-    });
-    if (filtered.length > 0) {
-      _photoMap.fitBounds(_markerGroup.getBounds(), {padding: [50, 50], maxZoom: 14});
-    }
-  }
-  // Sync GPS count to filtered pool
+  _renderAllPhotos();
+  _syncMapMarkers();
+  var pool = _getFilteredPhotos();
   var gc2 = pool.filter(function(p){return p.exif&&p.exif.gps;}).length;
   var elGc = document.getElementById('gps-count');
   if (gc2) { elGc.textContent = '· ' + gc2 + ' location' + (gc2>1?'s':''); elGc.style.display = ''; }
@@ -356,13 +419,15 @@ function initPhotoMap() {
       if (!gps) return;
       var ex = p.exif || {};
       var camera = _exifCamera(ex);
-      var html = '<img src="images/lg/' + encodeURIComponent(p.filename) + '">' +
-        '<b>' + (camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;') + '</b>';
+      var cameraName = (camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;');
+      var html = '<img src="images/lg/' + encodeURIComponent(p.filename) + '" onclick="openMapPhotoLB(\'' + encodeURIComponent(p.filename) + '\')" style="cursor:zoom-in" title="点击查看大图">' +
+        '<b>' + cameraName + '</b>';
       var exifHtml = _exifStr(ex, true);
       if (exifHtml) html += '<br><span class="popup-exif">' + exifHtml + '</span>';
       html += '<br><span class="popup-exif">' + _gpsStr(gps.lat, gps.lng) + '</span>';
       var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
-      L.marker([gps.lat, gps.lng], {icon: icon}).addTo(_markerGroup).bindPopup(html);
+      var popup = L.popup({maxWidth: 340}).setContent(html);
+      L.marker([gps.lat, gps.lng], {icon: icon}).addTo(_markerGroup).bindPopup(popup);
     });
 
     if (_markerGroup.getLayers().length > 0) {
@@ -379,6 +444,21 @@ function initPhotoMap() {
   }
 }
 
+function _haversine(lat1, lon1, lat2, lon2) {
+  var R = 6371000; // meters
+  var dLat = (lat2 - lat1) * Math.PI / 180;
+  var dLon = (lon2 - lon1) * Math.PI / 180;
+  var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function _fmtDist(m) {
+  if (m < 1000) return Math.round(m) + ' m';
+  return (m / 1000).toFixed(1) + ' km';
+}
+
 function loadGpxTracks() {
   var trackColors = ['#0066ff', '#ff4d4d', '#00c853', '#ffb800', '#9c27b0'];
   var colorIdx = 0;
@@ -392,12 +472,28 @@ function loadGpxTracks() {
         var parser = new DOMParser();
         var doc = parser.parseFromString(xml, 'text/xml');
         var points = [];
+        var dist = 0, gain = 0, prevEle = null;
         doc.querySelectorAll('trkpt').forEach(function(pt) {
-          points.push([parseFloat(pt.getAttribute('lat')), parseFloat(pt.getAttribute('lon'))]);
+          var lat = parseFloat(pt.getAttribute('lat'));
+          var lon = parseFloat(pt.getAttribute('lon'));
+          var eleEl = pt.querySelector('ele');
+          var ele = eleEl ? parseFloat(eleEl.textContent) : null;
+          if (points.length > 0) {
+            var prev = points[points.length - 1];
+            dist += _haversine(prev[0], prev[1], lat, lon);
+            if (ele !== null && prevEle !== null && ele > prevEle) gain += ele - prevEle;
+          }
+          points.push([lat, lon]);
+          prevEle = ele;
         });
         if (points.length > 1) {
           var color = trackColors[colorIdx % trackColors.length];
-          L.polyline(points, {color: color, weight: 3, opacity: 0.7, smoothFactor: 1}).addTo(_photoMap);
+          var name = t.name || t.file.replace('.gpx', '');
+          var stats = [name];
+          stats.push(_fmtDist(dist));
+          if (gain > 0) stats.push('↑' + Math.round(gain) + ' m');
+          var line = L.polyline(points, {color: color, weight: 3, opacity: 0.7, smoothFactor: 1}).addTo(_photoMap);
+          line.bindPopup('<b>' + stats.join('</b> · <b>') + '</b>');
           colorIdx++;
         }
       }).catch(function() {});
@@ -421,24 +517,17 @@ function switchView(view, cb) {
 
     loadLeaflet(function() {
       setTimeout(function() { _photoMap.invalidateSize(); }, 50);
-      if (_currentPhotoTag) filterPhotosByTag(_currentPhotoTag);  // re-apply filter on map
+      _syncMapMarkers();  // re-apply current filter on map
       if (cb) cb();
     });
   } else {
     masonry.style.display = ''; mapContainer.style.display = 'none';
     btnGrid.className = 'active';
     btnMap.className = 'inactive';
-    // Restore load-more visibility: show if expanded or more photos remain
-    var pool = _getFilteredPhotos();
-    var hidden = pool.length - _photoPageSize;
-    lm.style.display = (_photoExpanded || hidden > 0) ? 'block' : 'none';
+    lm.style.display = 'none';
     if (cb) cb();
   }
 }
-
-var _photoPage = 0;
-var _photoPageSize = 12;
-var _photoExpanded = false;
 
 function _getFilteredPhotos() {
   if (!window._photoData) return [];
@@ -448,37 +537,10 @@ function _getFilteredPhotos() {
   });
 }
 
-function loadMorePhotos() {
-  var lm = document.getElementById('photo-load-more');
-  var masonry = document.getElementById('photo-masonry');
+function _renderAllPhotos() {
   var pool = _getFilteredPhotos();
-  if (_photoExpanded) {
-    _photoExpanded = false; _photoPage = 0;
-    document.querySelectorAll('.photo-batch').forEach(function(el) { el.remove(); });
-    var hidden = pool.length - _photoPageSize;
-    if (hidden > 0) {
-      lm.innerHTML = '<button class="load-more-btn" onclick="loadMorePhotos()">Load (' + hidden + ' more)</button>';
-      lm.style.display = 'block';
-    } else { lm.style.display = 'none'; }
-    return;
-  }
-  _photoPage++;
-  var start = _photoPage * _photoPageSize;
-  var end = start + _photoPageSize;
-  var batch = pool.slice(start, end);
-  var more = pool.length - end;
-  var wrapper = document.createElement('div');
-  wrapper.className = 'photo-batch';
-  wrapper.innerHTML = renderPhotos(batch);
-  masonry.appendChild(wrapper);
-  if (more > 0) {
-    lm.innerHTML = '<button class="load-more-btn" onclick="loadMorePhotos()">Load (' + more + ' more)</button>';
-    lm.style.display = 'block';
-  } else {
-    _photoExpanded = true;
-    lm.innerHTML = '<button class="load-more-btn" onclick="loadMorePhotos()">Collapse</button>';
-    lm.style.display = 'block';
-  }
+  var masonry = document.getElementById('photo-masonry');
+  masonry.innerHTML = renderPhotos(pool);
   initLB();
 }
 
@@ -519,8 +581,9 @@ function renderMusic(data) {
     var t = themes[i % themes.length];
     return '<div class="music-row" data-src="music/' + htmlEncode(m.filename) + '" style="--theme:' + t[0] + ';--idx-color:' + t[1] + '">' +
       '<span class="idx">' + num + '</span>' +
-      '<span class="title">' + htmlEncode(m.title) + '</span>' +
-      '<span class="artist">' + htmlEncode(m.artist) + '</span>' +
+      '<span class="info"><span class="title">' + htmlEncode(m.title) + '</span>' +
+      '<span class="artist">' + htmlEncode(m.artist) + '</span></span>' +
+      '<span class="time"></span>' +
       '</div>';
   }).join('');
 }
@@ -586,19 +649,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     var total = results.photos.length;
     var cols = total <= 2 ? 2 : total <= 4 ? 3 : total <= 12 ? 4 : 5;
     document.getElementById('photo-masonry').style.columnCount = cols;
-    var shown = results.photos.slice(0, _photoPageSize);
-    document.getElementById('photo-masonry').innerHTML = renderPhotos(shown);
-    var hidden = total - _photoPageSize;
+    document.getElementById('photo-masonry').innerHTML = renderPhotos(results.photos);
 
+    // Load photo stories from server (pre-computed during build)
+    fetch('data/photo_stories.json?v=' + TS).then(function(r) { return r.ok ? r.json() : null; }).then(function(data) {
+      if (data) renderPhotoStories(data);
+    }).catch(function() {});
     buildPhotoTagFilter();
 
+    // Hide load-more (23 photos fit in one batch)
     var lm = document.getElementById('photo-load-more');
-    if (hidden > 0) {
-      lm.style.display = 'block';
-      lm.innerHTML = '<button class="load-more-btn" onclick="loadMorePhotos()">Load (' + hidden + ' more)</button>';
-    } else {
-      lm.style.display = 'none';
-    }
+    lm.style.display = 'none';
 
     var gc = results.photos.filter(function(p) { return p.exif && p.exif.gps; }).length;
     var elGc = document.getElementById('gps-count');

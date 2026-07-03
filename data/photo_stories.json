@@ -1,0 +1,35 @@
+[
+  {
+    "caption": "",
+    "cover": "0bd452bc.jpg",
+    "date": "Jul 2025",
+    "id": "chongqing_jul2025",
+    "name": "重庆 · 解放碑",
+    "photos": [
+      "0bd452bc.jpg",
+      "11f6710f.jpg"
+    ]
+  },
+  {
+    "caption": "",
+    "cover": "3a8a4acc.jpg",
+    "date": "May 2026",
+    "id": "shanghai_may2026",
+    "name": "上海 · 梧桐区",
+    "photos": [
+      "3a8a4acc.jpg",
+      "736e3c65.jpg"
+    ]
+  },
+  {
+    "caption": "",
+    "cover": "68b93d07a342daef4f8483cdb249c4f7.jpg",
+    "date": "May 2026",
+    "id": "shenzhen_may2026",
+    "name": "深圳 · 大沙河",
+    "photos": [
+      "15a70814318ed74d5ec2448532f7fab5.jpg",
+      "68b93d07a342daef4f8483cdb249c4f7.jpg"
+    ]
+  }
+]

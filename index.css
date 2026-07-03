@@ -101,6 +101,18 @@ section[id]:last-of-type { border-bottom: none; }
 .about-lead { font-weight: 700; color: var(--fg); font-size: 18px; }
 #work  { padding: 140px 0 120px; }
 #photos { padding: 100px 0; }
+.photo-stories { display: flex; gap: 12px; overflow-x: auto; padding-bottom: 24px; margin-bottom: 8px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+.photo-stories::-webkit-scrollbar { height: 4px; }
+.photo-stories::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.story-card { flex: 0 0 160px; cursor: pointer; border-radius: 12px; overflow: hidden; background: var(--card-bg); border: 1px solid var(--border); transition: transform .2s, border-color .2s; scroll-snap-align: start; }
+.story-card:hover { transform: translateY(-2px); border-color: var(--accent, #0066ff); }
+.story-card.active { border-color: #0066ff; box-shadow: 0 0 0 2px rgba(0,102,255,0.2); }
+.story-card img { width: 100%; height: 120px; object-fit: cover; display: block; }
+.story-info { padding: 10px 12px; }
+.story-name { font-size: 13px; font-weight: 600; display: block; }
+.story-caption { font-size: 12px; color: var(--muted); display: block; margin-top: 4px; line-height: 1.4; }
+.story-meta { font-size: 11px; color: var(--muted); display: block; margin-top: 2px; }
+.story-loc { font-size: 11px; color: var(--muted); display: block; }
 #music { padding: 160px 0 120px; }
 #essays { padding: 100px 0 120px; }
 #contact { padding: 100px 0 120px; }
@@ -237,11 +249,11 @@ html.dark .leaflet-marker-shadow,
 html.dark .leaflet-popup { filter: none; }
 .leaflet-popup-content {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 12px; line-height: 1.6;
+  font-size: 12px; line-height: 1.6; min-width: 240px;
 }
 .leaflet-popup-content img {
-  width: 100%; max-height: 260px; object-fit: cover;
-  border-radius: 4px; margin-bottom: 6px;
+  width: 100%; max-height: 220px; object-fit: cover;
+  border-radius: 4px; margin-bottom: 6px; cursor: zoom-in;
 }
 .leaflet-popup-content .popup-exif { color: #888; font-size: 10px; }
 .music-list { display: flex; flex-direction: column; }
@@ -255,12 +267,14 @@ html.dark .leaflet-popup { filter: none; }
 .music-row:hover { padding-left: 24px; background: rgba(255,255,255,0.5); }
 .music-row.playing { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
 .music-row.playing:hover { background: linear-gradient(to right, var(--theme) var(--progress), transparent var(--progress)); }
-.music-row .idx { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s, transform .3s; display: inline-block; }
+.music-row .idx { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 13px; font-weight: 700; color: #ddd; transition: color .3s, transform .3s; display: inline-block; min-width: 28px; text-align: center; }
 .music-row.playing .idx { color: var(--idx-color); animation: pulse 0.8s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.25); } }
 .music-row.paused .idx { animation-play-state: paused !important; }
-.music-row .title { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; font-weight: 600; }
-.music-row .artist { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 14px; color: var(--muted); }
+.music-row .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.music-row .title { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-row .artist { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 14px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.music-row .time { font-family: 'Inter', 'Noto Sans SC', sans-serif; font-size: 12px; color: var(--muted); white-space: nowrap; min-width: 85px; text-align: right; font-variant-numeric: tabular-nums; }
 .stars { font-size: 11px; color: #ccc; }
 .stars::before { content: '· '; }
 
@@ -446,9 +460,11 @@ html.dark .hero h1 mark { color: #1a1a1c; }
 .lb-next { right: 20px; }
 .lb-prev:hover, .lb-next:hover { opacity: 1; }
 .lb-exif {
-  position: fixed; bottom: 52px; left: 50%; transform: translateX(-50%);
-  color: rgba(255,255,255,0.35); font-size: 12px; z-index: 1001;
+  position: fixed; bottom: 56px; left: 50%; transform: translateX(-50%);
+  color: rgba(255,255,255,0.65); font-size: 13px; z-index: 1001;
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; letter-spacing: 0.03em;
+  background: rgba(0,0,0,0.4); padding: 6px 16px; border-radius: 8px;
+  max-width: 90vw; text-align: center;
 }
 .lb-counter {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);

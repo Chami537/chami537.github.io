@@ -239,7 +239,7 @@ def _generate_public_essays():
 
 
 def _generate_feeds():
-    """Regenerate all auto-generated files: RSS, sitemap, archive, map + public essays."""
+    """Regenerate all auto-generated files: RSS, sitemap, archive, map, public essays."""
     _generate_public_essays()
     _generate_rss()
     _generate_sitemap()

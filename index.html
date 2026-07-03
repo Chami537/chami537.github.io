@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="view-transition" content="same-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com; script-src 'self' 'unsafe-inline'; font-src 'self' fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net; font-src 'self' fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://api.github.com">
 <title>Chami — CS Student & Photographer</title>
 <meta name="description" content="Chami的个人主页 — CS 学生、摄影师，现居深圳。Building things that feel right.">
 <meta property="og:title" content="Chami">
@@ -13,10 +13,11 @@
 <meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="images/avatar.jpg">
+<link rel="alternate" type="application/rss+xml" title="Chami's Essays" href="/rss.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="index.css?v=1783003684">
+<link rel="stylesheet" href="index.css?v=1783095415">
 <script>
   if (localStorage.getItem('theme') === 'dark') {
     document.documentElement.classList.add('dark');
@@ -87,6 +88,7 @@
         <span id="btn-map" class="inactive" onclick="switchView('map')">Map</span><span id="gps-count" style="font-size:10px;color:var(--muted);margin-left:4px;display:none"></span>
       </div>
     </div>
+    <div id="photo-stories" class="photo-stories" style="display:none;"></div>
     <div id="photo-tag-filter" class="essay-filter" style="margin-bottom:16px;display:none;"></div>
     <div class="photo-masonry skeleton-loading" id="photo-masonry"></div>
     <div id="photo-load-more" style="text-align:center;padding:16px 0;display:none;"></div>
@@ -143,7 +145,7 @@
   © <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
 </footer>
 
-<script src="index.js?v=1783003684"></script>
+<script src="index.js?v=1783095415"></script>
 
 </body>
 </html>

@@ -1,3 +1,4 @@
+import json
 import os
 import uuid
 
@@ -5,9 +6,8 @@ from PIL import Image
 from flask import request, jsonify
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, BASE_DIR
+from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
 from backend.ssg import _extract_exif, _set_gps, IMAGES_DIR
-
 
 @app.route('/api/photos', methods=['GET'])
 def list_photos():
@@ -152,3 +152,23 @@ def update_photo_gps():
     if os.path.exists(rp):
         _set_gps(safe_fn, lat, lng)
     return jsonify({"status": "ok", "lat": lat, "lng": lng})
+
+
+# ── Photo stories (manually curated) ──
+
+@app.route('/api/photo-stories', methods=['GET'])
+def get_photo_stories():
+    stories_path = os.path.join(DATA_DIR, 'photo_stories.json')
+    if os.path.exists(stories_path):
+        with open(stories_path, 'r', encoding='utf-8') as f:
+            return jsonify(json.load(f))
+    return jsonify([])
+
+
+@app.route('/api/photo-stories', methods=['PUT'])
+def save_photo_stories():
+    data = request.get_json(silent=True)
+    if not isinstance(data, list):
+        return jsonify({"error": "Expected a list of stories"}), 400
+    atomic_write_json('photo_stories.json', data)
+    return jsonify({"status": "saved", "count": len(data)})
