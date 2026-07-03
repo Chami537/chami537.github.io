@@ -35,9 +35,14 @@ def _read_password_store():
 def _write_password_store(data):
     """Atomically write the password store."""
     tmp = PASSWORD_STORE + '.tmp'
-    with open(tmp, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    os.replace(tmp, PASSWORD_STORE)
+    try:
+        with open(tmp, 'w', encoding='utf-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, PASSWORD_STORE)
+    except Exception:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        raise
 
 
 def get_essay_password(slug):

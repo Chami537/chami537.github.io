@@ -428,7 +428,8 @@ html.dark .hero h1 mark { color: #1a1a1c; }
 }
 @keyframes lb-in { from { opacity: 0; } }
 .lb-overlay.show { display: flex; align-items: center; justify-content: center; }
-.lb-overlay img { max-width: 90vw; max-height: 85vh; object-fit: contain; cursor: default; }
+.lb-overlay img { max-width: 90vw; max-height: 85vh; object-fit: contain; cursor: zoom-in; transition: opacity .15s ease; }
+.lb-overlay img.loading { opacity: 0.4; }
 .lb-close {
   position: fixed; top: 20px; right: 28px; z-index: 1001;
   background: none; border: none; color: #fff; font-size: 36px;

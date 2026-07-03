@@ -348,33 +348,48 @@ div.arithmatex {
       return bytes;
     }
 
+    function base64urlToBytes(url) {
+      var b64 = url.replace(/-/g, '+').replace(/_/g, '/');
+      while (b64.length % 4) b64 += '=';
+      return base64ToBytes(b64);
+    }
+
     async function unlockEssay() {
       var pwd = document.getElementById('essay-password-input').value;
       if (!pwd) return;
       try {
-        var combined = base64ToBytes(_encryptedBody);
-        // v2: version(1) + salt(16) + hmac(32) + ciphertext
-        var salt = combined.slice(1, 17);
-        var hmacStored = combined.slice(17, 49);
-        var ciphertext = combined.slice(49);
+        // v3 Fernet: standard_base64(version_byte(2) + salt(16) + fernet_token_b64url)
+        var outer = base64ToBytes(_encryptedBody);
+        var salt = outer.slice(1, 17);
+        var fernetB64 = new TextDecoder().decode(outer.slice(17));
+
+        // Derive 256-bit key via PBKDF2-SHA256 (100k iter)
         var enc = new TextEncoder();
         var keyMaterial = await crypto.subtle.importKey('raw', enc.encode(pwd), 'PBKDF2', false, ['deriveBits']);
         var keyBits = await crypto.subtle.deriveBits({
           name: 'PBKDF2', salt: salt, iterations: 100000, hash: 'SHA-256'
         }, keyMaterial, 256);
-        var key = new Uint8Array(keyBits);
-        // Verify HMAC (catches wrong password without decryption garbage)
-        var hmacKey = await crypto.subtle.importKey('raw', key, {name: 'HMAC', hash: 'SHA-256'}, false, ['sign']);
-        var hmacSig = new Uint8Array(await crypto.subtle.sign('HMAC', hmacKey, ciphertext));
-        for (var i = 0; i < 32; i++) {
-          if (hmacSig[i] !== hmacStored[i]) throw new Error('wrong password');
-        }
-        // XOR decrypt
-        var plaintext = new Uint8Array(ciphertext.length);
-        for (var i = 0; i < ciphertext.length; i++) {
-          plaintext[i] = ciphertext[i] ^ key[i % 32];
-        }
-        var html = new TextDecoder().decode(plaintext);
+        var key = new Uint8Array(keyBits);  // 32 bytes
+
+        // Fernet splits key: first 16 = HMAC sign, last 16 = AES
+        var signKey = await crypto.subtle.importKey('raw', key.slice(0, 16), {name: 'HMAC', hash: 'SHA-256'}, false, ['sign', 'verify']);
+        var encKey = await crypto.subtle.importKey('raw', key.slice(16), 'AES-CBC', false, ['decrypt']);
+
+        // Decode Fernet token: version(1) + timestamp(8) + IV(16) + ciphertext + HMAC(32)
+        var token = base64urlToBytes(fernetB64);
+        var toAuth = token.slice(0, token.length - 32);
+        var storedHmac = token.slice(token.length - 32);
+
+        // Verify HMAC
+        var valid = await crypto.subtle.verify('HMAC', signKey, storedHmac, toAuth);
+        if (!valid) throw new Error('wrong password');
+
+        // AES-128-CBC decrypt
+        var iv = toAuth.slice(9, 25);     // after version(1) + timestamp(8)
+        var ct = toAuth.slice(25);
+        var plainBuf = await crypto.subtle.decrypt({name: 'AES-CBC', iv: iv}, encKey, ct);
+
+        var html = new TextDecoder().decode(plainBuf);
         document.getElementById('essay-gate').style.display = 'none';
         var content = document.getElementById('essay-content');
         content.innerHTML = html;

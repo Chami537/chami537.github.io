@@ -1,13 +1,24 @@
 """Flask application for the Chami CMS — app creation + static file serving."""
 
 import os
+import secrets
 from flask import Flask, request, send_from_directory
 from flask import jsonify, session
 
 from backend.data import BASE_DIR, DATA_DIR, ESSAYS_DIR, IMAGES_DIR
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'e825e2d3814a072e831e22b0769be5b9d1ffa587a93ca975')
+_secret = os.environ.get('FLASK_SECRET_KEY', '')
+if _secret:
+    app.secret_key = _secret
+else:
+    app.secret_key = secrets.token_hex(32)
+    if not app.config.get('TESTING'):
+        print('WARNING: FLASK_SECRET_KEY not set — using random key (sessions reset on restart)')
+
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_HTTPONLY'] = True
+app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 
 
 # ── Auth guard: all /api/* requires login except /api/login (skipped in test mode) ──

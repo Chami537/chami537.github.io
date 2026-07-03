@@ -1,8 +1,6 @@
 """SSG generators and essay helpers for the Chami CMS."""
 
 import base64
-import hashlib
-import hmac
 import html as html_mod
 import os
 import json
@@ -42,39 +40,19 @@ def _encrypt_content(plaintext, password):
 
 
 def _decrypt_content(encrypted_b64, password):
-    """Decrypt v3 (Fernet), v2 (HMAC+XOR), or v1 (legacy XOR). Raises ValueError on wrong password."""
+    """Decrypt v3 Fernet format. Raises ValueError on wrong password or unknown format."""
     raw = base64.b64decode(encrypted_b64)
 
-    # v3 (Fernet): version(2) + salt(16) + fernet_token
-    if raw and raw[0] == 2 and len(raw) > 17:
-        salt = raw[1:17]
-        token = raw[17:]
-        key = _derive_fernet(password, salt)
-        try:
-            return Fernet(key).decrypt(token).decode('utf-8')
-        except InvalidToken:
-            raise ValueError('Wrong password or corrupted data')
+    if not raw or raw[0] != 2 or len(raw) <= 17:
+        raise ValueError('Unknown or legacy encryption format — re-encrypt with v3 Fernet')
 
-    # v2 (legacy): version(1) + salt(16) + hmac(32) + XOR-ciphertext
-    if len(raw) > 49 and raw[0] == 1:
-        salt = raw[1:17]
-        tag_stored = raw[17:49]
-        cipher = raw[49:]
-        key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=32)
-        tag_check = hmac.new(key, cipher, 'sha256').digest()
-        if not hmac.compare_digest(tag_check, tag_stored):
-            raise ValueError('Wrong password or corrupted data')
-        return bytes(c ^ key[i % 32] for i, c in enumerate(cipher)).decode('utf-8')
-
-    # v1 (legacy): salt(16) + XOR-ciphertext, optional CHAMI_OK: prefix
-    salt = raw[:16]
-    cipher = raw[16:]
-    key = hashlib.pbkdf2_hmac('sha256', password.encode('utf-8'), salt, 100000, dklen=32)
-    plain_bytes = bytes(c ^ key[i % 32] for i, c in enumerate(cipher))
-    text = plain_bytes.decode('utf-8')
-    if text.startswith('CHAMI_OK:'):
-        return text[9:]
-    return text
+    salt = raw[1:17]
+    token = raw[17:]
+    key = _derive_fernet(password, salt)
+    try:
+        return Fernet(key).decrypt(token).decode('utf-8')
+    except InvalidToken:
+        raise ValueError('Wrong password or corrupted data')
 
 from backend.data import load_json, atomic_write_json, decimal_to_dms, dms_to_decimal, format_shutter, format_aperture, format_focal, get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR
 from jinja2 import Environment, FileSystemLoader
@@ -182,7 +160,7 @@ def _generate_sitemap():
     essays = load_json('essays.json')
     enriched = []
     for e in essays:
-        item = dict(e)
+        item = {k: v for k, v in e.items() if k != 'password'}
         date_str = e.get('date', '')
         item['lastmod'] = ''
         try:
@@ -460,30 +438,37 @@ def _sync_essay_html(essay, raw_md_memory=None):
 
     # 1.5 Decrypt .md if the essay is password-protected (content at rest is encrypted)
     password = get_essay_password(slug)
+    decrypt_ok = True
     if password and raw_md:
         try:
             raw_md = _decrypt_content(raw_md, password)
-        except (ValueError, UnicodeDecodeError, base64.binascii.Error):
-            pass  # may already be plaintext or old-format with wrong key
+        except ValueError:
+            # Decrypt failed. If raw_md looks like v3 ciphertext, it's a wrong-password
+            # scenario — don't touch it (decrypt_ok=False prevents double-encryption).
+            # If it doesn't look encrypted, it's plaintext that needs first-time encryption.
+            try:
+                raw_bytes = base64.b64decode(raw_md.split('\n')[0])
+                if raw_bytes and raw_bytes[0] == 2:
+                    decrypt_ok = False  # v3 ciphertext, wrong key — skip re-encrypt
+            except Exception:
+                pass  # not base64 → plaintext, OK to encrypt
     elif not password and raw_md and len(raw_md) > 32:
-        # Safety: detect orphan ciphertext → don't render garbage. Check for v2 version byte.
+        # Detect orphan ciphertext (encrypted .md but no password set)
         try:
             raw_bytes = base64.b64decode(raw_md.split('\n')[0])
-            if raw_bytes and raw_bytes[0] == 1:  # _ENCRYPT_V2
+            if raw_bytes and raw_bytes[0] == 2:
                 raw_md = ''
         except Exception:
-            pass  # not valid base64 = likely plaintext
+            pass
 
-    # 2. 将 Markdown 渲染为 HTML 正文
+    # 2. Render Markdown to HTML
     rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}}) if raw_md else ""
     last_edited = _parse_date(essay.get('date', ''), include_time=True)
     body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
 
-    # 2.5 Write .md file — encrypt at rest if password is set, skip if content unchanged
-    if raw_md:
-        # Check if content actually changed (avoids re-encrypting with new salt on every build)
+    # 2.5 Write .md file — encrypt at rest if password is set, skip if unchanged
+    if raw_md and decrypt_ok:
         existing = ''
-        existing_raw = ''
         if os.path.exists(md_file):
             with open(md_file, 'r', encoding='utf-8') as f:
                 existing_raw = f.read()
@@ -492,16 +477,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
                     existing = _decrypt_content(existing_raw, password)
                 except Exception:
                     existing = ''  # force write if decrypt fails
-        # Re-write if content changed OR old format needs migration to v3
-        needs_migration = False
-        if password and existing_raw:
-            try:
-                raw_bytes = base64.b64decode(existing_raw)
-                if raw_bytes and raw_bytes[0] != 2:
-                    needs_migration = True
-            except Exception:
-                needs_migration = True
-        if existing != raw_md or needs_migration:
+        if existing != raw_md:
             os.makedirs(MD_DIR, exist_ok=True)
             if password:
                 with open(md_file, 'w', encoding='utf-8') as f:

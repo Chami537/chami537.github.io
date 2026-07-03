@@ -658,6 +658,7 @@ function toggleTheme() {
 var lbPhotos = [];
 var lbIndex = 0;
 var _lbInited = false;
+var _lbPreload = {};
 function initLB() {
   if (_lbInited) return;
   _lbInited = true;
@@ -691,6 +692,7 @@ function openLB() {
   var lb = document.getElementById('lightbox');
   lb.classList.add('show');
   updateLB();
+  preloadAdjacent();
   document.body.style.overflow = 'hidden';
 }
 function closeLB() {
@@ -700,11 +702,27 @@ function closeLB() {
 function navLB(dir) {
   lbIndex = (lbIndex + dir + lbPhotos.length) % lbPhotos.length;
   updateLB();
+  preloadAdjacent();
+}
+function preloadAdjacent() {
+  [-1, 1].forEach(function(offset) {
+    var i = (lbIndex + offset + lbPhotos.length) % lbPhotos.length;
+    if (i === lbIndex) return;
+    var src = lbPhotos[i].src;
+    if (_lbPreload[src]) return;
+    var img = new Image();
+    img.onload = function() { _lbPreload[src] = true; };
+    img.src = src;
+  });
 }
 function updateLB() {
   var p = lbPhotos[lbIndex];
-  document.getElementById('lb-img').src = p.src;
-  document.getElementById('lb-img').alt = p.alt;
+  var img = document.getElementById('lb-img');
+  if (img.src === p.src) return;
+  img.classList.add('loading');
+  img.src = p.src;
+  img.alt = p.alt;
+  img.onload = function() { img.classList.remove('loading'); };
   document.getElementById('lb-exif').textContent = p.exif || '';
   document.getElementById('lb-counter').textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
 }

@@ -228,14 +228,13 @@ async function togglePin(slug) {
 
 function passwordBtn(e) {
   var hasPwd = e.password_set || false;
-  var current = e.password || '';
   var label = hasPwd ? '&#x1F512; 密码' : '&#x1F511; 设密码';
   var title = hasPwd ? '点击修改或清除密码' : '设置密码保护';
-  return '<button class="password-btn' + (hasPwd ? ' active' : '') + '" onclick="setPassword(\'' + esc(e.slug) + '\', \'' + esc(current) + '\')" title="' + title + '">' + label + '</button>';
+  return '<button class="password-btn' + (hasPwd ? ' active' : '') + '" onclick="setPassword(\'' + esc(e.slug) + '\', ' + hasPwd + ')" title="' + title + '">' + label + '</button>';
 }
 
-function setPassword(slug, current) {
-  document.getElementById('pwd-current').textContent = current || '(未设置)';
+function setPassword(slug, hasPwd) {
+  document.getElementById('pwd-current').textContent = hasPwd ? '(已设置)' : '(未设置)';
   document.getElementById('pwd-new').value = '';
   document.getElementById('pwd-confirm').value = '';
   document.getElementById('pwd-error').style.display = 'none';
@@ -250,6 +249,11 @@ function setPassword(slug, current) {
     if (pwd && pwd !== confirm) {
       document.getElementById('pwd-error').textContent = '两次输入的密码不一致';
       document.getElementById('pwd-error').style.display = 'block';
+      done = false;
+      return false;
+    }
+    // Confirm before clearing password
+    if (!pwd && hasPwd && !confirm('确定清除密码？文章将变为公开可见。')) {
       done = false;
       return false;
     }

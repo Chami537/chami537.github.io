@@ -185,7 +185,7 @@ def set_essay_password(slug):
                 except ValueError:
                     return jsonify({"error": "旧密码错误，无法重新加密内容"}), 400
                 except UnicodeDecodeError:
-                    pass
+                    return jsonify({"error": "旧密码错误，无法重新加密内容"}), 400
             with open(md_file, 'w', encoding='utf-8') as f:
                 f.write(_encrypt_content(raw_md, new_password))
         store_password(slug, new_password)
@@ -201,7 +201,7 @@ def set_essay_password(slug):
             except ValueError:
                 return jsonify({"error": "旧密码错误，无法解密内容"}), 400
             except UnicodeDecodeError:
-                pass
+                return jsonify({"error": "旧密码错误，无法解密内容"}), 400
         store_password(slug, '')
 
     # Strip password from essays.json (safety net)
