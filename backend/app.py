@@ -82,7 +82,7 @@ def serve_tracks(filename):
 
 
 # Routes for root-level generated files (rss, sitemap, archive, map, CSS, JS)
-_ROOTS = ['rss.xml', 'sitemap.xml', 'archive.html', 'map.html', 'index.css', 'index.js', 'admin.css', 'admin.js', 'admin-content.js', 'admin-essays.js', 'admin-photos.js']
+_ROOTS = ['theme.js', 'rss.xml', 'sitemap.xml', 'archive.html', 'map.html', 'index.css', 'index.js', 'admin.css', 'admin.js', 'admin-content.js', 'admin-essays.js', 'admin-photos.js']
 for _f in _ROOTS:
     _ep = f'serve_{_f.replace(".", "_")}'
     app.add_url_rule(f'/{_f}', _ep, lambda _f=_f: send_from_directory(BASE_DIR, _f))

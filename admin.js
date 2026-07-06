@@ -257,27 +257,12 @@ function confirmDialog(msg) {
 }
 
 // ═══════════════════════════════════
-// Theme
+// Theme (toggleTheme / _applyTheme defined in shared /theme.js)
 // ═══════════════════════════════════
-// [shared] Keep in sync with index.js::toggleTheme()
-function _applyTheme(mode) {
-  var btn = document.getElementById('theme-btn');
-  if (mode === 'dark') { document.body.classList.add('dark'); btn.textContent = '☀'; }
-  else { document.body.classList.remove('dark'); btn.textContent = '🌙'; }
-}
 (function() {
   var saved = localStorage.getItem('theme');
   if (saved === 'dark') _applyTheme('dark');
 })();
-function toggleTheme() {
-  if (document.body.classList.contains('dark')) {
-    localStorage.setItem('theme', 'light');
-    _applyTheme('light');
-  } else {
-    localStorage.setItem('theme', 'dark');
-    _applyTheme('dark');
-  }
-}
 
 // ═══ Drag & Drop upload ═══
 document.addEventListener('dragover', function(e) {

@@ -296,7 +296,13 @@ div.arithmatex {
   .reveal { opacity: 1; transform: none; transition: none; }
 }
 </style>
-    {% include 'includes/theme-init.html' %}
+    <script>
+      var _mq = window.matchMedia('(prefers-color-scheme: dark)');
+      var _saved = localStorage.getItem('theme');
+      if (_saved === 'dark' || (!_saved && _mq.matches)) {
+        document.documentElement.classList.add('dark');
+      }
+    </script>
 </head>
 <body>
 
@@ -559,7 +565,9 @@ if (lbEl) {
   }, {passive: true});
 }
 
-    {% include 'includes/theme.js' %}
+</script>
+<script src="/theme.js"></script>
+<script>
 
 // Nav sticky: hide on scroll down, show on scroll up
 var _lastScrollY = scrollY;

@@ -139,8 +139,8 @@ function initMusicPlayer() {
 // ═══════════════════════════════════
 function htmlEncode(str) {
   const d = document.createElement('div');
-  d.textContent = str;
-  return d.innerHTML.replace(/"/g, '&quot;');
+  d.textContent = str != null ? str : '';
+  return d.innerHTML.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
 function _exifStr(ex, html) {
@@ -416,27 +416,9 @@ function initPhotoMap() {
     attribution: '&copy; OSM &copy; CARTO'
   }).addTo(_photoMap);
 
-  // Add markers from photo data
+  // Add markers from photo data (shared with _syncMapMarkers)
   if (window._photoData) {
-    window._photoData.forEach(function(p) {
-      var gps = p.exif && p.exif.gps;
-      if (!gps) return;
-      var ex = p.exif || {};
-      var camera = _exifCamera(ex);
-      var cameraName = (camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;');
-      var html = '<img src="images/lg/' + encodeURIComponent(p.filename) + '" onclick="openMapPhotoLB(\'' + encodeURIComponent(p.filename) + '\')" style="cursor:zoom-in" title="点击查看大图">' +
-        '<b>' + cameraName + '</b>';
-      var exifHtml = _exifStr(ex, true);
-      if (exifHtml) html += '<br><span class="popup-exif">' + exifHtml + '</span>';
-      html += '<br><span class="popup-exif">' + _gpsStr(gps.lat, gps.lng) + '</span>';
-      var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
-      var popup = L.popup({maxWidth: 340}).setContent(html);
-      L.marker([gps.lat, gps.lng], {icon: icon}).addTo(_markerGroup).bindPopup(popup);
-    });
-
-    if (_markerGroup.getLayers().length > 0) {
-      _photoMap.fitBounds(_markerGroup.getBounds(), {padding: [50, 50], maxZoom: 14});
-    }
+    _syncMapMarkers();
   }
 
   // Load GPX tracks (always load, independent of photo data)
@@ -691,11 +673,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
 // ═══ Dark Mode ═══
 // Priority: manual toggle > system preference > default (light)
-function _applyTheme(mode) {
-  var html = document.documentElement, btn = document.getElementById('theme-btn');
-  if (mode === 'dark') { html.classList.add('dark'); btn.textContent = '☀'; }
-  else { html.classList.remove('dark'); btn.textContent = '🌙'; }
-}
 function initThemeBtn() {
   var mq = window.matchMedia('(prefers-color-scheme: dark)');
   var saved = localStorage.getItem('theme');
@@ -703,21 +680,17 @@ function initThemeBtn() {
     _applyTheme('dark');
   }
   mq.addEventListener('change', function(e) {
-    if (localStorage.getItem('theme')) return;  // manual override wins
+    if (localStorage.getItem('theme')) return;
     _applyTheme(e.matches ? 'dark' : 'light');
   });
 }
-// [shared] Keep in sync with templates/includes/theme.js::toggleTheme()
-function toggleTheme() {
-  if (document.documentElement.classList.contains('dark')) {
-    localStorage.setItem('theme', 'light');
-    _applyTheme('light');
-  } else {
-    localStorage.setItem('theme', 'dark');
-    _applyTheme('dark');
+// Listen for theme changes to sync photo map
+window.addEventListener('themechange', function(e) {
+  if (_photoMap) {
+    _photoMap.invalidateSize();
+    _photoMap.getContainer().classList.toggle('dark', e.detail.mode === 'dark');
   }
-  if (_photoMap) _photoMap.invalidateSize();
-}
+});
 
 // ═══ Lightbox ═══
 var lbPhotos = [];
