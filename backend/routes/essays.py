@@ -68,9 +68,9 @@ def create_essay():
     atomic_write_json('essays.json', essays)
 
     body_md = item.get('body', '')
-    _sync_essay_html(item, raw_md_memory=body_md if body_md else None)
+    _sync_essay_html(item, raw_md_memory=body_md if body_md else None, essays=essays)
     if len(essays) > 1:
-        _sync_essay_html(essays[-2])
+        _sync_essay_html(essays[-2], essays=essays)
     _generate_feeds()
 
     return jsonify(item), 201
@@ -101,11 +101,11 @@ def update_essay_meta(slug):
                 if os.path.exists(old_md):
                     os.replace(old_md, new_md)
             # Re-sync updated essay + essays sharing tags (nav links may have changed)
-            _sync_essay_html(essays[i])
+            _sync_essay_html(essays[i], essays=essays)
             new_tags = _parse_tags(essays[i].get('tag', ''), essays[i])
             for e2 in essays:
                 if e2['slug'] != slug and new_tags & _parse_tags(e2.get('tag', ''), e2):
-                    _sync_essay_html(e2)
+                    _sync_essay_html(e2, essays=essays)
             _generate_feeds()
             return jsonify(essays[i])
     return jsonify({"error": "Not found"}), 404
@@ -132,9 +132,11 @@ def delete_essay(slug):
     essays_img_dir = os.path.realpath(os.path.join(IMAGES_DIR, 'essays'))
     if os.path.realpath(img_dir).startswith(essays_img_dir + os.sep) and os.path.exists(img_dir):
         shutil.rmtree(img_dir)
-    # Re-sync all remaining essays' nav links
+    # Re-sync essays sharing tags with the deleted essay
+    deleted_tags = _parse_tags(target.get('tag', ''), target)
     for e in essays:
-        _sync_essay_html(e)
+        if deleted_tags & _parse_tags(e.get('tag', ''), e):
+            _sync_essay_html(e, essays=essays)
     _generate_feeds()
     return jsonify({"status": "deleted"})
 
@@ -211,7 +213,7 @@ def set_essay_password(slug):
     atomic_write_json('essays.json', essays)
 
     # Regenerate HTML (password gate or normal)
-    _sync_essay_html(target)
+    _sync_essay_html(target, essays=essays)
     _generate_feeds()
 
     return jsonify({"password_set": bool(new_password)})
@@ -270,7 +272,7 @@ def update_essay_content(slug):
         return jsonify({"error": "Essay not found"}), 404
 
     # 3. 直接调用渲染函数，把最新的 Markdown 传过去
-    _sync_essay_html(target_essay, raw_md_memory=md_content)
+    _sync_essay_html(target_essay, raw_md_memory=md_content, essays=essays)
     _generate_feeds()
 
     return jsonify({"status": "success", "message": f"{slug}.html updated"})

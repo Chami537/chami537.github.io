@@ -426,7 +426,7 @@ def _is_encrypted_v3(content):
         return False
 
 
-def _sync_essay_html(essay, raw_md_memory=None):
+def _sync_essay_html(essay, raw_md_memory=None, essays=None):
     """
     Regenerate essay HTML from the .md source file.
 
@@ -434,6 +434,8 @@ def _sync_essay_html(essay, raw_md_memory=None):
     decryption, rendering, or re-encryption. The browser handles everything:
     Web Crypto decrypt -> marked.js render MD to HTML -> KaTeX -> display.
     Passwords never touch the SSG build path.
+
+    essays: optional pre-loaded essays list. When not provided, loaded from disk.
     """
     slug = essay['slug']
     html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
@@ -501,7 +503,8 @@ def _sync_essay_html(essay, raw_md_memory=None):
         og_image = ''
 
     # 4. Prepare template data
-    essays = load_json('essays.json')
+    if essays is None:
+        essays = load_json('essays.json')
     prev_nav, next_nav = _build_nav(essays, slug)
 
     tag_raw = essay.get('tag', '')
@@ -521,6 +524,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
         encrypted_body=encrypted_body,
         password_protected=password_protected,
         encrypted_is_md=encrypted_is_md,
+        last_edited=html_mod.escape(last_edited),
         prev_nav=Markup(prev_nav),
         next_nav=Markup(next_nav),
         slug=slug,

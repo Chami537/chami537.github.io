@@ -36,7 +36,7 @@ if __name__ == '__main__':
                         skipped += 1
                         continue
 
-                _sync_essay_html(e)
+                _sync_essay_html(e, essays=essays)
                 print(f"  ✓ essays/{slug}.html")
                 rebuilt += 1
 

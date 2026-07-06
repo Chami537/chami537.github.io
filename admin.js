@@ -162,6 +162,7 @@ function switchTab(name) {
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'work') loadWork();
   if (name === 'essays') loadEssays();
+  else clearInterval(window._autosaveInterval);  // stop autosave when leaving editor
   if (name === 'photos') loadPhotos();
   if (name === 'about') loadAbout();
   if (name === 'contact') loadContact();

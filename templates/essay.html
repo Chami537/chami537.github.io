@@ -342,6 +342,7 @@ div.arithmatex {
   <script>
     var _encryptedBody = {{ encrypted_body | tojson }};
     var _encryptedIsMd = {{ encrypted_is_md | tojson }};
+    var _lastEdited = {{ last_edited | tojson }};
 
     function base64ToBytes(b64) {
       var binary = atob(b64);
@@ -396,28 +397,16 @@ div.arithmatex {
         var html = (typeof _encryptedIsMd !== 'undefined' && _encryptedIsMd)
           ? DOMPurify.sanitize(marked.parse(decrypted))
           : DOMPurify.sanitize(decrypted);
+        // Append last-edited timestamp (not part of encrypted markdown source)
+        if (typeof _lastEdited !== 'undefined') {
+          html += '<p class="essay-updated">Last edited at ' + _lastEdited + '</p>';
+        }
         document.getElementById('essay-gate').style.display = 'none';
         var content = document.getElementById('essay-content');
         content.innerHTML = html;
         content.style.display = 'block';
         // Re-render KaTeX in decrypted content
-        (function rerenderKatex(el) {
-          var arithmatex = el.querySelectorAll ? el.querySelectorAll('.arithmatex') : [];
-          arithmatex.forEach(function(ae) {
-            var t = ae.textContent || ae.innerText;
-            var isBlock = t.indexOf('\\[') !== -1;
-            var startDelim = isBlock ? '\\[' : '\\(';
-            var endDelim = isBlock ? '\\]' : '\\)';
-            var startIdx = t.indexOf(startDelim);
-            var endIdx = t.lastIndexOf(endDelim);
-            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
-              var math = t.substring(startIdx + 2, endIdx);
-              try {
-                katex.render(math, ae, {displayMode: isBlock, throwOnError: false, output: 'htmlAndMathml'});
-              } catch(e) { console.error('KaTeX:', e); }
-            }
-          });
-        })(content);
+        renderKatexIn(content);
         // Trigger scroll reveal on decrypted elements
         var observer = new IntersectionObserver(function(entries) {
           entries.forEach(function(e) {
@@ -628,10 +617,9 @@ window.addEventListener('message', function(e) {
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-  var els = document.querySelectorAll('.arithmatex');
-  els.forEach(function(el) {
-    var t = el.textContent || el.innerText;
+function renderKatexIn(el) {
+  (el.querySelectorAll ? el.querySelectorAll('.arithmatex') : []).forEach(function(sp) {
+    var t = sp.textContent || sp.innerText;
     var isBlock = t.indexOf('\\[') !== -1;
     var startDelim = isBlock ? '\\[' : '\\(';
     var endDelim = isBlock ? '\\]' : '\\)';
@@ -640,11 +628,12 @@ document.addEventListener("DOMContentLoaded", function() {
     if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
       var math = t.substring(startIdx + 2, endIdx);
       try {
-        katex.render(math, el, {displayMode: isBlock, throwOnError: false, output: 'htmlAndMathml'});
+        katex.render(math, sp, {displayMode: isBlock, throwOnError: false, output: 'htmlAndMathml'});
       } catch(e) { console.error('KaTeX:', e); }
     }
   });
-});
+}
+document.addEventListener("DOMContentLoaded", function() { renderKatexIn(document); });
 </script>
 
 </body>
