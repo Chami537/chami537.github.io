@@ -346,14 +346,16 @@ function _syncMapMarkers() {
   gpsPhotos.forEach(function(p) {
     var g = p.exif.gps;
     var ex = p.exif || {};
-    var camera = (ex.model || ex.camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    var camera = (ex.model || ex.camera || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     var exifHtml = _exifStr(ex, true);
     var gpsHtml = _gpsStr(g.lat, g.lng);
-    var html = '<img src=\"images/lg/' + encodeURIComponent(p.filename) + '\" onclick=\"openMapPhotoLB(\'' + encodeURIComponent(p.filename) + '\')\" style=\"cursor:zoom-in\" title=\"点击查看大图\"><b>' + camera + '</b>';
+    var html = '<img src=\"images/sm/' + encodeURIComponent(p.filename) + '\" onclick=\"openMapPhotoLB(\'' + encodeURIComponent(p.filename) + '\')\" style=\"cursor:zoom-in\" title=\"点击查看大图\">';
+    if (camera) html += '<b>' + camera + '</b>';
     if (exifHtml) html += '<br><span class=\"popup-exif\">' + exifHtml + '</span>';
     html += '<br><span class=\"popup-exif\">' + gpsHtml + '</span>';
     var icon = L.divIcon({className: 'custom-marker', html: '<div class="marker-dot"></div>', iconSize: [16, 16], iconAnchor: [8, 8]});
-    var popup = L.popup({maxWidth: 340}).setContent(html);
+    var mw = Math.min(260, window.innerWidth - 48);
+    var popup = L.popup({maxWidth: mw, minWidth: 100}).setContent(html);
     L.marker([g.lat, g.lng], {icon: icon}).addTo(_markerGroup).bindPopup(popup);
   });
   if (_markerGroup.getLayers().length > 0) {

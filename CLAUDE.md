@@ -34,7 +34,7 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 ### 模板 `templates/`
 - `essay.html` — 随笔页模板
 - `rss.xml` / `sitemap.xml` / `archive.html` / `map.html` — SSG 构建产物模板
-- `includes/` — 共享组件（base.css / nav / footer / theme-init / theme.js）
+- `includes/` — 共享组件（base.css / nav / footer）
 
 ### 数据与资源
 - `data/` — JSON 数据文件（about / contact / essays / friends / music / photos / stack / tracks / work）

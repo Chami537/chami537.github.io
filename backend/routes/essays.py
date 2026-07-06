@@ -104,7 +104,7 @@ def update_essay_meta(slug):
             _sync_essay_html(essays[i], essays=essays)
             new_tags = _parse_tags(essays[i].get('tag', ''), essays[i])
             for e2 in essays:
-                if e2['slug'] != slug and new_tags & _parse_tags(e2.get('tag', ''), e2):
+                if e2['slug'] != slug and (not new_tags or new_tags & _parse_tags(e2.get('tag', ''), e2)):
                     _sync_essay_html(e2, essays=essays)
             _generate_feeds()
             return jsonify(essays[i])
@@ -132,10 +132,10 @@ def delete_essay(slug):
     essays_img_dir = os.path.realpath(os.path.join(IMAGES_DIR, 'essays'))
     if os.path.realpath(img_dir).startswith(essays_img_dir + os.sep) and os.path.exists(img_dir):
         shutil.rmtree(img_dir)
-    # Re-sync essays sharing tags with the deleted essay
+    # Re-sync essays sharing tags with the deleted essay (or all siblings if tagless)
     deleted_tags = _parse_tags(target.get('tag', ''), target)
     for e in essays:
-        if deleted_tags & _parse_tags(e.get('tag', ''), e):
+        if not deleted_tags or deleted_tags & _parse_tags(e.get('tag', ''), e):
             _sync_essay_html(e, essays=essays)
     _generate_feeds()
     return jsonify({"status": "deleted"})
