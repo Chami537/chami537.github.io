@@ -17,6 +17,9 @@ if __name__ == '__main__':
             essays = load_json('essays.json')
             essays_json = os.path.join(DATA_DIR, 'essays.json')
             essay_template = os.path.join(BASE_DIR, 'templates', 'essay.html')
+            if not os.path.exists(essay_template):
+                print("ERROR: templates/essay.html not found")
+                sys.exit(1)
             template_mtime = os.path.getmtime(essay_template)
 
             rebuilt = 0
@@ -59,7 +62,11 @@ if __name__ == '__main__':
             if len(sys.argv) < 5:
                 print("Usage: python manage.py set-gps <filename> <lat> <lng>")
             else:
-                _set_gps(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]))
+                try:
+                    _set_gps(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]))
+                except ValueError:
+                    print("ERROR: lat/lng must be numbers, e.g. 39.9042 116.4074")
+                    sys.exit(1)
         else:
             print(f"Unknown command: {sys.argv[1]}")
             print("Usage: python manage.py [build|sync-photos|process-images|set-gps]")

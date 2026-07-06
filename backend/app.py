@@ -19,6 +19,7 @@ else:
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
+app.config['SESSION_COOKIE_SECURE'] = True
 
 
 # ── Auth guard: all /api/* requires login except /api/login (skipped in test mode) ──
@@ -30,6 +31,17 @@ def _require_auth():
         return None
     if request.path.startswith('/api/') and not session.get('authenticated'):
         return jsonify({"error": "Unauthorized"}), 401
+
+
+# ── CSRF check: reject cross-origin state-changing requests ──
+@app.before_request
+def _csrf_check():
+    if request.method in ('POST', 'PUT', 'DELETE', 'PATCH'):
+        origin = request.headers.get('Origin', '')
+        if origin:
+            host = request.host_url.rstrip('/')
+            if not origin.startswith(host):
+                return jsonify({"error": "CSRF check failed"}), 403
 
 
 # ── Admin UI ──

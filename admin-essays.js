@@ -8,7 +8,7 @@ async function loadEssays() {
 
     // Load saved tag order from server; merge any new essay tags at end
     let ordered = [];
-    try { ordered = await api('GET', '/api/tags/order'); } catch(e) {}
+    try { ordered = await api('GET', '/api/tags/order'); } catch(e) { console.warn('Failed to load tag order:', e); }
     data.forEach(e => {
       if (e.tag) {
         e.tag.split(/[,，]/).map(function(s) { return s.trim(); }).filter(Boolean).forEach(function(pt) {

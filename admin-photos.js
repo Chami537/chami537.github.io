@@ -370,7 +370,10 @@ async function saveStoryOverrides() {
 // Auto-load stories when photos tab is active
 var _origLoadPhotos = loadPhotos;
 loadPhotos = async function() {
-  await _origLoadPhotos();
-  loadStories();
+  try {
+    await _origLoadPhotos();
+  } finally {
+    loadStories();
+  }
 };
 

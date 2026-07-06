@@ -1,4 +1,3 @@
-import html
 import json
 import os
 import re
@@ -231,7 +230,7 @@ def get_essay_content(slug):
                 password = get_essay_password(slug)
                 content = _decrypt_content(content, password)
             except (ValueError, UnicodeDecodeError):
-                pass
+                return jsonify({"error": "解密失败，密码可能已变更或数据损坏"}), 500
         return jsonify({"content": content, "format": "markdown"})
 
     # Fallback: 从 HTML 注释提取（兼容旧格式）

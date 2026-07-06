@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="view-transition" content="same-origin">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net cdn.staticfile.net; script-src 'self' 'unsafe-inline'; font-src 'self' fonts.gstatic.com cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self'">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' fonts.googleapis.com cdn.jsdelivr.net cdn.staticfile.net; script-src 'self' 'unsafe-inline' cdn.jsdelivr.net cdn.staticfile.net; font-src 'self' fonts.gstatic.com cdn.jsdelivr.net; img-src 'self' data: https:; connect-src 'self'">
 <title>{{ title }} — Chami</title>
 <meta name="description" content="{{ excerpt }}">
 <meta property="og:title" content="{{ title }} — Chami">
@@ -341,6 +341,7 @@ div.arithmatex {
 
   <script>
     var _encryptedBody = {{ encrypted_body | tojson }};
+    var _encryptedIsMd = {{ encrypted_is_md | tojson }};
 
     function base64ToBytes(b64) {
       var binary = atob(b64);
@@ -390,15 +391,33 @@ div.arithmatex {
         var ct = toAuth.slice(25);
         var plainBuf = await crypto.subtle.decrypt({name: 'AES-CBC', iv: iv}, encKey, ct);
 
-        var html = new TextDecoder().decode(plainBuf);
+        var decrypted = new TextDecoder().decode(plainBuf);
+        // Render markdown to HTML if the encrypted body is markdown (new format)
+        var html = (typeof _encryptedIsMd !== 'undefined' && _encryptedIsMd)
+          ? DOMPurify.sanitize(marked.parse(decrypted))
+          : DOMPurify.sanitize(decrypted);
         document.getElementById('essay-gate').style.display = 'none';
         var content = document.getElementById('essay-content');
         content.innerHTML = html;
         content.style.display = 'block';
         // Re-render KaTeX in decrypted content
-        if (typeof renderMathInElement === 'function') {
-          renderMathInElement(content);
-        }
+        (function rerenderKatex(el) {
+          var arithmatex = el.querySelectorAll ? el.querySelectorAll('.arithmatex') : [];
+          arithmatex.forEach(function(ae) {
+            var t = ae.textContent || ae.innerText;
+            var isBlock = t.indexOf('\\[') !== -1;
+            var startDelim = isBlock ? '\\[' : '\\(';
+            var endDelim = isBlock ? '\\]' : '\\)';
+            var startIdx = t.indexOf(startDelim);
+            var endIdx = t.lastIndexOf(endDelim);
+            if (startIdx !== -1 && endIdx !== -1 && endIdx > startIdx) {
+              var math = t.substring(startIdx + 2, endIdx);
+              try {
+                katex.render(math, ae, {displayMode: isBlock, throwOnError: false, output: 'htmlAndMathml'});
+              } catch(e) { console.error('KaTeX:', e); }
+            }
+          });
+        })(content);
         // Trigger scroll reveal on decrypted elements
         var observer = new IntersectionObserver(function(entries) {
           entries.forEach(function(e) {
@@ -605,6 +624,8 @@ window.addEventListener('message', function(e) {
   <div class="lb-counter" id="lb-counter"></div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.5/dist/purify.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
 <script>
 document.addEventListener("DOMContentLoaded", function() {

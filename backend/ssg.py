@@ -412,21 +412,43 @@ def _build_nav(essays, current_slug):
 
 
 
+def _is_encrypted_v3(content):
+    """Detect v3 Fernet encrypted content by inspecting the first-line base64."""
+    try:
+        raw = base64.b64decode(content.split('\n')[0])
+        return raw and raw[0] == 2
+    except (ValueError, IndexError):
+        return False
+
+
 def _sync_essay_html(essay, raw_md_memory=None):
     """
-    根据最新的 essay 元数据和存储的 Markdown 原文，
-    直接重新渲染并覆盖对应的 HTML 文件，彻底抛弃正则修补。
-    raw_md_memory: 可选，内存中的最新 Markdown 内容（跳过文件读取）。
+    Regenerate essay HTML from the .md source file.
+
+    Encrypted essays: raw ciphertext is passed through — no server-side
+    decryption, rendering, or re-encryption. The browser handles everything:
+    Web Crypto decrypt -> marked.js render MD to HTML -> KaTeX -> display.
+    Passwords never touch the SSG build path.
     """
     slug = essay['slug']
     html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
     md_file = os.path.join(MD_DIR, f"{slug}.md")
 
-    # 1. 提取正文 Markdown（优先 .md 文件，其次内存传入，最后回退 HTML 注释）
-    raw_md = ""
+    # 1. Persist raw_md_memory to .md if provided (admin content save).
+    #    Password is only used for at-rest encryption of the .md file.
     if raw_md_memory is not None:
-        raw_md = raw_md_memory
-    elif os.path.exists(md_file):
+        password = get_essay_password(slug)
+        os.makedirs(MD_DIR, exist_ok=True)
+        if password and raw_md_memory.strip():
+            with open(md_file, 'w', encoding='utf-8') as f:
+                f.write(_encrypt_content(raw_md_memory, password))
+        else:
+            with open(md_file, 'w', encoding='utf-8') as f:
+                f.write(raw_md_memory)
+
+    # 2. Read .md content (prefer file, fallback to HTML comment for legacy)
+    raw_md = ""
+    if os.path.exists(md_file):
         with open(md_file, 'r', encoding='utf-8') as f:
             raw_md = f.read()
     elif os.path.exists(html_file):
@@ -436,57 +458,44 @@ def _sync_essay_html(essay, raw_md_memory=None):
         if md_match:
             raw_md = md_match.group(1)
 
-    # 1.5 Decrypt .md if the essay is password-protected (content at rest is encrypted)
-    password = get_essay_password(slug)
-    decrypt_ok = True
-    if password and raw_md:
-        try:
-            raw_md = _decrypt_content(raw_md, password)
-        except ValueError:
-            # Decrypt failed. If raw_md looks like v3 ciphertext, it's a wrong-password
-            # scenario — don't touch it (decrypt_ok=False prevents double-encryption).
-            # If it doesn't look encrypted, it's plaintext that needs first-time encryption.
-            try:
-                raw_bytes = base64.b64decode(raw_md.split('\n')[0])
-                if raw_bytes and raw_bytes[0] == 2:
-                    decrypt_ok = False  # v3 ciphertext, wrong key — skip re-encrypt
-            except Exception:
-                pass  # not base64 → plaintext, OK to encrypt
-    elif not password and raw_md and len(raw_md) > 32:
-        # Detect orphan ciphertext (encrypted .md but no password set)
-        try:
-            raw_bytes = base64.b64decode(raw_md.split('\n')[0])
-            if raw_bytes and raw_bytes[0] == 2:
-                raw_md = ''
-        except Exception:
-            pass
-
-    # 2. Render Markdown to HTML
-    rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}}) if raw_md else ""
+    # 3. Detect encrypted content by inspecting the content itself
     last_edited = _parse_date(essay.get('date', ''), include_time=True)
-    body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
-
-    # 2.5 Write .md file — encrypt at rest if password is set, skip if unchanged
-    if raw_md and decrypt_ok:
-        existing = ''
-        if os.path.exists(md_file):
-            with open(md_file, 'r', encoding='utf-8') as f:
-                existing_raw = f.read()
-            if password:
-                try:
-                    existing = _decrypt_content(existing_raw, password)
-                except Exception:
-                    existing = ''  # force write if decrypt fails
-        if existing != raw_md:
+    encrypted_is_md = False
+    if raw_md and _is_encrypted_v3(raw_md):
+        # Encrypted at rest -> pass through for client-side decryption + rendering
+        password_protected = True
+        encrypted_body = raw_md
+        body_html = ''
+        encrypted_is_md = True
+        og_image = ''
+    elif raw_md and raw_md.strip():
+        # Plaintext content. Check if this essay should be encrypted (first-time setup).
+        password = get_essay_password(slug)
+        if password:
+            # First-time encryption: encrypt now, then pass through
             os.makedirs(MD_DIR, exist_ok=True)
-            if password:
-                with open(md_file, 'w', encoding='utf-8') as f:
-                    f.write(_encrypt_content(raw_md, password))
-            else:
-                with open(md_file, 'w', encoding='utf-8') as f:
-                    f.write(raw_md)
+            raw_md = _encrypt_content(raw_md, password)
+            with open(md_file, 'w', encoding='utf-8') as f:
+                f.write(raw_md)
+            password_protected = True
+            encrypted_body = raw_md
+            body_html = ''
+            encrypted_is_md = True
+            og_image = ''
+        else:
+            password_protected = False
+            encrypted_body = ''
+            rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}})
+            body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
+            og_image = _extract_first_image(raw_md)
+    else:
+        # No content at all
+        password_protected = False
+        encrypted_body = ''
+        body_html = ''
+        og_image = ''
 
-    # 3. 准备渲染模板所需的数据
+    # 4. Prepare template data
     essays = load_json('essays.json')
     prev_nav, next_nav = _build_nav(essays, slug)
 
@@ -494,15 +503,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
     tag_display = html_mod.escape(tag_raw.replace(', ', ' · ').replace(',', ' · '))
     date_display = html_mod.escape(_parse_date(essay.get('date', '')))
 
-    # 3.5 Handle password protection for the HTML output
-    password_protected = bool(password)
-    encrypted_body = ''
-    if password_protected:
-        encrypted_body = _encrypt_content(body_html, password)
-        body_html = ''  # don't embed plaintext in the template
-
-    # 4. 全量重新渲染 HTML
-    og_image = _extract_first_image(raw_md)
+    # 5. Render template
     template = _env.get_template('essay.html')
     html = template.render(
         title=html_mod.escape(essay.get('title', '')),
@@ -514,6 +515,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
         body_html=Markup(body_html),
         encrypted_body=encrypted_body,
         password_protected=password_protected,
+        encrypted_is_md=encrypted_is_md,
         prev_nav=Markup(prev_nav),
         next_nav=Markup(next_nav),
         slug=slug,
@@ -521,7 +523,7 @@ def _sync_essay_html(essay, raw_md_memory=None):
         build_ts=int(datetime.now().timestamp()),
     )
 
-    # 5. 覆盖写入
+    # 6. Write output
     os.makedirs(ESSAYS_DIR, exist_ok=True)
     with open(html_file, 'w', encoding='utf-8') as f:
         f.write(html)
