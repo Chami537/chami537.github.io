@@ -306,3 +306,89 @@ def test_password_roundtrip(tmp_path, monkeypatch):
     # MD must be decrypted
     md_content = (md_dir / 'test.md').read_text()
     assert 'Hello World' in md_content
+
+
+# ── _is_encrypted_v3 ──
+
+def test_is_encrypted_v3_valid():
+    from backend.ssg import _is_encrypted_v3, _encrypt_content
+    encrypted = _encrypt_content("test content", "pw")
+    assert _is_encrypted_v3(encrypted) is True
+
+def test_is_encrypted_v3_plaintext():
+    from backend.ssg import _is_encrypted_v3
+    assert _is_encrypted_v3("Hello World") is False
+    assert _is_encrypted_v3("# Markdown title\n\ncontent") is False
+
+def test_is_encrypted_v3_empty():
+    from backend.ssg import _is_encrypted_v3
+    assert not _is_encrypted_v3("")
+
+
+# ── SSG pass-through for encrypted essays ──
+
+def test_sync_essay_html_encrypted_pass_through(tmp_path, monkeypatch):
+    """Encrypted .md → HTML has password gate with encrypted_body and encrypted_is_md."""
+    md_dir = tmp_path / 'md'
+    essays_dir = tmp_path / 'essays'
+    md_dir.mkdir()
+    essays_dir.mkdir()
+    monkeypatch.setattr('backend.ssg.MD_DIR', str(md_dir))
+    monkeypatch.setattr('backend.ssg.ESSAYS_DIR', str(essays_dir))
+    monkeypatch.setattr('backend.ssg.IMAGES_DIR', str(tmp_path / 'images'))
+    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
+
+    (tmp_path / 'data').mkdir()
+    (tmp_path / 'templates').mkdir()
+    essay = {'slug': 'test', 'title': 'Test', 'date': '2026-01-01',
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1}
+    with open(tmp_path / 'data' / 'essays.json', 'w') as f:
+        json.dump([essay], f)
+
+    # Pre-encrypt the .md with a password (simulating already-encrypted at rest)
+    encrypted_md = _encrypt_content("# Secret\n\nTop secret content.", "pw")
+    with open(md_dir / 'test.md', 'w') as f:
+        f.write(encrypted_md)
+
+    # Build without get_essay_password returning anything (CI mode)
+    monkeypatch.setattr('backend.ssg.get_essay_password', lambda slug: '')
+    _sync_essay_html(essay)
+
+    html = (essays_dir / 'test.html').read_text()
+    assert 'id="essay-gate"' in html
+    assert '_encryptedBody' in html
+    assert '_encryptedIsMd = true' in html
+    assert '此内容已隐藏' in html
+    assert 'Top secret' not in html  # plaintext must not leak
+
+def test_sync_essay_html_encrypted_no_password_ci(tmp_path, monkeypatch):
+    """No password available (CI) but .md is encrypted → still gets password gate."""
+    md_dir = tmp_path / 'md'
+    essays_dir = tmp_path / 'essays'
+    md_dir.mkdir()
+    essays_dir.mkdir()
+    monkeypatch.setattr('backend.ssg.MD_DIR', str(md_dir))
+    monkeypatch.setattr('backend.ssg.ESSAYS_DIR', str(essays_dir))
+    monkeypatch.setattr('backend.ssg.IMAGES_DIR', str(tmp_path / 'images'))
+    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
+
+    (tmp_path / 'data').mkdir()
+    (tmp_path / 'templates').mkdir()
+    essay = {'slug': 'test', 'title': 'Test', 'date': '2026-01-01',
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1}
+    with open(tmp_path / 'data' / 'essays.json', 'w') as f:
+        json.dump([essay], f)
+
+    encrypted_md = _encrypt_content("# CI test", "pw")
+    with open(md_dir / 'test.md', 'w') as f:
+        f.write(encrypted_md)
+
+    monkeypatch.setattr('backend.ssg.get_essay_password', lambda slug: '')
+    _sync_essay_html(essay)
+
+    html = (essays_dir / 'test.html').read_text()
+    assert 'id="essay-gate"' in html         # gate must appear
+    assert '_encryptedIsMd' in html          # flag for client-side MD rendering
+    assert 'CI test' not in html             # plaintext must not appear

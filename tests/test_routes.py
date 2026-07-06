@@ -1,5 +1,7 @@
 """Smoke tests for all API routes."""
 import json
+import os
+from backend.data import DATA_DIR
 
 
 # ── Data listing endpoints (GET) ──
@@ -486,3 +488,59 @@ def test_work_crud(client, data_backup):
     # Delete
     r = client.delete(f'/api/work/{work_id}')
     assert r.status_code == 200
+
+
+# ── CSRF protection ──
+
+def test_csrf_rejects_cross_origin_post(client):
+    """POST with foreign Origin header should be rejected."""
+    r = client.post('/api/login', json={'password': 'chami'},
+                    headers={'Origin': 'https://evil.com'})
+    assert r.status_code == 403
+    assert 'CSRF' in r.json.get('error', '')
+
+def test_csrf_allows_same_origin_post(client):
+    """POST with matching Origin header should pass."""
+    r = client.post('/api/login', json={'password': 'chami'},
+                    headers={'Origin': 'http://localhost'})
+    assert r.status_code == 200
+
+def test_csrf_allows_no_origin(client):
+    """POST without Origin header (old browsers) should pass."""
+    r = client.post('/api/login', json={'password': 'chami'})
+    assert r.status_code == 200
+
+
+# ── Content API decrypt failure ──
+
+def test_content_api_decrypt_corrupted_ciphertext(client, data_backup):
+    """Corrupted ciphertext should return error, not the raw blob."""
+    r = client.post('/api/essays', json={
+        'slug': 'test-corrupt', 'title': 'Corrupt Test',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'corrupt',
+        'tag': ''
+    })
+    slug = r.json.get('slug', 'test-corrupt')
+
+    client.put(f'/api/essays/{slug}/content', json={'content': 'plaintext'})
+    client.post(f'/api/essays/{slug}/password', json={'password': 'secret'})
+
+    # Corrupt the .md file by writing garbage
+    md_file = os.path.join(DATA_DIR, '..', 'md', f'{slug}.md')
+    with open(md_file, 'w') as f:
+        f.write('this is not valid base64!!!')
+
+    r2 = client.get(f'/api/essays/{slug}/content')
+    assert r2.status_code == 500
+    assert 'error' in r2.json
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
+# ── Session security config ──
+
+def test_session_cookie_secure():
+    """SESSION_COOKIE_SECURE should be True."""
+    from backend.app import app
+    assert app.config.get('SESSION_COOKIE_SECURE') is True
