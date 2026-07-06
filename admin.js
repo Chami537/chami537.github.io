@@ -157,7 +157,7 @@ async function deleteTrack(i) {
 function switchTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  var tabBtn = document.querySelector('.tab-btn[onclick="switchTab(\'' + name + '\')"]');
+  var tabBtn = document.querySelector('.tab-btn[data-tab="' + name + '"]');
   if (tabBtn) tabBtn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
   if (name === 'work') loadWork();
@@ -237,9 +237,21 @@ function confirmDialog(msg) {
     document.getElementById('confirm-msg').textContent = msg;
     const dialog = document.getElementById('confirm-dialog');
     const form = dialog.querySelector('form');
+    const cancelBtn = dialog.querySelector('[value="cancel"]');
     var done = false;
-    form.onsubmit = () => { if (!done) { done = true; dialog.close(); resolve(true); } return false; };
-    dialog.querySelector('[value="cancel"]').onclick = () => { if (!done) { done = true; dialog.close(); resolve(false); } };
+    function handleSubmit(e) {
+      e.preventDefault();
+      if (!done) { done = true; dialog.close(); cleanup(); resolve(true); }
+    }
+    function handleCancel() {
+      if (!done) { done = true; dialog.close(); cleanup(); resolve(false); }
+    }
+    function cleanup() {
+      form.removeEventListener('submit', handleSubmit);
+      cancelBtn.removeEventListener('click', handleCancel);
+    }
+    form.addEventListener('submit', handleSubmit);
+    cancelBtn.addEventListener('click', handleCancel);
     dialog.showModal();
   });
 }

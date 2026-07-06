@@ -84,7 +84,8 @@ function initMusicPlayer() {
   if (musicTimeHandler) player.removeEventListener('timeupdate', musicTimeHandler);
   if (musicEndHandler) player.removeEventListener('ended', musicEndHandler);
 
-  document.querySelectorAll('.music-row').forEach(row => {
+  var musicRows = document.querySelectorAll('.music-row');
+  musicRows.forEach(row => {
     row.addEventListener('click', function(e) {
       var src = row.dataset.src;
       if (!src) return;
@@ -123,11 +124,10 @@ function initMusicPlayer() {
   musicEndHandler = function() {
     if (curRow) { curRow.classList.remove('playing'); curRow.style.removeProperty('--progress');
       var t = curRow.querySelector('.time'); if (t) t.textContent = ''; }
-    var rows = document.querySelectorAll('.music-row');
-    var idx = Array.prototype.indexOf.call(rows, curRow);
+    var idx = Array.prototype.indexOf.call(musicRows, curRow);
     curRow = null;
-    if (idx >= 0 && idx + 1 < rows.length) {
-      rows[idx + 1].click();
+    if (idx >= 0 && idx + 1 < musicRows.length) {
+      musicRows[idx + 1].click();
     }
   };
   player.addEventListener('timeupdate', musicTimeHandler);

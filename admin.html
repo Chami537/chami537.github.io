@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' cdn.staticfile.net; script-src 'self' 'unsafe-inline' cdn.staticfile.net; font-src 'self' cdn.staticfile.net; img-src 'self' data: blob:; connect-src 'self'">
 <title>Chami — Site Admin</title>
-<link rel="stylesheet" href="admin.css?v=1783354807">
+<link rel="stylesheet" href="admin.css?v=1783355687">
 <link rel="stylesheet" href="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.css">
 <script>
   if (localStorage.getItem('theme') === 'dark') {
@@ -33,17 +33,17 @@
 </div>
 
 <nav class="tabs">
-  <button class="tab-btn" onclick="switchTab('about')">About</button>
-  <button class="tab-btn active" onclick="switchTab('work')">Work</button>
-  <button class="tab-btn" onclick="switchTab('essays')">Essays</button>
-  <button class="tab-btn" onclick="switchTab('photos')">Photos</button>
-  <button class="tab-btn" onclick="switchTab('contact')">Contact</button>
-  <button class="tab-btn" onclick="switchTab('friends')">Friends</button>
-  <button class="tab-btn" onclick="switchTab('music')">Music</button>
-  <button class="tab-btn" onclick="switchTab('tracks')">Tracks</button>
-  <button class="tab-btn" onclick="switchTab('stack')">Stack</button>
-  <button class="tab-btn" onclick="switchTab('git')">Git</button>
-  <button class="tab-btn" onclick="switchTab('readme')">README</button>
+  <button class="tab-btn" data-tab="about" onclick="switchTab('about')">About</button>
+  <button class="tab-btn active" data-tab="work" onclick="switchTab('work')">Work</button>
+  <button class="tab-btn" data-tab="essays" onclick="switchTab('essays')">Essays</button>
+  <button class="tab-btn" data-tab="photos" onclick="switchTab('photos')">Photos</button>
+  <button class="tab-btn" data-tab="contact" onclick="switchTab('contact')">Contact</button>
+  <button class="tab-btn" data-tab="friends" onclick="switchTab('friends')">Friends</button>
+  <button class="tab-btn" data-tab="music" onclick="switchTab('music')">Music</button>
+  <button class="tab-btn" data-tab="tracks" onclick="switchTab('tracks')">Tracks</button>
+  <button class="tab-btn" data-tab="stack" onclick="switchTab('stack')">Stack</button>
+  <button class="tab-btn" data-tab="git" onclick="switchTab('git')">Git</button>
+  <button class="tab-btn" data-tab="readme" onclick="switchTab('readme')">README</button>
 </nav>
 
 <div class="content">
@@ -378,10 +378,10 @@
 </dialog>
 
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
-<script src="admin.js?v=1783354807"></script>
-<script src="admin-content.js?v=1783354807"></script>
-<script src="admin-essays.js?v=1783354807"></script>
-<script src="admin-photos.js?v=1783354807"></script>
+<script src="admin.js?v=1783355687"></script>
+<script src="admin-content.js?v=1783355687"></script>
+<script src="admin-essays.js?v=1783355687"></script>
+<script src="admin-photos.js?v=1783355687"></script>
 <script>refreshGitStatus();loadWork();</script>
 
 <!-- Password Dialog -->

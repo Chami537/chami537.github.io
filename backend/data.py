@@ -69,8 +69,24 @@ def has_essay_password(slug):
     return bool(get_essay_password(slug))
 
 
-for _d in (DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR):
-    os.makedirs(_d, exist_ok=True)
+ALLOWED_IMAGE_EXTENSIONS = frozenset({'jpg', 'jpeg', 'png', 'gif', 'webp'})
+
+
+def get_image_ext(filename):
+    """Return lowercase extension if the filename has a valid image extension."""
+    if '.' in filename:
+        ext = filename.rsplit('.', 1)[-1].lower()
+        if ext in ALLOWED_IMAGE_EXTENSIONS:
+            return ext
+    return None
+
+
+def _ensure_dirs():
+    for _d in (DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR):
+        os.makedirs(_d, exist_ok=True)
+
+
+_ensure_dirs()
 
 
 def load_json(name):

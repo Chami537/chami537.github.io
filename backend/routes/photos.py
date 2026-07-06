@@ -6,7 +6,7 @@ from PIL import Image
 from flask import request, jsonify
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
+from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR, get_image_ext
 from backend.ssg import _extract_exif, _set_gps, IMAGES_DIR
 
 @app.route('/api/photos', methods=['GET'])
@@ -36,9 +36,9 @@ def upload_photo():
     if not file.filename:
         return jsonify({"error": "No filename"}), 400
 
-    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'jpg'
-    if ext not in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
-        return jsonify({"error": f"不支持的文件类型: .{ext}"}), 400
+    ext = get_image_ext(file.filename)
+    if not ext:
+        return jsonify({"error": "不支持的文件类型"}), 400
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
     try:
         img = Image.open(file.stream)

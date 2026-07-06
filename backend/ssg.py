@@ -131,24 +131,27 @@ def _extract_first_image(md_text):
     return 'https://chami537.github.io/images/avatar.jpg'
 
 
+def _strip_enrich(essays, date_key, date_fmt, limit=None):
+    """Shared: strip password, parse dates. Used by RSS and sitemap generators."""
+    enriched = []
+    for e in (essays[:limit] if limit else essays):
+        item = {k: v for k, v in e.items() if k != 'password'}
+        date_str = e.get('date', '')
+        item[date_key] = ''
+        for fmt in ('%Y-%m-%d %H:%M', '%Y-%m-%d'):
+            try:
+                item[date_key] = datetime.strptime(date_str, fmt).strftime(date_fmt)
+                break
+            except ValueError:
+                continue
+        enriched.append(item)
+    return enriched
+
+
 def _generate_rss():
     """Generate rss.xml from essays.json (Jinja2 template)."""
     essays = load_json('essays.json')
-    enriched = []
-    for e in essays[:20]:
-        item = {k: v for k, v in e.items() if k != 'password'}
-        date_str = e.get('date', '')
-        item['pub_date'] = ''
-        try:
-            dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M')
-        except ValueError:
-            try:
-                dt = datetime.strptime(date_str, '%Y-%m-%d')
-            except ValueError:
-                dt = None
-        if dt:
-            item['pub_date'] = dt.strftime('%a, %d %b %Y %H:%M:%S +0800')
-        enriched.append(item)
+    enriched = _strip_enrich(essays, 'pub_date', '%a, %d %b %Y %H:%M:%S +0800', 20)
     last_build = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0800')
     html = _env.get_template('rss.xml').render(essays=enriched, last_build=last_build)
     with open(os.path.join(BASE_DIR, 'rss.xml'), 'w', encoding='utf-8') as f:
@@ -158,17 +161,7 @@ def _generate_rss():
 def _generate_sitemap():
     """Generate sitemap.xml (Jinja2 template)."""
     essays = load_json('essays.json')
-    enriched = []
-    for e in essays:
-        item = {k: v for k, v in e.items() if k != 'password'}
-        date_str = e.get('date', '')
-        item['lastmod'] = ''
-        try:
-            dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M')
-            item['lastmod'] = dt.strftime('%Y-%m-%d')
-        except ValueError:
-            pass
-        enriched.append(item)
+    enriched = _strip_enrich(essays, 'lastmod', '%Y-%m-%d')
     html = _env.get_template('sitemap.xml').render(essays=enriched)
     with open(os.path.join(BASE_DIR, 'sitemap.xml'), 'w', encoding='utf-8') as f:
         f.write(html)
