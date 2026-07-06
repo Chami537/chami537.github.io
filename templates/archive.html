@@ -160,7 +160,12 @@
 </style>
 {% raw %}
 {% endraw %}
-{% include 'includes/theme-init.html' %}
+<script>
+  var _saved = localStorage.getItem('theme');
+  if (_saved === 'dark' || (!_saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+</script>
 {% raw %}
 </head>
 <body>
