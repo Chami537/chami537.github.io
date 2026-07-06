@@ -195,10 +195,13 @@ def _generate_map():
     total = len(gps_photos)
     center_lat, center_lng = 22.5431, 113.9579  # default: Shenzhen
     if gps_photos:
-        lats = [p['exif']['gps']['lat'] for p in gps_photos]
-        lngs = [p['exif']['gps']['lng'] for p in gps_photos]
-        center_lat = sum(lats) / len(lats)
-        center_lng = sum(lngs) / len(lngs)
+        try:
+            lats = [p['exif']['gps']['lat'] for p in gps_photos]
+            lngs = [p['exif']['gps']['lng'] for p in gps_photos]
+            center_lat = sum(lats) / len(lats)
+            center_lng = sum(lngs) / len(lngs)
+        except KeyError:
+            pass  # malformed GPS entry — keep default center
     html = _env.get_template('map.html').render(
         photos_json=photos_json, total=total,
         center_lat=center_lat, center_lng=center_lng,
@@ -272,7 +275,7 @@ def _extract_gps(exif_dict):
 def _extract_exif(img):
     """从 PIL Image 提取 EXIF 元数据（相机/镜头/ISO/GPS 等），返回 dict。"""
     exif_data = {}
-    exif_raw = img._getexif()
+    exif_raw = img.getexif()
     if not exif_raw:
         return exif_data
     tags = {}
@@ -322,6 +325,8 @@ def _set_gps(filename, lat, lng):
         }
         exif[34853] = gps_ifd
 
+        if img.mode == 'RGBA':
+            img = img.convert('RGB')
         img.save(path, 'JPEG', quality=95, exif=exif.tobytes())
 
     # 同步更新 photos.json
@@ -539,8 +544,11 @@ def _fetch_stars():
     etag_path = os.path.join(DATA_DIR, '_stars_etag.json')
     etags = {}
     if os.path.exists(etag_path):
-        with open(etag_path, 'r', encoding='utf-8') as f:
-            etags = json.load(f)
+        try:
+            with open(etag_path, 'r', encoding='utf-8') as f:
+                etags = json.load(f)
+        except (json.JSONDecodeError, ValueError):
+            etags = {}  # corrupted — reset
 
     updated = False
     for w in work:
@@ -575,5 +583,8 @@ def _fetch_stars():
 
     if updated:
         atomic_write_json('work.json', work)
-    with open(etag_path, 'w', encoding='utf-8') as f:
+    # Atomic write to avoid corruption on crash
+    etag_tmp = etag_path + '.tmp'
+    with open(etag_tmp, 'w', encoding='utf-8') as f:
         json.dump(etags, f)
+    os.replace(etag_tmp, etag_path)

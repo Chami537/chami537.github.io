@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' cdn.staticfile.net; script-src 'self' 'unsafe-inline' cdn.staticfile.net; font-src 'self' cdn.staticfile.net; img-src 'self' data: blob:; connect-src 'self'">
 <title>Chami — Site Admin</title>
-<link rel="stylesheet" href="admin.css?v=1783353586">
+<link rel="stylesheet" href="admin.css?v=1783354807">
 <link rel="stylesheet" href="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.css">
 <script>
   if (localStorage.getItem('theme') === 'dark') {
@@ -378,10 +378,10 @@
 </dialog>
 
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
-<script src="admin.js?v=1783353586"></script>
-<script src="admin-content.js?v=1783353586"></script>
-<script src="admin-essays.js?v=1783353586"></script>
-<script src="admin-photos.js?v=1783353586"></script>
+<script src="admin.js?v=1783354807"></script>
+<script src="admin-content.js?v=1783354807"></script>
+<script src="admin-essays.js?v=1783354807"></script>
+<script src="admin-photos.js?v=1783354807"></script>
 <script>refreshGitStatus();loadWork();</script>
 
 <!-- Password Dialog -->
@@ -390,13 +390,19 @@
     <div class="dlg-header">密码保护</div>
     <div class="dlg-body">
       <div style="margin-bottom:12px;">
-        <label style="font-size:12px;color:var(--muted);">当前密码</label>
+        <label style="font-size:12px;color:var(--muted);">当前状态</label>
         <div id="pwd-current" style="font-size:14px;color:var(--fg);padding:4px 0;">(未设置)</div>
       </div>
       <label style="font-size:12px;color:var(--muted);">新密码</label>
-      <input type="password" id="pwd-new" placeholder="留空则清除密码" style="width:100%;" autocomplete="off">
+      <div style="display:flex;gap:4px;align-items:center;">
+        <input type="password" id="pwd-new" placeholder="留空则清除密码" style="flex:1;" autocomplete="off">
+        <button type="button" class="pwd-toggle" onclick="togglePwdVis('pwd-new', this)" title="显示密码">&#x1F441;</button>
+      </div>
       <label style="font-size:12px;color:var(--muted);margin-top:8px;display:block;">确认密码</label>
-      <input type="password" id="pwd-confirm" placeholder="再次输入新密码" style="width:100%;" autocomplete="off">
+      <div style="display:flex;gap:4px;align-items:center;">
+        <input type="password" id="pwd-confirm" placeholder="再次输入新密码" style="flex:1;" autocomplete="off">
+        <button type="button" class="pwd-toggle" onclick="togglePwdVis('pwd-confirm', this)" title="显示密码">&#x1F441;</button>
+      </div>
       <p id="pwd-error" style="color:#e53935;font-size:12px;margin-top:8px;display:none;"></p>
     </div>
     <div class="dlg-footer">

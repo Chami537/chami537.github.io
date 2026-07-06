@@ -2,6 +2,7 @@
 
 import os
 import secrets
+from urllib.parse import urlparse
 from flask import Flask, request, send_from_directory
 from flask import jsonify, session
 
@@ -39,8 +40,7 @@ def _csrf_check():
     if request.method in ('POST', 'PUT', 'DELETE', 'PATCH'):
         origin = request.headers.get('Origin', '')
         if origin:
-            host = request.host_url.rstrip('/')
-            if not origin.startswith(host):
+            if urlparse(origin).netloc != request.host:
                 return jsonify({"error": "CSRF check failed"}), 403
 
 

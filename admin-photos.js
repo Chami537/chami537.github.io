@@ -195,6 +195,7 @@ function loadEditorMap() {
     var s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js';
     s.onload = function() { initEditorMap(container); };
+    s.onerror = function() { container.style.display = 'none'; toast('Leaflet 地图加载失败，请检查网络', true); };
     document.head.appendChild(s);
   } else {
     initEditorMap(container);
@@ -373,7 +374,7 @@ loadPhotos = async function() {
   try {
     await _origLoadPhotos();
   } finally {
-    loadStories();
+    await loadStories();
   }
 };
 

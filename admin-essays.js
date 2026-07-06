@@ -233,39 +233,78 @@ function passwordBtn(e) {
   return '<button class="password-btn' + (hasPwd ? ' active' : '') + '" onclick="setPassword(\'' + esc(e.slug) + '\', ' + hasPwd + ')" title="' + title + '">' + label + '</button>';
 }
 
+function togglePwdVis(inputId, btn) {
+  var input = document.getElementById(inputId);
+  if (input.type === 'password') {
+    input.type = 'text';
+    btn.textContent = '\u{1F576}';
+    btn.title = '隐藏密码';
+  } else {
+    input.type = 'password';
+    btn.textContent = '\u{1F441}';
+    btn.title = '显示密码';
+  }
+}
+
 function setPassword(slug, hasPwd) {
   document.getElementById('pwd-current').textContent = hasPwd ? '(已设置)' : '(未设置)';
-  document.getElementById('pwd-new').value = '';
-  document.getElementById('pwd-confirm').value = '';
-  document.getElementById('pwd-error').style.display = 'none';
+  var pwdNew = document.getElementById('pwd-new');
+  var pwdConfirm = document.getElementById('pwd-confirm');
+  var pwdError = document.getElementById('pwd-error');
+  var saveBtn = document.getElementById('pwd-save');
+  pwdNew.value = '';
+  pwdNew.type = 'password';
+  pwdConfirm.value = '';
+  pwdConfirm.type = 'password';
+  pwdError.style.display = 'none';
+  // Reset eye icons
+  document.querySelectorAll('.pwd-toggle').forEach(function(b) { b.textContent = '\u{1F441}'; b.title = '显示密码'; });
+
   var dialog = document.getElementById('password-dialog');
   var form = document.getElementById('password-form');
-  var done = false;
+  var saving = false;
+
+  // Auto-clear error on input
+  var clearError = function() { pwdError.style.display = 'none'; };
+  pwdNew.oninput = clearError;
+  pwdConfirm.oninput = clearError;
+
   form.onsubmit = async function(e) {
     e.preventDefault();
-    if (done) return false; done = true;
-    var pwd = document.getElementById('pwd-new').value;
-    var confirm = document.getElementById('pwd-confirm').value;
+    if (saving) return false;
+    var pwd = pwdNew.value;
+    var confirm = pwdConfirm.value;
+
     if (pwd && pwd !== confirm) {
-      document.getElementById('pwd-error').textContent = '两次输入的密码不一致';
-      document.getElementById('pwd-error').style.display = 'block';
-      done = false;
+      pwdError.textContent = '两次输入的密码不一致';
+      pwdError.style.display = 'block';
       return false;
     }
     // Confirm before clearing password
     if (!pwd && hasPwd && !confirm('确定清除密码？文章将变为公开可见。')) {
-      done = false;
       return false;
     }
+
+    saving = true;
+    saveBtn.disabled = true;
+    saveBtn.textContent = '保存中…';
+
     try {
       var r = await api('POST', '/api/essays/' + slug + '/password', { password: pwd });
       toast(r.password_set ? '密码已设置' : '密码已清除');
       dialog.close();
       loadEssays();
-    } catch(e) { toast(e.message, true); dialog.close(); }
+    } catch(e) {
+      toast(e.message, true);
+      // Keep dialog open for retry
+      saveBtn.disabled = false;
+      saveBtn.textContent = '保存';
+      saving = false;
+    }
     return false;
   };
   dialog.showModal();
+  pwdNew.focus();
 }
 
 function closePwdDialog() {

@@ -28,6 +28,12 @@ def upload_avatar():
         file.stream.seek(0)
     except Exception:
         return jsonify({"error": "Invalid or corrupted image file"}), 400
+    # Clean up old avatar files with different extensions
+    for old_ext in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
+        if old_ext != ext:
+            old_path = os.path.join(BASE_DIR, 'images', 'avatar.' + old_ext)
+            if os.path.exists(old_path):
+                os.remove(old_path)
     filename = 'avatar.' + ext
     filepath = os.path.join(BASE_DIR, 'images', filename)
     os.makedirs(os.path.dirname(filepath), exist_ok=True)

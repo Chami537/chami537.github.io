@@ -296,7 +296,11 @@ function filterByStory(idx) {
   var story = _photoStories[_currentStory];
   if (!story || !story.photos.length) return;
   var firstFn = story.photos[0];
-  var target = document.querySelector('.photo-item img[src*="' + firstFn + '"]');
+  // CSS.escape prevents selector syntax error from special chars in filenames
+  try {
+    var escapedFn = CSS.escape(firstFn);
+  } catch(e) { return; }
+  var target = document.querySelector('.photo-item img[src*="' + escapedFn + '"]');
   if (target) {
     target.closest('.photo-item').scrollIntoView({behavior: 'smooth', block: 'center'});
     target.closest('.photo-item').style.transition = 'box-shadow 0.4s';
@@ -342,7 +346,7 @@ function _syncMapMarkers() {
   gpsPhotos.forEach(function(p) {
     var g = p.exif.gps;
     var ex = p.exif || {};
-    var camera = (ex.model || ex.camera || 'Photo');
+    var camera = (ex.model || ex.camera || 'Photo').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
     var exifHtml = _exifStr(ex, true);
     var gpsHtml = _gpsStr(g.lat, g.lng);
     var html = '<img src=\"images/lg/' + encodeURIComponent(p.filename) + '\" onclick=\"openMapPhotoLB(\'' + encodeURIComponent(p.filename) + '\')\" style=\"cursor:zoom-in\" title=\"点击查看大图\"><b>' + camera + '</b>';
@@ -432,11 +436,11 @@ function initPhotoMap() {
 
     if (_markerGroup.getLayers().length > 0) {
       _photoMap.fitBounds(_markerGroup.getBounds(), {padding: [50, 50], maxZoom: 14});
+    }
   }
 
-  // Load GPX tracks
+  // Load GPX tracks (always load, independent of photo data)
   loadGpxTracks();
-    }
 
   // Sync dark mode
   if (document.documentElement.classList.contains('dark')) {
@@ -451,7 +455,7 @@ function _haversine(lat1, lon1, lat2, lon2) {
   var a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * 2 * Math.atan2(Math.sqrt(Math.min(a, 1)), Math.sqrt(Math.max(1 - a, 0)));
 }
 
 function _fmtDist(m) {
@@ -659,7 +663,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
     // Hide load-more (23 photos fit in one batch)
     var lm = document.getElementById('photo-load-more');
-    lm.style.display = 'none';
+    if (lm) lm.style.display = 'none';
 
     var gc = results.photos.filter(function(p) { return p.exif && p.exif.gps; }).length;
     var elGc = document.getElementById('gps-count');
@@ -723,7 +727,9 @@ var _lbPreload = {};
 function initLB() {
   if (_lbInited) return;
   _lbInited = true;
-  document.querySelector('#photo-masonry').addEventListener('click', function(e) {
+  var masonry = document.querySelector('#photo-masonry');
+  if (!masonry) return;
+  masonry.addEventListener('click', function(e) {
     var img = e.target.closest('.photo-item')?.querySelector('img');
     if (!img) return;
     lbPhotos = Array.from(document.querySelectorAll('#photo-masonry img')).map(function(el) {
@@ -778,12 +784,13 @@ function preloadAdjacent() {
 }
 function updateLB() {
   var p = lbPhotos[lbIndex];
+  if (!p) return;
   var img = document.getElementById('lb-img');
   if (img.src === p.src) return;
+  img.onload = function() { img.classList.remove('loading'); };
   img.classList.add('loading');
   img.src = p.src;
   img.alt = p.alt;
-  img.onload = function() { img.classList.remove('loading'); };
   document.getElementById('lb-exif').textContent = p.exif || '';
   document.getElementById('lb-counter').textContent = (lbIndex + 1) + ' / ' + lbPhotos.length;
 }

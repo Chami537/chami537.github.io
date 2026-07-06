@@ -346,6 +346,14 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 .password-btn:hover { border-color: var(--c3); }
 .password-btn.active { border-color: #9c27b0; color: #9c27b0; background: #f3e5f5; }
 
+/* Password visibility toggle inside dialog */
+.pwd-toggle {
+  padding: 4px 8px; font-size: 14px; border: 1px solid var(--border);
+  border-radius: 4px; background: var(--card-bg); cursor: pointer;
+  line-height: 1; transition: background .15s;
+}
+.pwd-toggle:hover { background: var(--line); }
+
 /* Dimmed card for password-protected essays */
 .card-password { opacity: 0.5; transition: opacity .2s; }
 .card-password:hover { opacity: 0.85; }

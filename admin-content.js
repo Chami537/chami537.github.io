@@ -23,7 +23,7 @@ async function loadWork() {
 }
 
 function pad2(n) { return n.toString().padStart(2, '0'); }
-function esc(s) { const d = document.createElement('div'); d.textContent = s != null ? s : ''; return d.innerHTML; }
+function esc(s) { const d = document.createElement('div'); d.textContent = s != null ? s : ''; return d.innerHTML.replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
 
 async function editWork(id) {  const form = document.getElementById('work-form');
   if (form.style.display === 'block' && document.getElementById('work-edit-id').value == id) {

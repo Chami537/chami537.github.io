@@ -114,7 +114,9 @@ def update_essay_meta(slug):
 def delete_essay(slug):
     essays = load_json('essays.json')
     target = next((e for e in essays if e['slug'] == slug), None)
-    title_folder = target.get('title', slug) if target else slug
+    if not target:
+        return jsonify({"error": "Not found"}), 404
+    title_folder = target['title']
     title_folder = title_folder.replace('/', '_').replace('\\', '_')
     if '..' in title_folder.split(os.sep):
         return jsonify({"error": "Invalid title"}), 400

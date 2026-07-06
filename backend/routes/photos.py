@@ -54,6 +54,8 @@ def upload_photo():
     # Generate thumbnails
     for size_name, max_w in [('lg', 1920), ('md', 800), ('sm', 400)]:
         thumb = img.copy()
+        if thumb.mode == 'RGBA':
+            thumb = thumb.convert('RGB')
         thumb.thumbnail((max_w, max_w), Image.LANCZOS)
         out_dir = os.path.join(IMAGES_DIR, size_name)
         os.makedirs(out_dir, exist_ok=True)
