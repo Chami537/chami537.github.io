@@ -401,7 +401,7 @@ div.arithmatex {
         var decrypted = new TextDecoder().decode(plainBuf);
         // Escape raw HTML chars so <script> in essay text stays as text,
         // not interpreted as HTML by marked or stripped by DOMPurify
-        decrypted = decrypted.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        decrypted = decrypted.replace(/</g, '&lt;');
         // Render markdown to HTML if the encrypted body is markdown (new format)
         var html = (typeof _encryptedIsMd !== 'undefined' && _encryptedIsMd)
           ? DOMPurify.sanitize(marked.parse(decrypted))
