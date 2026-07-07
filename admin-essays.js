@@ -554,6 +554,21 @@ function _wrapSelection(ta, before, after) {
   }
 }
 
+function _prefixLines(ta, prefix) {
+  var s = ta.selectionStart, e = ta.selectionEnd;
+  var v = ta.value;
+  while (s > 0 && v[s - 1] !== '\n') s--;
+  while (e < v.length && v[e] !== '\n') e++;
+  if (e < v.length) e++;
+  var lines = v.slice(s, e).split('\n');
+  if (lines.length > 1 && lines[lines.length - 1] === '') lines.pop();
+  var result = lines.map(function(l) { return prefix + l; }).join('\n');
+  if (v[e - 1] === '\n') result += '\n';
+  ta.value = v.slice(0, s) + result + v.slice(e);
+  ta.selectionStart = s;
+  ta.selectionEnd = s + result.length;
+}
+
 function _updateWordCount() {
   var ta = document.getElementById('essay-content-md');
   var text = ta.value;
@@ -579,6 +594,21 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'b') { e.preventDefault(); _wrapSelection(ta, '**', '**'); }
     if (e.key === 'i') { e.preventDefault(); _wrapSelection(ta, '*', '*'); }
     if (e.key === 'k') { e.preventDefault(); _wrapSelection(ta, '[', '](url)'); }
+    // Inline code Ctrl+E
+    if (e.key === 'e') { e.preventDefault(); _wrapSelection(ta, '`', '`'); }
+    // Code block Ctrl+Shift+C
+    if (e.key === 'C' && e.shiftKey) {
+      e.preventDefault();
+      var s = ta.selectionStart, v = ta.value, sel = v.slice(s, ta.selectionEnd);
+      var block = '\n```\n' + (sel || 'code') + '\n```\n';
+      ta.value = v.slice(0, s) + block + v.slice(ta.selectionEnd);
+      var pos = s + 5 + (sel ? 0 : 0);
+      ta.selectionStart = ta.selectionEnd = sel ? s + block.length : pos;
+    }
+    // Ordered list Ctrl+Shift+7
+    if (e.key === '7' && e.shiftKey) { e.preventDefault(); _prefixLines(ta, '1. '); }
+    // Unordered list Ctrl+Shift+8
+    if (e.key === '8' && e.shiftKey) { e.preventDefault(); _prefixLines(ta, '- '); }
   }
 });
 
