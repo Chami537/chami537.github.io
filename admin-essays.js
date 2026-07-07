@@ -594,10 +594,10 @@ document.addEventListener('keydown', function(e) {
     if (e.key === 'b') { e.preventDefault(); _wrapSelection(ta, '**', '**'); }
     if (e.key === 'i') { e.preventDefault(); _wrapSelection(ta, '*', '*'); }
     if (e.key === 'k') { e.preventDefault(); _wrapSelection(ta, '[', '](url)'); }
-    // Inline code Ctrl+E
-    if (e.key === 'e') { e.preventDefault(); _wrapSelection(ta, '`', '`'); }
-    // Code block Ctrl+Shift+C
-    if (e.key === 'C' && e.shiftKey) {
+    // Inline code Ctrl+`
+    if (e.code === 'Backquote') { e.preventDefault(); _wrapSelection(ta, '`', '`'); }
+    // Code block Ctrl+Shift+`
+    if (e.code === 'Backquote' && e.shiftKey) {
       e.preventDefault();
       var s = ta.selectionStart, v = ta.value, sel = v.slice(s, ta.selectionEnd);
       var block = '\n```\n' + (sel || 'code') + '\n```\n';
