@@ -544,3 +544,58 @@ def test_session_cookie_secure():
     """SESSION_COOKIE_SECURE should be True."""
     from backend.app import app
     assert app.config.get('SESSION_COOKIE_SECURE') is True
+
+
+# ── Tagless essay re-sync ──
+
+def test_delete_tagless_essay_resyncs_siblings(client, data_backup):
+    """Deleting a tagless essay should re-sync all remaining essays (not just tag-sharing ones)."""
+    # Create two tagless essays
+    r1 = client.post('/api/essays', json={
+        'slug': 'test-tagless-a', 'title': 'Tagless A',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'a', 'tag': ''
+    })
+    r2 = client.post('/api/essays', json={
+        'slug': 'test-tagless-b', 'title': 'Tagless B',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'b', 'tag': ''
+    })
+    assert r1.status_code == 201
+    assert r2.status_code == 201
+
+    # Delete one — should succeed and re-sync the other
+    r3 = client.delete('/api/essays/test-tagless-a')
+    assert r3.status_code == 200
+
+    # Verify the other essay's HTML was regenerated
+    from backend.data import ESSAYS_DIR
+    html_path = os.path.join(ESSAYS_DIR, 'test-tagless-b.html')
+    assert os.path.exists(html_path)
+    assert 'Tagless B' in open(html_path, encoding='utf-8').read()
+
+    # Cleanup
+    client.delete('/api/essays/test-tagless-b')
+
+
+def test_update_tagless_essay_meta_resyncs_siblings(client, data_backup):
+    """Updating meta of a tagless essay should re-sync all siblings."""
+    r1 = client.post('/api/essays', json={
+        'slug': 'test-tagless-c', 'title': 'Tagless C',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'c', 'tag': ''
+    })
+    r2 = client.post('/api/essays', json={
+        'slug': 'test-tagless-d', 'title': 'Tagless D',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'd', 'tag': ''
+    })
+    assert r1.status_code == 201
+    assert r2.status_code == 201
+
+    # Update meta of tagless essay
+    r3 = client.put('/api/essays/test-tagless-c', json={
+        'title': 'Tagless C Updated', 'date': '2026-01-01',
+        'epigraph': '', 'excerpt': 'c', 'tag': '', 'slug': 'test-tagless-c'
+    })
+    assert r3.status_code == 200
+
+    # Cleanup
+    client.delete('/api/essays/test-tagless-c')
+    client.delete('/api/essays/test-tagless-d')

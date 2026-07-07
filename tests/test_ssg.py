@@ -392,3 +392,59 @@ def test_sync_essay_html_encrypted_no_password_ci(tmp_path, monkeypatch):
     assert 'id="essay-gate"' in html         # gate must appear
     assert '_encryptedIsMd' in html          # flag for client-side MD rendering
     assert 'CI test' not in html             # plaintext must not appear
+
+
+# ── get_image_ext ──
+
+def test_get_image_ext_valid():
+    from backend.data import get_image_ext
+    assert get_image_ext('photo.jpg') == 'jpg'
+    assert get_image_ext('photo.JPEG') == 'jpeg'
+    assert get_image_ext('photo.PNG') == 'png'
+    assert get_image_ext('photo.gif') == 'gif'
+    assert get_image_ext('photo.webp') == 'webp'
+
+def test_get_image_ext_invalid():
+    from backend.data import get_image_ext
+    assert get_image_ext('file.exe') is None
+    assert get_image_ext('file') is None
+    assert get_image_ext('file.bmp') is None
+    assert get_image_ext('') is None
+
+
+# ── _strip_enrich ──
+
+def test_strip_enrich_strips_password():
+    from backend.ssg import _strip_enrich
+    essays = [{'slug': 'a', 'title': 'A', 'date': '2026-01-01', 'password': 'secret'}]
+    result = _strip_enrich(essays, 'pub_date', '%Y-%m-%d')
+    assert 'password' not in result[0]
+
+def test_strip_enrich_rss_format():
+    from backend.ssg import _strip_enrich
+    essays = [{'slug': 'a', 'title': 'A', 'date': '2026-06-15 14:30', 'password': 'x'}]
+    result = _strip_enrich(essays, 'pub_date', '%a, %d %b %Y %H:%M:%S +0800', 20)
+    assert result[0]['pub_date'] != ''
+    assert 'Jun' in result[0]['pub_date']
+
+def test_strip_enrich_sitemap_format():
+    from backend.ssg import _strip_enrich
+    essays = [{'slug': 'a', 'title': 'A', 'date': '2026-06-15', 'password': 'x'}]
+    result = _strip_enrich(essays, 'lastmod', '%Y-%m-%d')
+    assert result[0]['lastmod'] == '2026-06-15'
+
+def test_strip_enrich_invalid_date():
+    from backend.ssg import _strip_enrich
+    essays = [{'slug': 'a', 'title': 'A', 'date': 'not-a-date'}]
+    result = _strip_enrich(essays, 'pub_date', '%Y-%m-%d')
+    assert result[0]['pub_date'] == ''
+
+def test_strip_enrich_limit():
+    from backend.ssg import _strip_enrich
+    essays = [
+        {'slug': 'a', 'date': '2026-01-01'},
+        {'slug': 'b', 'date': '2026-01-02'},
+        {'slug': 'c', 'date': '2026-01-03'},
+    ]
+    result = _strip_enrich(essays, 'pub_date', '%Y-%m-%d', 2)
+    assert len(result) == 2
