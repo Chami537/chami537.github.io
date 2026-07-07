@@ -485,6 +485,7 @@ def _sync_essay_html(essay, raw_md_memory=None, essays=None):
         else:
             password_protected = False
             encrypted_body = ''
+            raw_md = raw_md.replace('<', '&lt;').replace('>', '&gt;')
             rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}})
             body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
             og_image = _extract_first_image(raw_md)
