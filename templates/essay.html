@@ -399,6 +399,9 @@ div.arithmatex {
         var plainBuf = await crypto.subtle.decrypt({name: 'AES-CBC', iv: iv}, encKey, ct);
 
         var decrypted = new TextDecoder().decode(plainBuf);
+        // Escape raw HTML chars so <script> in essay text stays as text,
+        // not interpreted as HTML by marked or stripped by DOMPurify
+        decrypted = decrypted.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         // Render markdown to HTML if the encrypted body is markdown (new format)
         var html = (typeof _encryptedIsMd !== 'undefined' && _encryptedIsMd)
           ? DOMPurify.sanitize(marked.parse(decrypted))
