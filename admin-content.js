@@ -84,7 +84,7 @@ async function deleteWork(id) {  const confirmed = await confirmDialog('确定�
 async function loadContact() {
   try {
     const data = await api('GET', '/api/contact');
-  document.getElementById('contact-list').innerHTML = data.map((c, i) => `
+  document.getElementById('contact-list').innerHTML = data.map(c => `
     <div class="card">
       <div class="card-header">
         <div>
@@ -92,8 +92,8 @@ async function loadContact() {
           <div class="card-meta">${c.url ? '🔗 ' + esc(c.url) : '无链接'}</div>
         </div>
         <div class="card-actions">
-          <button class="btn btn-sm" onclick="editContact(${i})">编辑</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteContact(${i})">删除</button>
+          <button class="btn btn-sm" onclick="editContact(${c.id})">编辑</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteContact(${c.id})">删除</button>
         </div>
       </div>
     </div>
@@ -102,19 +102,20 @@ async function loadContact() {
 }
 
 function showContactForm() {
-  showEntryForm({ formId: 'contact-form', editId: 'contact-edit-index', title: '添加联系方式',
+  showEntryForm({ formId: 'contact-form', editId: 'contact-edit-id', title: '添加联系方式',
     fields: ['contact-label','contact-handle','contact-url'] });
 }
 
 
-function editContact(i) {
+function editContact(id) {
   var form = document.getElementById('contact-form');
-  if (form.style.display === 'block' && document.getElementById('contact-edit-index').value == i) {
+  if (form.style.display === 'block' && document.getElementById('contact-edit-id').value == id) {
     form.style.display = 'none'; return;
   }
   api('GET', '/api/contact').then(data => {
-    var c = data[i];
-    document.getElementById('contact-edit-index').value = i;
+    var c = data.find(item => item.id === id);
+    if (!c) { toast('未找到条目', true); return; }
+    document.getElementById('contact-edit-id').value = id;
     document.getElementById('contact-label').value = c.label;
     document.getElementById('contact-handle').value = c.handle;
     document.getElementById('contact-url').value = c.url || '';
@@ -126,12 +127,12 @@ function editContact(i) {
 
 async function saveContact() {
   try {
-  var idx = document.getElementById('contact-edit-index').value;
+  var id = document.getElementById('contact-edit-id').value;
   var item = {
     label: document.getElementById('contact-label').value,
     handle: document.getElementById('contact-handle').value,
     url: document.getElementById('contact-url').value,
-  };    if (idx !== '') { await api('PUT', '/api/contact/' + idx, item); }
+  };    if (id !== '') { await api('PUT', '/api/contact/' + id, item); }
     else { await api('POST', '/api/contact', item); }
     markClean();
     hidePanel('contact-form');
@@ -143,7 +144,7 @@ async function saveContact() {
 async function deleteContact(i) {  var confirmed = await confirmDialog('确定删除？');
   if (!confirmed) return;
   await api('DELETE', '/api/contact/' + i);
-  if (document.getElementById('contact-edit-index').value == i) hidePanel('contact-form');
+  if (document.getElementById('contact-edit-id').value == id) hidePanel('contact-form');
   loadContact();
   toast('已删除');
 }
@@ -153,7 +154,7 @@ async function deleteContact(i) {  var confirmed = await confirmDialog('确定�
 async function loadFriends() {
   try {
     const data = await api('GET', '/api/friends');
-  document.getElementById('friend-list').innerHTML = data.map((f, i) => `
+  document.getElementById('friend-list').innerHTML = data.map(f => `
     <div class="card">
       <div class="card-header">
         <div>
@@ -161,8 +162,8 @@ async function loadFriends() {
           <div class="card-meta">${esc(f.url)}</div>
         </div>
         <div class="card-actions">
-          <button class="btn btn-sm" onclick="editFriend(${i})">编辑</button>
-          <button class="btn btn-sm btn-danger" onclick="deleteFriend(${i})">删除</button>
+          <button class="btn btn-sm" onclick="editFriend(${f.id})">编辑</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteFriend(${f.id})">删除</button>
         </div>
       </div>
     </div>
@@ -171,31 +172,31 @@ async function loadFriends() {
 }
 
 function showFriendForm() {
-  showEntryForm({ formId: 'friend-form', editId: 'friend-edit-index', title: '添加友链',
+  showEntryForm({ formId: 'friend-form', editId: 'friend-edit-id', title: '添加友链',
     fields: ['friend-name','friend-url'] });
 }
 
 
-function editFriend(i) {
+function editFriend(id) {
   var form = document.getElementById('friend-form');
-  if (form.style.display === 'block' && document.getElementById('friend-edit-index').value == i) {
+  if (form.style.display === 'block' && document.getElementById('friend-edit-id').value == id) {
     form.style.display = 'none'; return;
   }
-  document.getElementById('friend-edit-index').value = i;
+  document.getElementById('friend-edit-id').value = id;
   document.getElementById('friend-form-title').textContent = '编辑友链';
   form.style.display = 'block';
   form.scrollIntoView({ behavior: 'smooth' });
   api('GET', '/api/friends').then(data => {
-    document.getElementById('friend-name').value = data[i].name;
+    document.getElementById('friend-name').value = 'data.find(item => item.id === id).name';
     document.getElementById('friend-url').value = data[i].url;
   }).catch(e => toast(e.message, true));
 }
 
 async function saveFriend() {
   try {
-  const idx = document.getElementById('friend-edit-index').value;
-  const item = { name: document.getElementById('friend-name').value, url: document.getElementById('friend-url').value };    if (idx !== '') {
-      await api('PUT', '/api/friends/' + idx, item);
+  const id = document.getElementById('friend-edit-id').value;
+  const item = { name: document.getElementById('friend-name').value, url: document.getElementById('friend-url').value };    if (id !== '') {
+      await api('PUT', '/api/friends/' + id, item);
     } else {
       await api('POST', '/api/friends', item);
     }
@@ -209,7 +210,7 @@ async function saveFriend() {
 async function deleteFriend(i) {  const confirmed = await confirmDialog('确定删除这个友链？');
   if (!confirmed) return;
   await api('DELETE', '/api/friends/' + i);
-  if (document.getElementById('friend-edit-index').value == i) hidePanel('friend-form');
+  if (document.getElementById('friend-edit-id').value == id) hidePanel('friend-form');
   loadFriends();
   toast('友链已删除');
 }

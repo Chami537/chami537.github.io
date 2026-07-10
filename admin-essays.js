@@ -88,28 +88,6 @@ async function loadEssays() {
 let currentEssayTag = null;
 let essayDeleteTagMode = false;
 
-// 标签库 helpers
-function _tagLib(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key) || fallback); }
-  catch(e) { return JSON.parse(fallback); }
-}
-function _saveTagLib(key, tags) { localStorage.setItem(key, JSON.stringify(tags)); }
-function _promptTag(key, fallback, onAdd) {
-  var t = prompt('请输入新标签名称：');
-  if (!t || !t.trim()) return;
-  var tags = _tagLib(key, fallback);
-  if (tags.indexOf(t.trim()) < 0) { tags.push(t.trim()); _saveTagLib(key, tags); }
-  onAdd(t.trim());
-}
-function _toggleDeleteTagMode(btnId, flag, onDone) {
-  var btn = document.getElementById(btnId);
-  var on = !flag;
-  btn.textContent = on ? '完成' : '删除标签';
-  btn.classList.toggle('btn-danger', on);
-  onDone();
-  return on;
-}
-
 // 初始化标签库
 function getTags() { return _tagLib('essay-tags', '["随笔","摄影","剪辑","骑行","投资"]'); }
 function saveTags(tags) { _saveTagLib('essay-tags', tags); }

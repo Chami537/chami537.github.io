@@ -78,6 +78,28 @@ function _dragStart(e, idx) {
 function _dragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
 function _dragEnd(e) { e.target.style.opacity = '1'; _dragState.idx = -1; }
 
+// ── Shared tag library helpers (used by essays, photos, about) ──
+function _tagLib(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || fallback); }
+  catch(e) { return JSON.parse(fallback); }
+}
+function _saveTagLib(key, tags) { localStorage.setItem(key, JSON.stringify(tags)); }
+function _promptTag(key, fallback, onAdd) {
+  var t = prompt('请输入新标签名称：');
+  if (!t || !t.trim()) return;
+  var tags = _tagLib(key, fallback);
+  if (tags.indexOf(t.trim()) < 0) { tags.push(t.trim()); _saveTagLib(key, tags); }
+  onAdd(t.trim());
+}
+function _toggleDeleteTagMode(btnId, flag, onDone) {
+  var btn = document.getElementById(btnId);
+  var on = !flag;
+  btn.textContent = on ? '完成' : '删除标签';
+  btn.classList.toggle('btn-danger', on);
+  onDone();
+  return on;
+}
+
 var MONTHS_NUM = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
 var MONTHS_ARR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 function showEntryForm(cfg) {

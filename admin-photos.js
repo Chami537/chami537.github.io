@@ -61,6 +61,7 @@ async function loadPhotos() {
       });
     }
     renderAdminPhotos();
+    await loadStories();
   } catch(e) { toast(e.message, true); }
 }
 
@@ -366,15 +367,4 @@ async function saveStoryOverrides() {
     toast('故事线已保存');
   } catch(e) { toast(e.message, true); }
 }
-
-// Auto-load stories when photos tab is active
-// Auto-load stories when photos tab is active
-var _origLoadPhotos = loadPhotos;
-loadPhotos = async function() {
-  try {
-    await _origLoadPhotos();
-  } finally {
-    await loadStories();
-  }
-};
 
