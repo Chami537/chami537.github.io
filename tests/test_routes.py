@@ -53,22 +53,22 @@ def test_get_readme(client):
     assert 'content' in r.json
 
 
-# ── CRUD: create → update → delete (contact, index-based) ──
+# ── CRUD: create → update → delete (contact, id-based) ──
 
 def test_contact_crud(client, data_backup):
-    # Create
+    # Create (auto_id=True)
     r = client.post('/api/contact', json={'label': 'Test', 'handle': 'unit', 'url': 'https://x.com'})
     assert r.status_code == 201
+    cid = r.json['id']
     # List
     r = client.get('/api/contact')
     assert any(c['label'] == 'Test' for c in r.json)
-    idx = next(i for i, c in enumerate(r.json) if c['label'] == 'Test')
     # Update
-    r = client.put(f'/api/contact/{idx}', json={'label': 'Updated'})
+    r = client.put(f'/api/contact/{cid}', json={'label': 'Updated'})
     assert r.status_code == 200
     assert r.json['label'] == 'Updated'
     # Delete
-    r = client.delete(f'/api/contact/{idx}')
+    r = client.delete(f'/api/contact/{cid}')
     assert r.status_code == 200
 
 
@@ -77,9 +77,8 @@ def test_contact_crud(client, data_backup):
 def test_friend_crud(client, data_backup):
     r = client.post('/api/friends', json={'name': 'Tester', 'url': 'https://test.dev'})
     assert r.status_code == 201
-    r = client.get('/api/friends')
-    idx = next(i for i, f in enumerate(r.json) if f['name'] == 'Tester')
-    r = client.delete(f'/api/friends/{idx}')
+    fid = r.json['id']
+    r = client.delete(f'/api/friends/{fid}')
     assert r.status_code == 200
 
 

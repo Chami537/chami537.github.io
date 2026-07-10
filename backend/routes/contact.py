@@ -2,7 +2,7 @@ from flask import request, jsonify
 
 from backend.app import app
 from backend.data import atomic_write_json
-from backend.crud import list_all, create_item, update_item_by_index, delete_item_by_index, require_json
+from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id, require_json
 
 
 @app.route('/api/contact', methods=['GET'])
@@ -21,15 +21,15 @@ def update_contact():
 @app.route('/api/contact', methods=['POST'])
 @require_json
 def add_contact():
-    return create_item('contact.json', request.json)
+    return create_item('contact.json', request.json, auto_id=True)
 
 
-@app.route('/api/contact/<int:index>', methods=['PUT'])
+@app.route('/api/contact/<int:id>', methods=['PUT'])
 @require_json
-def update_contact_item(index):
-    return update_item_by_index('contact.json', index, request.json)
+def update_contact_item(id):
+    return update_item_by_id('contact.json', id, request.json)
 
 
-@app.route('/api/contact/<int:index>', methods=['DELETE'])
-def delete_contact(index):
-    return delete_item_by_index('contact.json', index)
+@app.route('/api/contact/<int:id>', methods=['DELETE'])
+def delete_contact(id):
+    return delete_item_by_id('contact.json', id)
