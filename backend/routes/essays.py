@@ -294,9 +294,10 @@ def upload_essay_image():
         essay = next((e for e in essays if e.get('slug') == slug), None)
         folder = essay.get('title', slug) if essay else slug
         folder = folder.replace('/', '_').replace('\\', '_')
-        if '..' in folder.split(os.sep):
-            folder = slug
-        img_dir = os.path.join(IMAGES_DIR, 'essays', folder)
+        img_dir = os.path.realpath(os.path.join(IMAGES_DIR, 'essays', folder))
+        essays_img_dir = os.path.realpath(os.path.join(IMAGES_DIR, 'essays'))
+        if not img_dir.startswith(essays_img_dir + os.sep):
+            return jsonify({"error": "Invalid title"}), 400
         url = f"/images/essays/{folder}/{filename}"
     else:
         img_dir = os.path.join(IMAGES_DIR, 'essays')

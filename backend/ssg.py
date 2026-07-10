@@ -289,6 +289,14 @@ def _extract_exif(img):
         exif_data['iso'] = tags['ISOSpeedRatings']
     if 'FocalLength' in tags:
         exif_data['focal'] = format_focal(tags['FocalLength'])
+    for date_key in ('DateTimeOriginal', 'DateTimeDigitized', 'DateTime'):
+        if date_key in tags:
+            raw_date = tags[date_key]
+            try:
+                exif_data['date'] = raw_date.replace(':', '-', 2).rsplit(':', 1)[0]
+            except (ValueError, KeyError):
+                exif_data['date'] = raw_date
+            break
     gps_data = _extract_gps(exif_raw)
     if gps_data:
         exif_data['gps'] = gps_data

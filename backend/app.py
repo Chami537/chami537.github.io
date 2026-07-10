@@ -40,7 +40,8 @@ def _csrf_check():
     if request.method in ('POST', 'PUT', 'DELETE', 'PATCH'):
         origin = request.headers.get('Origin', '')
         if origin:
-            if urlparse(origin).netloc != request.host:
+            expected = app.config.get('SERVER_NAME') or request.host
+            if urlparse(origin).netloc != expected:
                 return jsonify({"error": "CSRF check failed"}), 403
 
 
