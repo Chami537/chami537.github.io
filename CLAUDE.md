@@ -74,6 +74,19 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 
 ## 存档
 
+### 2026-07-11
+- fix: CSRF 用 `SERVER_NAME` 防 Host 头注入（`app.py`）
+- fix: 路径穿越改用 `os.path.realpath` 跨平台验证（`essays.py`）
+- feat: EXIF 日期提取 `DateTimeOriginal`（`ssg.py`）
+- refactor: `data.py` 拆分 EXIF → `exif_utils.py`（凝聚力 0.06→独立模块）
+- refactor: Contact/Friends 迁移到 id 寻址（`auto_id=True`，匹配 Work/Music）
+- refactor: 标签助手函数移到 `admin.js` 共享，删 admin-essays.js 重复
+- fix: `loadPhotos` monkey-patch 改为直接调用 `loadStories()`
+- fix: git revert/push 端点 TESTING 模式下跳过实际操作
+- test: 补 19 条测试 — photo stories / essay preview / feeds / git / uploads（99→118）
+- fix: 审计发现 3 个 critical bug（editFriend 字符串字面量、deleteContact/Friend 参数名）
+- fix: 审计修复 crud.py id tolerance + bulk PUT 验证 + 死异常处理
+
 ### 2026-07-02
 - `admin.js` 拆分为 4 文件（core/content/essays/photos）
 - Admin 内联样式 → `admin.css` CSS 类（+90/-44 行）
