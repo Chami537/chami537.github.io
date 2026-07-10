@@ -184,13 +184,13 @@ function editFriend(id) {
   }
   document.getElementById('friend-edit-id').value = id;
   document.getElementById('friend-form-title').textContent = '编辑友链';
-  form.style.display = 'block';
-  form.scrollIntoView({ behavior: 'smooth' });
   api('GET', '/api/friends').then(data => {
     var f = data.find(item => item.id === id);
     if (!f) { toast('未找到条目', true); return; }
     document.getElementById('friend-name').value = f.name;
     document.getElementById('friend-url').value = f.url;
+    form.style.display = 'block';
+    form.scrollIntoView({ behavior: 'smooth' });
   }).catch(e => toast(e.message, true));
 }
 
