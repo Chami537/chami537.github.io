@@ -6,7 +6,7 @@ from PIL import Image
 from backend.ssg import (
     _extract_exif, _extract_gps, _calc_read_time, _parse_date,
     _parse_tags, _find_adjacent_siblings, _extract_first_image,
-    _cache_bust_assets, _encrypt_content, _decrypt_content,
+    _cache_bust_assets, _encrypt_content, _decrypt_content, _is_encrypted_v3,
     _generate_public_essays, _sync_essay_html,
     ESSAYS_DIR, MD_DIR,
 )
@@ -448,3 +448,164 @@ def test_strip_enrich_limit():
     ]
     result = _strip_enrich(essays, 'pub_date', '%Y-%m-%d', 2)
     assert len(result) == 2
+
+
+# ── Encryption full-chain (HMAC v2 / Fernet) ──
+
+def test_encrypt_decrypt_long_content():
+    """Multi-paragraph essay with special chars should roundtrip correctly."""
+    plaintext = """# 长文测试
+
+这是第一段内容，包含中文标点：，。！？「」『』【】、…—～
+
+```python
+def hello():
+    print("Hello, World!")
+```
+
+> 引用文字：这是一段引用内容。**加粗** 和 *斜体* 混合。
+
+第二段，带数学公式：$E = mc^2$
+
+最后一段。✨🎉 Unicode emoji test. 日本語テスト。한국어 테스트。
+"""
+    password = "my-secret-password-长密码🔑"
+    encrypted = _encrypt_content(plaintext, password)
+    assert plaintext not in encrypted
+    assert len(encrypted) > len(plaintext)  # base64 overhead
+    decrypted = _decrypt_content(encrypted, password)
+    assert decrypted == plaintext
+
+
+def test_encrypt_decrypt_empty_password():
+    """Empty password should still work (PBKDF2 handles empty input)."""
+    encrypted = _encrypt_content("some content", "")
+    assert encrypted
+    decrypted = _decrypt_content(encrypted, "")
+    assert decrypted == "some content"
+
+
+def test_encrypt_decrypt_unicode_only():
+    """纯中文 + 日文 + 韩文内容，无双字节英文。"""
+    plaintext = "你好世界！这是一篇纯中文测试文章。人生若只如初见，何事秋风悲画扇。"
+    password = "中文密码测试"
+    encrypted = _encrypt_content(plaintext, password)
+    decrypted = _decrypt_content(encrypted, password)
+    assert decrypted == plaintext
+
+
+# ── HMAC verification failure paths ──
+
+def test_decrypt_tampered_ciphertext():
+    """Valid base64 but one byte flipped → HMAC mismatch → ValueError."""
+    import base64 as b64
+    encrypted = _encrypt_content("secret content", "password123")
+    raw = bytearray(b64.b64decode(encrypted))
+    # Flip a bit in the Fernet token portion (after version + salt = 17 bytes)
+    raw[-10] ^= 0x01  # tamper with last portion (inside HMAC region)
+    tampered = b64.b64encode(bytes(raw)).decode('ascii')
+    with pytest.raises(ValueError):
+        _decrypt_content(tampered, "password123")
+
+
+def test_decrypt_truncated_ciphertext():
+    """Truncated base64 data → should raise ValueError."""
+    encrypted = _encrypt_content("secret", "pw")
+    # Take only first 20 chars of base64 (too short for valid format)
+    truncated = encrypted[:20]
+    with pytest.raises((ValueError, IndexError)):
+        _decrypt_content(truncated, "pw")
+
+
+def test_decrypt_wrong_version_byte():
+    """Content where first decoded byte is not 2 → legacy format error."""
+    import base64 as b64
+    # Construct: version=0x01 + random 16 salt + random data (min 1 byte)
+    fake = bytes([1]) + os.urandom(16) + os.urandom(32)
+    encoded = b64.b64encode(fake).decode('ascii')
+    with pytest.raises(ValueError, match=r'legacy'):
+        _decrypt_content(encoded, "pw")
+
+
+def test_decrypt_garbage_base64():
+    """Random base64 string that decodes to garbage (< 18 bytes) → format error."""
+    import base64 as b64
+    # "AAAA" decodes to 3 null bytes
+    with pytest.raises(ValueError, match=r'legacy'):
+        _decrypt_content("AAAA", "pw")
+
+
+# ── _sync_essay_html: hidden = encrypted 联动 ──
+
+def test_sync_essay_encrypted_md_stays_encrypted(tmp_path, monkeypatch):
+    """Encrypted .md already exists, no password available → SSG passes through as-is."""
+    md_dir = tmp_path / 'md'
+    essays_dir = tmp_path / 'essays'
+    md_dir.mkdir()
+    essays_dir.mkdir()
+    monkeypatch.setattr('backend.ssg.MD_DIR', str(md_dir))
+    monkeypatch.setattr('backend.ssg.ESSAYS_DIR', str(essays_dir))
+    monkeypatch.setattr('backend.ssg.IMAGES_DIR', str(tmp_path / 'images'))
+    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
+
+    (tmp_path / 'data').mkdir()
+    (tmp_path / 'templates').mkdir()
+    essay = {'slug': 'enc-stays', 'title': 'Enc Stays', 'date': '2026-01-01',
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1}
+    with open(tmp_path / 'data' / 'essays.json', 'w') as f:
+        json.dump([essay], f)
+
+    original = _encrypt_content("# Original secret content", "mypw")
+    with open(md_dir / 'enc-stays.md', 'w') as f:
+        f.write(original)
+
+    monkeypatch.setattr('backend.ssg.get_essay_password', lambda slug: '')
+    _sync_essay_html(essay)
+
+    # .md must be unchanged (pass-through, no server-side re-encryption)
+    md_after = (md_dir / 'enc-stays.md').read_text()
+    assert md_after == original
+
+    # HTML must have gate
+    html = (essays_dir / 'enc-stays.html').read_text()
+    assert 'id="essay-gate"' in html
+    assert '_encryptedIsMd = true' in html
+
+
+def test_sync_essay_first_time_encryption(tmp_path, monkeypatch):
+    """Plaintext .md + password → first-time encryption on the fly, gate in HTML."""
+    md_dir = tmp_path / 'md'
+    essays_dir = tmp_path / 'essays'
+    md_dir.mkdir()
+    essays_dir.mkdir()
+    monkeypatch.setattr('backend.ssg.MD_DIR', str(md_dir))
+    monkeypatch.setattr('backend.ssg.ESSAYS_DIR', str(essays_dir))
+    monkeypatch.setattr('backend.ssg.IMAGES_DIR', str(tmp_path / 'images'))
+    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
+
+    (tmp_path / 'data').mkdir()
+    (tmp_path / 'templates').mkdir()
+    essay = {'slug': 'first-time', 'title': 'First Time', 'date': '2026-01-01',
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1}
+    with open(tmp_path / 'data' / 'essays.json', 'w') as f:
+        json.dump([essay], f)
+
+    # Plaintext .md exists
+    with open(md_dir / 'first-time.md', 'w') as f:
+        f.write('Fresh content here.')
+
+    # Password is set
+    monkeypatch.setattr('backend.ssg.get_essay_password', lambda slug: 'newpw')
+
+    _sync_essay_html(essay)
+
+    # .md must now be encrypted
+    md_content = (md_dir / 'first-time.md').read_text()
+    assert _is_encrypted_v3(md_content)
+    assert 'Fresh' not in md_content
+
+    # HTML must have gate
+    html = (essays_dir / 'first-time.html').read_text()
+    assert 'id="essay-gate"' in html

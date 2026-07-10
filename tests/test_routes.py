@@ -599,3 +599,161 @@ def test_update_tagless_essay_meta_resyncs_siblings(client, data_backup):
     # Cleanup
     client.delete('/api/essays/test-tagless-c')
     client.delete('/api/essays/test-tagless-d')
+
+
+# ── Password change (hidden = encrypted 联动) ──
+
+def test_change_password_roundtrip(client, data_backup):
+    """Set password → change to new password → content still accessible."""
+    r = client.post('/api/essays', json={
+        'slug': 'test-pw-change', 'title': 'Password Change Test',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'pw change', 'tag': ''
+    })
+    slug = r.json.get('slug', 'test-pw-change')
+
+    # Write content
+    client.put(f'/api/essays/{slug}/content', json={'content': '原始秘密内容'})
+    # Set password
+    r1 = client.post(f'/api/essays/{slug}/password', json={'password': 'oldpass'})
+    assert r1.status_code == 200
+    assert r1.json['password_set'] == True
+
+    # Verify content is encrypted at rest
+    md_file = os.path.join(DATA_DIR, '..', 'md', f'{slug}.md')
+    assert os.path.exists(md_file)
+    with open(md_file, encoding='utf-8') as f:
+        encrypted_md = f.read()
+    from backend.ssg import _is_encrypted_v3
+    assert _is_encrypted_v3(encrypted_md)
+
+    # Change to new password
+    r2 = client.post(f'/api/essays/{slug}/password', json={'password': 'newpass'})
+    assert r2.status_code == 200
+    assert r2.json['password_set'] == True
+
+    # Content API must still return decrypted content
+    r3 = client.get(f'/api/essays/{slug}/content')
+    assert r3.status_code == 200
+    assert '原始秘密内容' in r3.json['content']
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
+def test_change_password_wrong_old(client, data_backup):
+    """Changing password returns 400 when running but old password unknown."""
+    r = client.post('/api/essays', json={
+        'slug': 'test-pw-wrong-old', 'title': 'Wrong Old PW',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'wrong old', 'tag': ''
+    })
+    slug = r.json.get('slug', 'test-pw-wrong-old')
+
+    # Write content and set first password
+    client.put(f'/api/essays/{slug}/content', json={'content': '内容'})
+    client.post(f'/api/essays/{slug}/password', json={'password': 'firstpass'})
+
+    # Corrupt the .md to simulate unknown-password scenario
+    # (Since the test has the password, direct manipulation of the store is needed)
+    md_file = os.path.join(DATA_DIR, '..', 'md', f'{slug}.md')
+    # Replace with new encrypted content (using different password, unknown to the store)
+    from backend.ssg import _encrypt_content
+    with open(md_file, 'w', encoding='utf-8') as f:
+        f.write(_encrypt_content("内容", "differentpw"))
+
+    # Now the password store has 'firstpass' but .md was encrypted with 'differentpw'
+    # Trying to set a new password should fail because old password can't decrypt
+    r2 = client.post(f'/api/essays/{slug}/password', json={'password': 'thirdpass'})
+    assert r2.status_code == 400
+    assert '旧密码错误' in r2.json.get('error', '')
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
+def test_encrypted_essay_content_update(client, data_backup):
+    """Update content of an encrypted essay → re-encrypted with same password."""
+    r = client.post('/api/essays', json={
+        'slug': 'test-upd-crypt', 'title': 'Update Encrypted',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'update', 'tag': ''
+    })
+    slug = r.json.get('slug', 'test-upd-crypt')
+
+    # Write content + set password
+    client.put(f'/api/essays/{slug}/content', json={'content': '第一版内容'})
+    client.post(f'/api/essays/{slug}/password', json={'password': 'securepw'})
+
+    # Update content while encrypted
+    r2 = client.put(f'/api/essays/{slug}/content', json={'content': '第二版内容——更新后'})
+    assert r2.status_code == 200
+
+    # Content API must return NEW content (decrypted)
+    r3 = client.get(f'/api/essays/{slug}/content')
+    assert r3.status_code == 200
+    assert '第二版内容——更新后' in r3.json['content']
+    assert '第一版内容' not in r3.json['content']
+
+    # .md must still be encrypted
+    md_file = os.path.join(DATA_DIR, '..', 'md', f'{slug}.md')
+    with open(md_file, encoding='utf-8') as f:
+        md_content = f.read()
+    from backend.ssg import _is_encrypted_v3
+    assert _is_encrypted_v3(md_content)
+    assert '第二版' not in md_content  # not plaintext
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
+def test_encrypted_essay_is_hidden_in_html(client, data_backup):
+    """Password = hidden = gate in HTML, plaintext body absent."""
+    r = client.post('/api/essays', json={
+        'slug': 'test-hidden-crypt', 'title': 'Hidden = Encrypted',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'hidden', 'tag': ''
+    })
+    slug = r.json.get('slug', 'test-hidden-crypt')
+
+    # Write content + set password (which means "hidden")
+    client.put(f'/api/essays/{slug}/content', json={'content': '这是隐藏内容'})
+    client.post(f'/api/essays/{slug}/password', json={'password': 'hidepw'})
+
+    # Verify generated HTML has gate and no plaintext body
+    from backend.data import ESSAYS_DIR
+    html_path = os.path.join(ESSAYS_DIR, f'{slug}.html')
+    assert os.path.exists(html_path)
+    html = open(html_path, encoding='utf-8').read()
+    assert 'id="essay-gate"' in html
+    assert '此内容已隐藏' in html
+    assert '这是隐藏内容' not in html
+
+    # essays_public.json must strip password
+    public_path = os.path.join(DATA_DIR, 'essays_public.json')
+    public = json.load(open(public_path, encoding='utf-8'))
+    essay = next((e for e in public['essays'] if e['slug'] == slug), None)
+    assert essay is not None
+    assert 'password' not in essay
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')
+
+
+def test_clear_password_restores_visibility(client, data_backup):
+    """Clear password → essay no longer hidden → plaintext body in HTML."""
+    r = client.post('/api/essays', json={
+        'slug': 'test-restore-vis', 'title': 'Restore Visibility',
+        'date': '2026-01-01', 'epigraph': '', 'excerpt': 'restore', 'tag': ''
+    })
+    slug = r.json.get('slug', 'test-restore-vis')
+
+    client.put(f'/api/essays/{slug}/content', json={'content': '可见内容'})
+    client.post(f'/api/essays/{slug}/password', json={'password': 'pw'})
+    # Clear password → unhides
+    client.post(f'/api/essays/{slug}/password', json={'password': ''})
+
+    from backend.data import ESSAYS_DIR
+    html_path = os.path.join(ESSAYS_DIR, f'{slug}.html')
+    html = open(html_path, encoding='utf-8').read()
+    assert 'id="essay-gate"' not in html
+    assert '可见内容' in html
+
+    # Cleanup
+    client.delete(f'/api/essays/{slug}')

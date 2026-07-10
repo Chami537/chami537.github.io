@@ -7,7 +7,7 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - **后端**：Python Flask + Jinja2 + Markdown + Pillow（`requirements.txt`）
 - **部署**：GitHub Pages `chami537.github.io`（自动从 master 分支部署）
 - 无构建工具，无包管理器
-- **测试**：pytest（46 个用例）
+- **测试**：pytest（99 个用例）
 
 ## 结构
 
@@ -50,7 +50,7 @@ Chami 的个人主页。前端纯手写 HTML/CSS/JS 零框架零依赖；后端 
 - `manage.py` — CLI 入口，`python manage.py [build|sync-photos|set-gps]`
 - `manage.bat` — 一键启动脚本
 - `tools/process_images.py` — 图像流水线（全量同步）
-- `tests/` — pytest（46 个用例，test_routes.py + test_ssg.py + conftest.py）
+- `tests/` — pytest（99 个用例，test_routes.py + test_ssg.py + conftest.py）
 - `.github/workflows/` — CI/CD（pytest → build → deploy）
 
 ## 配色
