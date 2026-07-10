@@ -14,6 +14,9 @@ def list_contact():
 def update_contact():
     if not isinstance(request.json, list):
         return jsonify({"error": "Expected a JSON array"}), 400
+    for item in request.json:
+        if not isinstance(item.get('id'), int):
+            return jsonify({"error": "Each item must have a numeric id"}), 400
     atomic_write_json('contact.json', request.json)
     return jsonify({"status": "updated"})
 

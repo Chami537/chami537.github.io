@@ -39,7 +39,6 @@ def git_commit():
 
 @app.route('/api/git/revert', methods=['POST'])
 def git_revert():
-    from backend.app import app
     # In test mode, don't actually run destructive git operations
     if app.config.get('TESTING'):
         return jsonify({"status": "reverted"})
@@ -68,7 +67,6 @@ def git_diff():
 
 @app.route('/api/git/push', methods=['POST'])
 def git_push():
-    from backend.app import app
     if app.config.get('TESTING'):
         return jsonify({"status": "success", "output": "test mode"})
     fetch_r = _run_git(['fetch'])

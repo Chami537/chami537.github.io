@@ -291,11 +291,8 @@ def _extract_exif(img):
         exif_data['focal'] = format_focal(tags['FocalLength'])
     for date_key in ('DateTimeOriginal', 'DateTimeDigitized', 'DateTime'):
         if date_key in tags:
-            raw_date = tags[date_key]
-            try:
-                exif_data['date'] = raw_date.replace(':', '-', 2).rsplit(':', 1)[0]
-            except (ValueError, KeyError):
-                exif_data['date'] = raw_date
+            raw_date = str(tags[date_key])
+            exif_data['date'] = raw_date.replace(':', '-', 2).rsplit(':', 1)[0]
             break
     gps_data = _extract_gps(exif_raw)
     if gps_data:

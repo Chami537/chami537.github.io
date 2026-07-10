@@ -24,7 +24,7 @@ def list_all(filename):
 def create_item(filename, item, auto_id=False):
     data = load_json(filename)
     if auto_id:
-        item['id'] = max((i['id'] for i in data), default=0) + 1
+        item['id'] = max((i['id'] for i in data if isinstance(i.get('id'), int)), default=0) + 1
     data.append(item)
     atomic_write_json(filename, data)
     return jsonify(item), 201
@@ -51,6 +51,8 @@ def delete_item_by_index(filename, index):
 def update_item_by_id(filename, id_val, updates):
     data = load_json(filename)
     for i, item in enumerate(data):
+        if 'id' not in item:
+            continue
         if item['id'] == id_val:
             updates['id'] = id_val
             data[i].update(updates)
@@ -61,7 +63,7 @@ def update_item_by_id(filename, id_val, updates):
 
 def delete_item_by_id(filename, id_val):
     data = load_json(filename)
-    new_data = [item for item in data if item['id'] != id_val]
+    new_data = [item for item in data if item.get('id') != id_val]
     if len(new_data) == len(data):
         return jsonify({"error": "Not found"}), 404
     atomic_write_json(filename, new_data)
