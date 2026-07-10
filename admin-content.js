@@ -141,10 +141,10 @@ async function saveContact() {
   } catch(e) { toast(e.message, true); }
 }
 
-async function deleteContact(i) {  var confirmed = await confirmDialog('确定删除？');
+async function deleteContact(id) {  var confirmed = await confirmDialog('确定删除？');
   if (!confirmed) return;
-  await api('DELETE', '/api/contact/' + i);
-  if (document.getElementById('contact-edit-id').value == id) hidePanel('contact-form');
+  await api('DELETE', '/api/contact/' + id);
+  if (document.getElementById('contact-edit-id') && document.getElementById('contact-edit-id').value == id) hidePanel('contact-form');
   loadContact();
   toast('已删除');
 }
@@ -187,8 +187,10 @@ function editFriend(id) {
   form.style.display = 'block';
   form.scrollIntoView({ behavior: 'smooth' });
   api('GET', '/api/friends').then(data => {
-    document.getElementById('friend-name').value = 'data.find(item => item.id === id).name';
-    document.getElementById('friend-url').value = data[i].url;
+    var f = data.find(item => item.id === id);
+    if (!f) { toast('未找到条目', true); return; }
+    document.getElementById('friend-name').value = f.name;
+    document.getElementById('friend-url').value = f.url;
   }).catch(e => toast(e.message, true));
 }
 
@@ -207,10 +209,10 @@ async function saveFriend() {
   } catch(e) { toast(e.message, true); }
 }
 
-async function deleteFriend(i) {  const confirmed = await confirmDialog('确定删除这个友链？');
+async function deleteFriend(id) {  const confirmed = await confirmDialog('确定删除这个友链？');
   if (!confirmed) return;
-  await api('DELETE', '/api/friends/' + i);
-  if (document.getElementById('friend-edit-id').value == id) hidePanel('friend-form');
+  await api('DELETE', '/api/friends/' + id);
+  if (document.getElementById('friend-edit-id') && document.getElementById('friend-edit-id').value == id) hidePanel('friend-form');
   loadFriends();
   toast('友链已删除');
 }
