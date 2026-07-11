@@ -286,7 +286,7 @@ async function loadStories() {
 function renderStoryEditor() {
   var el = document.getElementById('story-editor-list');
   if (!_storyData.length) {
-    el.innerHTML = '<p style="color:var(--muted);font-size:12px;">暂无故事线。<button class="btn btn-sm" onclick="addStory()" style="margin-left:8px;">+ 新建故事</button></p>';
+    el.innerHTML = '<div class="story-empty">暂无故事线。<button class="btn btn-sm" onclick="addStory()">+ 新建故事</button></div>';
     return;
   }
   var allPhotos = _photoData || [];
@@ -295,34 +295,34 @@ function renderStoryEditor() {
     var cover = s.cover || (s.photos && s.photos[0]) || '';
     var caption = s.caption || '';
     var photos = s.photos || [];
-    html += '<div class="story-edit-card" style="background:var(--card-bg);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">' +
-      '<input value="' + esc(s.id) + '" onchange="_storyData[' + si + '].id=this.value" style="width:180px;font-weight:600;font-size:13px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;background:var(--bg);color:var(--fg);" placeholder="故事ID">' +
+    html += '<div class="story-edit-card">' +
+      '<div class="story-edit-head">' +
+      '<input class="story-id-input" value="' + esc(s.id) + '" onchange="_storyData[' + si + '].id=this.value" placeholder="故事ID">' +
+      '<span class="story-edit-count">' + photos.length + ' photos</span>' +
       '<button class="btn btn-sm btn-danger" onclick="deleteStory(' + si + ')">删除</button>' +
       '</div>' +
-      '<div style="display:flex;gap:8px;margin-bottom:6px;">' +
-      '<input value="' + esc(s.name || '') + '" onchange="_storyData[' + si + '].name=this.value" style="flex:1;font-size:12px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;background:var(--bg);color:var(--fg);" placeholder="故事名称">' +
-      '<input value="' + esc(s.date || '') + '" onchange="_storyData[' + si + '].date=this.value" style="width:140px;font-size:12px;border:1px solid var(--border);border-radius:4px;padding:3px 6px;background:var(--bg);color:var(--fg);" placeholder="日期标签">' +
+      '<div class="story-edit-fields">' +
+      '<input value="' + esc(s.name || '') + '" onchange="_storyData[' + si + '].name=this.value" placeholder="故事名称">' +
+      '<input value="' + esc(s.date || '') + '" onchange="_storyData[' + si + '].date=this.value" placeholder="日期标签">' +
       '</div>' +
-      '<div style="font-size:11px;margin-bottom:4px;">封面 / 照片（点击图选封面，点 ✓/+ 添加/移除）：</div>' +
-      '<div style="display:flex;gap:4px;overflow-x:auto;padding-bottom:6px;flex-wrap:wrap;" class="story-cover-picker">';
+      '<div class="story-edit-help">封面 / 照片：点击图片选封面，点右上角添加或移除。</div>' +
+      '<div class="story-cover-picker">';
     allPhotos.forEach(function(p) {
       var fn = p.filename;
-      var sel = fn === cover ? 'border:2px solid #0066ff;' : 'border:2px solid transparent;';
       var inStory = photos.indexOf(fn) >= 0;
-      html += '<div style="position:relative;flex-shrink:0;" title="' + esc(fn) + '">' +
-        '<img src="/images/sm/' + fn + '" data-fn="' + esc(fn) + '" ' +
+      var itemClass = 'story-photo-pick' + (fn === cover ? ' is-cover' : '') + (inStory ? ' in-story' : '');
+      html += '<div class="' + itemClass + '" title="' + esc(fn) + '">' +
+        '<img src="/images/sm/' + encodeURIComponent(fn) + '" data-fn="' + esc(fn) + '" ' +
         'onclick="pickStoryCover(' + si + ', this)" ' +
-        'style="width:56px;height:56px;object-fit:cover;border-radius:6px;cursor:pointer;' + sel + 'opacity:' + (inStory ? '1' : '0.35') + '">' +
-        '<span onclick="toggleStoryPhoto(' + si + ', \'' + esc(fn) + '\', this)" ' +
-        'style="position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:' + (inStory ? '#0066ff' : '#888') + ';color:#fff;font-size:10px;line-height:16px;text-align:center;cursor:pointer;">' + (inStory ? '✓' : '+') + '</span>' +
+        'class="story-photo-thumb">' +
+        '<span class="story-photo-toggle" onclick="toggleStoryPhoto(' + si + ', \'' + esc(fn) + '\', this)">' + (inStory ? '✓' : '+') + '</span>' +
         '</div>';
     });
     html += '</div>' +
-      '<textarea onchange="_storyData[' + si + '].caption=this.value" style="width:100%;box-sizing:border-box;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--fg);font-size:12px;resize:vertical;margin-top:6px;" rows="2" placeholder="简介（留空不显示）">' + esc(caption) + '</textarea>' +
+      '<textarea class="story-caption-input" onchange="_storyData[' + si + '].caption=this.value" rows="2" placeholder="简介（留空不显示）">' + esc(caption) + '</textarea>' +
       '</div>';
   });
-  html += '<button class="btn btn-sm" onclick="addStory()" style="margin-top:4px;">+ 新建故事</button>';
+  html += '<button class="btn btn-sm story-add-btn" onclick="addStory()">+ 新建故事</button>';
   el.innerHTML = html;
 }
 
@@ -339,26 +339,41 @@ function deleteStory(idx) {
 
 function pickStoryCover(si, img) {
   var container = img.closest('.story-cover-picker');
-  container.querySelectorAll('img').forEach(function(el) { el.style.border = '2px solid transparent'; });
-  img.style.border = '2px solid #0066ff';
+  container.querySelectorAll('.story-photo-pick').forEach(function(el) { el.classList.remove('is-cover'); });
+  img.closest('.story-photo-pick').classList.add('is-cover');
   _storyData[si].cover = img.dataset.fn;
 }
 
 function toggleStoryPhoto(si, fn, badge) {
   var photos = _storyData[si].photos || [];
   var idx = photos.indexOf(fn);
+  var item = badge.closest('.story-photo-pick');
   if (idx >= 0) {
     photos.splice(idx, 1);
-    badge.style.background = '#888';
     badge.textContent = '+';
-    badge.parentElement.querySelector('img').style.opacity = '0.35';
+    item.classList.remove('in-story');
+    if (_storyData[si].cover === fn) {
+      _storyData[si].cover = photos[0] || '';
+    }
   } else {
     photos.push(fn);
-    badge.style.background = '#0066ff';
     badge.textContent = '✓';
-    badge.parentElement.querySelector('img').style.opacity = '1';
+    item.classList.add('in-story');
+    if (!_storyData[si].cover) {
+      _storyData[si].cover = fn;
+    }
   }
   _storyData[si].photos = photos;
+  var picker = item.closest('.story-cover-picker');
+  if (picker) {
+    picker.querySelectorAll('.story-photo-pick').forEach(function(el) {
+      var img = el.querySelector('img');
+      el.classList.toggle('is-cover', img && img.dataset.fn === _storyData[si].cover);
+    });
+  }
+  var card = badge.closest('.story-edit-card');
+  var count = card && card.querySelector('.story-edit-count');
+  if (count) count.textContent = photos.length + ' photos';
 }
 
 async function saveStoryOverrides() {
