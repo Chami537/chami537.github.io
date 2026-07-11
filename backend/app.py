@@ -52,6 +52,11 @@ def admin_panel():
 
 
 # ── Static file serving (for index.html preview) ──
+@app.route('/assets/<path:filename>')
+def serve_assets(filename):
+    return send_from_directory(os.path.join(BASE_DIR, 'assets'), filename)
+
+
 @app.route('/data/<path:filename>')
 def serve_data(filename):
     return send_from_directory(DATA_DIR, filename)
@@ -82,8 +87,8 @@ def serve_tracks(filename):
     return send_from_directory(os.path.join(BASE_DIR, 'tracks'), filename)
 
 
-# Routes for root-level generated files (rss, sitemap, archive, map, CSS, JS)
-_ROOTS = ['theme.js', 'rss.xml', 'sitemap.xml', 'archive.html', 'map.html', 'index.css', 'index.js', 'admin.css', 'admin.js', 'admin-content.js', 'admin-essays.js', 'admin-photos.js']
+# Routes for root-level generated files.
+_ROOTS = ['rss.xml', 'sitemap.xml', 'archive.html', 'map.html']
 for _f in _ROOTS:
     _ep = f'serve_{_f.replace(".", "_")}'
     app.add_url_rule(f'/{_f}', _ep, lambda _f=_f: send_from_directory(BASE_DIR, _f))

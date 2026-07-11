@@ -68,6 +68,12 @@ def test_map_html_exists():
     if os.path.exists(p): assert '<' in open(p).read()
 
 
+def test_assets_route_serves_frontend_files(client):
+    r = client.get('/assets/js/index.js')
+    assert r.status_code == 200
+    assert b'buildEssayFilter' in r.data
+
+
 def test_git_revert(client):
     r = client.post('/api/git/revert', json={'confirm': True})
     assert r.status_code == 200

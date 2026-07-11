@@ -17,7 +17,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="index.css?v=1783393348">
+<link rel="stylesheet" href="assets/css/index.css?v=1783771627">
 <script>
   var _saved = localStorage.getItem('theme');
   if (_saved === 'dark' || (!_saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -75,7 +75,12 @@
 
   <section id="essays">
     <div class="section-tag yellow">ESSAYS</div>
-    <div id="essay-tag-filter" class="essay-filter" style="margin-bottom:16px;"></div>
+    <p class="section-note">学习记录、项目复盘，以及一些生活里的碎片。</p>
+    <div class="essay-filter-shell">
+      <div id="essay-tag-filter" class="essay-filter essay-filter-primary"></div>
+      <div id="essay-topic-filter" class="essay-filter essay-subfilter" style="display:none;"></div>
+      <div id="essay-type-filter" class="essay-filter essay-subfilter essay-type-filter" style="display:none;"></div>
+    </div>
     <div class="essays-list skeleton-loading" id="essays-list"></div>
   </section>
 
@@ -89,7 +94,7 @@
       </div>
     </div>
     <div id="photo-stories" class="photo-stories" style="display:none;"></div>
-    <div id="photo-tag-filter" class="essay-filter" style="margin-bottom:16px;display:none;"></div>
+    <div id="photo-tag-filter" class="photo-filter" style="display:none;"></div>
     <div class="photo-masonry skeleton-loading" id="photo-masonry"></div>
     <div id="photo-load-more" style="text-align:center;padding:16px 0;display:none;"></div>
     <div id="photo-map-container"></div>
@@ -145,8 +150,8 @@
   © <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
 </footer>
 
-<script src="theme.js"></script>
-<script src="index.js?v=1783393348"></script>
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/index.js?v=1783771627"></script>
 
 </body>
 </html>

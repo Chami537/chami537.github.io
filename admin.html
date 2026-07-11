@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' cdn.staticfile.net; script-src 'self' 'unsafe-inline' cdn.staticfile.net; font-src 'self' cdn.staticfile.net; img-src 'self' data: blob:; connect-src 'self'">
 <title>Chami — Site Admin</title>
-<link rel="stylesheet" href="admin.css?v=1783396967">
+<link rel="stylesheet" href="assets/css/admin.css?v=1783757978">
 <script>
   var _saved = localStorage.getItem('theme');
   if (_saved === 'dark' || (!_saved && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -110,8 +110,12 @@
         <button class="btn btn-primary" onclick="showEssayForm()">+ 新建文章</button>
       </div>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
-      <div id="essay-tag-tabs" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 12px; scrollbar-width: none; flex:1;"></div>
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:4px;">
+      <div class="essay-tag-area">
+        <div id="essay-tag-tabs" class="essay-tag-row"></div>
+        <div id="essay-subtag-tabs" class="essay-tag-row essay-subtag-row" style="display:none;"></div>
+        <div id="essay-type-tabs" class="essay-tag-row essay-subtag-row essay-type-row" style="display:none;"></div>
+      </div>
       <span id="pin-count" style="font-size:12px;color:var(--muted);white-space:nowrap;padding-bottom:12px;padding-left:16px;"></span>
     </div>
     <div style="border-bottom:1px solid var(--border);margin-bottom:20px;"></div>
@@ -122,7 +126,50 @@
       <div class="form-group"><label>标题</label><input id="essay-title"></div>
       <div class="form-group">
         <label>分类标签 <span style="font-weight:400;color:var(--muted);" id="essay-tag-display"></span></label>
-        <div id="tag-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;"></div>
+        <div class="taxonomy-grid">
+          <div>
+            <span class="field-hint">主类</span>
+            <select id="essay-category" onchange="handleEssayCategoryChange()">
+              <option value="随笔">随笔</option>
+              <option value="生活">生活</option>
+              <option value="摄影">摄影</option>
+              <option value="阅读">阅读</option>
+              <option value="感悟">感悟</option>
+              <option value="技术">技术</option>
+            </select>
+          </div>
+          <div class="tech-taxonomy">
+            <span class="field-hint">技术主题</span>
+            <input id="essay-tech-topic" list="essay-tech-topic-list" placeholder="Kotlin" oninput="syncEssayTagFromTaxonomy()">
+            <datalist id="essay-tech-topic-list">
+              <option value="Obsidian">
+              <option value="Kotlin">
+              <option value="Shell">
+              <option value="Git">
+              <option value="LeetCode">
+              <option value="Python">
+              <option value="Flask">
+              <option value="前端">
+              <option value="安全">
+            </datalist>
+          </div>
+          <div class="tech-taxonomy">
+            <span class="field-hint">内容类型</span>
+            <select id="essay-tech-type" onchange="syncEssayTagFromTaxonomy()">
+              <option value="">未选择</option>
+              <option value="学习日志">学习日志</option>
+              <option value="教程">教程</option>
+              <option value="踩坑">踩坑</option>
+              <option value="速查">速查</option>
+              <option value="题解">题解</option>
+              <option value="项目复盘">项目复盘</option>
+            </select>
+          </div>
+          <div>
+            <span class="field-hint">补充标签</span>
+            <input id="essay-extra-tags" placeholder="滑动窗口, 深圳" oninput="syncEssayTagFromTaxonomy()">
+          </div>
+        </div>
         <input type="hidden" id="essay-tag">
       </div>
       <div class="form-group"><label>日期</label><input id="essay-date" placeholder="自动"></div>
@@ -175,6 +222,7 @@
         <button class="btn" onclick="previewEssayContent()">预览</button>
         <input type="file" id="essay-img-input" accept="image/*" onchange="uploadEssayImage()" style="display:none;">
         <button class="btn" onclick="document.getElementById('essay-img-input').click()">📷 插图</button>
+        <button class="btn" onclick="insertTechEssayTemplate()">技术模板</button>
         <button class="btn" onclick="hideEssayContentEditor()">关闭</button>
       </div>
       <div id="essay-preview" class="preview-panel" style="display:none;"></div>
@@ -383,11 +431,11 @@
 </dialog>
 
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
-<script src="theme.js"></script>
-<script src="admin.js?v=1783396967"></script>
-<script src="admin-content.js?v=1783396967"></script>
-<script src="admin-essays.js?v=1783396967"></script>
-<script src="admin-photos.js?v=1783396967"></script>
+<script src="assets/js/theme.js"></script>
+<script src="assets/js/admin.js?v=1783757978"></script>
+<script src="assets/js/admin-content.js?v=1783757978"></script>
+<script src="assets/js/admin-essays.js?v=1783757978"></script>
+<script src="assets/js/admin-photos.js?v=1783757978"></script>
 <script>refreshGitStatus();loadWork();</script>
 
 <!-- Password Dialog -->

@@ -116,11 +116,20 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
     from backend.data import BASE_DIR
 
     # Create temp copies of all HTML, CSS, JS files
-    configs = [('index.html', 'index.css', ('index.js',)),
-               ('admin.html', 'admin.css', ('admin.js', 'admin-content.js', 'admin-essays.js', 'admin-photos.js'))]
+    configs = [
+        ('index.html', 'assets/css/index.css', ('assets/js/index.js',)),
+        ('admin.html', 'assets/css/admin.css', (
+            'assets/js/admin.js',
+            'assets/js/admin-content.js',
+            'assets/js/admin-essays.js',
+            'assets/js/admin-photos.js',
+        )),
+    ]
     for html_fn, css_fn, js_fns in configs:
+        (tmp_path / css_fn).parent.mkdir(parents=True, exist_ok=True)
         (tmp_path / css_fn).write_text('/* css */')
         for js_fn in js_fns:
+            (tmp_path / js_fn).parent.mkdir(parents=True, exist_ok=True)
             (tmp_path / js_fn).write_text('/* js */')
         js_tags = '\n'.join(f'<script src="{js_fn}?v=999"></script>' for js_fn in js_fns)
         (tmp_path / html_fn).write_text(f'<link href="{css_fn}?v=999" rel="stylesheet">\n{js_tags}')

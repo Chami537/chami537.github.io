@@ -65,8 +65,15 @@ def _cache_bust_assets():
     """Append ?v=<mtime> to CSS/JS links in index.html and admin.html.
     Uses regex to safely replace existing version strings — idempotent, no stacking.
     """
-    for html_fn, css_fn, js_fns in [('index.html', 'index.css', ('index.js',)),
-                                     ('admin.html', 'admin.css', ('admin.js', 'admin-content.js', 'admin-essays.js', 'admin-photos.js'))]:
+    for html_fn, css_fn, js_fns in [
+        ('index.html', 'assets/css/index.css', ('assets/js/index.js',)),
+        ('admin.html', 'assets/css/admin.css', (
+            'assets/js/admin.js',
+            'assets/js/admin-content.js',
+            'assets/js/admin-essays.js',
+            'assets/js/admin-photos.js',
+        )),
+    ]:
         html_path = os.path.join(BASE_DIR, html_fn)
         if not os.path.exists(html_path):
             continue
@@ -82,9 +89,11 @@ def _cache_bust_assets():
             continue
         with open(html_path, 'r', encoding='utf-8') as f:
             html = f.read()
-        html = re.sub(rf'href="{css_fn}(\?v=\d+)?"', f'href="{css_fn}?v={ts}"', html)
+        css_ref = re.escape(css_fn)
+        html = re.sub(rf'href="{css_ref}(\?v=\d+)?"', f'href="{css_fn}?v={ts}"', html)
         for js_fn in js_fns:
-            html = re.sub(rf'src="{js_fn}(\?v=\d+)?"', f'src="{js_fn}?v={ts}"', html)
+            js_ref = re.escape(js_fn)
+            html = re.sub(rf'src="{js_ref}(\?v=\d+)?"', f'src="{js_fn}?v={ts}"', html)
         with open(html_path, 'w', encoding='utf-8') as f:
             f.write(html)
 
