@@ -258,6 +258,35 @@ def test_sync_essay_html_without_password(tmp_path, monkeypatch):
     assert '_encryptedBody' not in html
 
 
+def test_sync_essay_html_csp_allows_giscus(tmp_path, monkeypatch):
+    """Giscus comments need both script and iframe permission in the essay CSP."""
+    md_dir = tmp_path / 'md'
+    essays_dir = tmp_path / 'essays'
+    md_dir.mkdir()
+    essays_dir.mkdir()
+    monkeypatch.setattr('backend.ssg.MD_DIR', str(md_dir))
+    monkeypatch.setattr('backend.ssg.ESSAYS_DIR', str(essays_dir))
+    monkeypatch.setattr('backend.ssg.IMAGES_DIR', str(tmp_path / 'images'))
+    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path / 'data'))
+    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
+
+    (tmp_path / 'data').mkdir()
+    essay = {'slug': 'test', 'title': 'Test', 'date': '2026-01-01',
+             'tag': '', 'epigraph': '', 'excerpt': '', 'readTime': 1}
+    with open(tmp_path / 'data' / 'essays.json', 'w') as f:
+        json.dump([essay], f)
+    with open(md_dir / 'test.md', 'w') as f:
+        f.write('Hello World')
+
+    _sync_essay_html(essay)
+
+    html = (essays_dir / 'test.html').read_text(encoding='utf-8')
+    csp = html.split('Content-Security-Policy" content="', 1)[1].split('"', 1)[0]
+    assert 'script-src' in csp
+    assert 'https://giscus.app' in csp
+    assert 'frame-src https://giscus.app' in csp
+
+
 def test_sync_essay_html_with_password(tmp_path, monkeypatch):
     """Password set → generated HTML has gate with encrypted body."""
     md_dir = tmp_path / 'md'
