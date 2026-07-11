@@ -378,6 +378,23 @@ html.dark .essay-body .hljs-comment { color: var(--code-comment); }
 .essay-end .prev-link:hover .prev-arr { transform: translateX(-4px); }
 .essay-end .next-link:hover .next-arr { transform: translateX(4px); }
 
+.comments-section {
+  margin-top: 80px;
+  padding-top: 40px;
+  border-top: 1px dashed var(--line);
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+.comments-section .giscus,
+.comments-section .giscus-frame {
+  display: block;
+  width: 100% !important;
+  max-width: 100% !important;
+  border: 0;
+}
+html.dark .comments-section { color-scheme: dark; }
+
 /* Password gate */
 .essay-gate {
   text-align: center; padding: 80px 20px;
@@ -580,26 +597,24 @@ html.dark .essay-body .hljs-comment { color: var(--code-comment); }
     </a>
   </div>
 
-  <div class="comments-section" id="giscus-container" style="margin-top:80px;padding-top:40px;border-top:1px dashed var(--line);"></div>
+  <div class="comments-section" id="giscus-container"></div>
   <script>
-    if (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1') {
-      var gs = document.createElement('script');
-      gs.src = 'https://giscus.app/client.js';
-      gs.setAttribute('data-repo', 'Chami537/chami537.github.io');
-      gs.setAttribute('data-repo-id', 'R_kgDOS6Xqvg');
-      gs.setAttribute('data-category', 'General');
-      gs.setAttribute('data-category-id', 'DIC_kwDOS6Xqvs4C_7Cz');
-      gs.setAttribute('data-mapping', 'pathname');
-      gs.setAttribute('data-strict', '0');
-      gs.setAttribute('data-reactions-enabled', '1');
-      gs.setAttribute('data-emit-metadata', '0');
-      gs.setAttribute('data-input-position', 'top');
-      gs.setAttribute('data-theme', 'https://chami537.github.io/data/giscus.css');
-      gs.setAttribute('data-lang', 'zh-CN');
-      gs.crossOrigin = 'anonymous';
-      gs.async = true;
-      document.getElementById('giscus-container').appendChild(gs);
-    }
+    var gs = document.createElement('script');
+    gs.src = 'https://giscus.app/client.js';
+    gs.setAttribute('data-repo', 'Chami537/chami537.github.io');
+    gs.setAttribute('data-repo-id', 'R_kgDOS6Xqvg');
+    gs.setAttribute('data-category', 'General');
+    gs.setAttribute('data-category-id', 'DIC_kwDOS6Xqvs4C_7Cz');
+    gs.setAttribute('data-mapping', 'pathname');
+    gs.setAttribute('data-strict', '0');
+    gs.setAttribute('data-reactions-enabled', '1');
+    gs.setAttribute('data-emit-metadata', '0');
+    gs.setAttribute('data-input-position', 'top');
+    gs.setAttribute('data-theme', 'https://chami537.github.io/data/giscus.css');
+    gs.setAttribute('data-lang', 'zh-CN');
+    gs.crossOrigin = 'anonymous';
+    gs.async = true;
+    document.getElementById('giscus-container').appendChild(gs);
   </script>
 
 </main>
