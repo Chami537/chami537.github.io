@@ -6,11 +6,11 @@ import uuid
 from datetime import datetime
 
 from flask import request, jsonify
-from markdown import markdown as md_to_html
 
 from backend.app import app
 from backend.data import load_json, atomic_write_json, DATA_DIR, get_essay_password, set_essay_password as store_password, has_essay_password
 from backend.crud import require_json
+from backend.markdown_utils import render_markdown
 from backend.ssg import (
     _calc_read_time, _parse_date, _parse_tags, _sync_essay_html, _generate_feeds,
     _encrypt_content, _decrypt_content,
@@ -314,6 +314,6 @@ def preview_essay_html(slug):
         md_content = request.json.get('md', '')
     else:
         md_content = request.args.get('md', '')
-    html_content = md_to_html(md_content, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}})
+    html_content = render_markdown(md_content)
     html_content += '\n<p class=\"essay-updated\">Last edited at ' + datetime.now().strftime('%Y-%m-%d %H:%M') + '</p>'
     return jsonify({"html": html_content})

@@ -391,6 +391,130 @@ dialog .dlg-footer button.btn-warn:hover { background: #fff0f0; }
 .preview-panel .arithmatex { font-size: 1.05em; }
 .preview-panel div.arithmatex { overflow-x: auto; padding: 0.5em 0; }
 .preview-panel .katex-mathml { display: none; }
+.preview-panel pre {
+  --code-text: #27272a;
+  --code-keyword: #a6485f;
+  --code-function: #175b82;
+  --code-string: #56743d;
+  --code-number: #555b9b;
+  --code-directive: #5f6673;
+  --code-preprocessor: #697386;
+  --code-comment: #9a9a92;
+  position: relative;
+  overflow-x: auto;
+  margin: 2em 0;
+  padding: 34px 24px 24px;
+  border: 1px solid rgba(224,220,213,0.9);
+  border-top: 2px solid rgba(255,184,0,0.9);
+  border-radius: 5px;
+  background: rgba(255,255,255,0.58);
+  box-shadow: 0 12px 32px rgba(17,17,17,0.035);
+  line-height: 1.68;
+}
+.preview-panel pre code {
+  display: block;
+  font-family: "JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  color: var(--code-text);
+  background: transparent;
+  padding: 0;
+  overflow: visible;
+}
+.preview-panel .code-language {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: #8b97a3;
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(224,220,213,0.85);
+  border-radius: 999px;
+  background: rgba(250,250,248,0.82);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .18s ease, border-color .18s ease, background .18s ease;
+}
+.preview-panel .code-language::after {
+  content: attr(data-action);
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translate(4px, -50%);
+  opacity: 0;
+  pointer-events: none;
+  color: #9aa1a9;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  transition: opacity .16s ease, transform .16s ease;
+}
+.preview-panel pre:hover .code-language::after,
+.preview-panel .code-language:focus-visible::after {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+.preview-panel .code-language:hover,
+.preview-panel .code-language:focus-visible {
+  color: #6f5b20;
+  border-color: rgba(255,184,0,0.46);
+  background: rgba(255,250,229,0.9);
+}
+.preview-panel .hljs-meta { color: var(--code-directive); }
+.preview-panel .hljs-keyword { color: var(--code-keyword); }
+.preview-panel .hljs-title,
+.preview-panel .hljs-built_in { color: var(--code-function); }
+.preview-panel .hljs-string { color: var(--code-string); }
+.preview-panel .hljs-number { color: var(--code-number); }
+.preview-panel .hljs-type,
+.preview-panel .hljs-property { color: var(--code-preprocessor); }
+.preview-panel .hljs-comment { color: var(--code-comment); }
+html.dark .preview-panel pre {
+  --code-text: #e4dfd8;
+  --code-keyword: #d68aa0;
+  --code-function: #9cc4dc;
+  --code-string: #abc98c;
+  --code-number: #b9add6;
+  --code-directive: #a1a8b1;
+  --code-preprocessor: #93a4b6;
+  --code-comment: #86867f;
+  border-color: #343230;
+  border-top-color: rgba(255,184,0,0.62);
+  background: rgba(255,255,255,0.035);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+}
+html.dark .preview-panel pre code { color: var(--code-text); }
+html.dark .preview-panel .code-language {
+  color: #8794a3;
+  border-color: #343230;
+  background: rgba(26,26,28,0.72);
+}
+html.dark .preview-panel .code-language::after {
+  color: #818b98;
+}
+html.dark .preview-panel .code-language:hover,
+html.dark .preview-panel .code-language:focus-visible {
+  color: #d8c895;
+  border-color: rgba(255,184,0,0.32);
+  background: rgba(255,184,0,0.08);
+}
+html.dark .preview-panel .hljs-meta { color: var(--code-directive); }
+html.dark .preview-panel .hljs-keyword { color: var(--code-keyword); }
+html.dark .preview-panel .hljs-title,
+html.dark .preview-panel .hljs-built_in { color: var(--code-function); }
+html.dark .preview-panel .hljs-string { color: var(--code-string); }
+html.dark .preview-panel .hljs-number { color: var(--code-number); }
+html.dark .preview-panel .hljs-type,
+html.dark .preview-panel .hljs-property { color: var(--code-preprocessor); }
+html.dark .preview-panel .hljs-comment { color: var(--code-comment); }
 
 .stack-chip {
   display: inline-flex; align-items: center; gap: 6px;

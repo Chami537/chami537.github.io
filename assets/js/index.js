@@ -253,10 +253,11 @@ function buildEssayFilter() {
   var techTopics = _orderedEssayTags(Array.from(techTopicSet), _essayTechTopics);
   var techTypes = _orderedEssayTags(Array.from(techTypeSet), _essayTechTypes);
   if (techTopics.length) {
-    var topicHtml = '<span class="ef-label">主题</span><button type="button" class="ef-chip' + (!_essayTopicFilter ? ' active' : '') + '" onclick="filterEssayTopic(\'\')">全部</button>';
+    var topicHtml = '<span class="ef-label">主题</span><span class="ef-options"><button type="button" class="ef-chip' + (!_essayTopicFilter ? ' active' : '') + '" onclick="filterEssayTopic(\'\')">全部</button>';
     techTopics.forEach(function(t) {
       topicHtml += '<button type="button" class="ef-chip' + (_essayTopicFilter === t ? ' active' : '') + '" data-tag="' + htmlEncode(t) + '" onclick="filterEssayTopic(this.getAttribute(\'data-tag\'))">' + htmlEncode(t) + '</button>';
     });
+    topicHtml += '</span>';
     topicEl.innerHTML = topicHtml;
     topicEl.style.display = 'flex';
   } else {
@@ -264,10 +265,11 @@ function buildEssayFilter() {
     topicEl.innerHTML = '';
   }
   if (techTypes.length) {
-    var typeHtml = '<span class="ef-label">类型</span><button type="button" class="ef-chip' + (!_essayTypeFilter ? ' active' : '') + '" onclick="filterEssayType(\'\')">全部</button>';
+    var typeHtml = '<span class="ef-label">类型</span><span class="ef-options"><button type="button" class="ef-chip' + (!_essayTypeFilter ? ' active' : '') + '" onclick="filterEssayType(\'\')">全部</button>';
     techTypes.forEach(function(t) {
       typeHtml += '<button type="button" class="ef-chip' + (_essayTypeFilter === t ? ' active' : '') + '" data-tag="' + htmlEncode(t) + '" onclick="filterEssayType(this.getAttribute(\'data-tag\'))">' + htmlEncode(t) + '</button>';
     });
+    typeHtml += '</span>';
     typeEl.innerHTML = typeHtml;
     typeEl.style.display = 'flex';
   } else {

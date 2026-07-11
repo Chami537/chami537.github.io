@@ -333,6 +333,31 @@ def test_set_password(client, data_backup):
     client.delete(f'/api/essays/{slug}')
 
 
+def test_preview_markdown_supports_common_extensions(client):
+    md = "\n".join([
+        "~~deleted~~",
+        "",
+        "- [ ] todo",
+        "- [x] done",
+        "",
+        "$$",
+        "f(x)=x^2+x",
+        "$$",
+    ])
+
+    r = client.post('/api/essays/test/html', json={'md': md})
+
+    assert r.status_code == 200
+    html = r.json['html']
+    assert '<del>deleted</del>' in html
+    assert 'type="checkbox"' in html
+    assert 'checked' in html
+    assert 'class="arithmatex"' in html
+    assert r'\[' in html
+    assert 'f(x)=x^2+x' in html
+    assert r'\]' in html
+
+
 def test_password_visible_in_admin_api(client, data_backup):
     r = client.post('/api/essays', json={
         'slug': 'test-no-pwd-leak', 'title': 'No Leak Test',

@@ -977,6 +977,7 @@ async function previewEssayContent() {
   const md = document.getElementById('essay-content-md').value;    const data = await api('POST', '/api/essays/x/html', { md: md });
     panel.innerHTML = data.html;
     renderKatexIn(panel);
+    highlightCodeBlocks(panel);
     panel.style.display = 'block';
   } catch(e) { toast(e.message, true); }
 }

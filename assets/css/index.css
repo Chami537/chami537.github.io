@@ -528,7 +528,7 @@ html.dark .leaflet-popup { filter: none; }
 }
 
 .essay-filter-shell {
-  margin: 0 0 34px;
+  margin: 0 0 52px;
 }
 .essay-filter {
   display: flex;
@@ -541,25 +541,35 @@ html.dark .leaflet-popup { filter: none; }
   gap: 36px;
 }
 .essay-subfilter {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
   align-items: center;
-  margin-top: 16px;
-  gap: 8px;
+  column-gap: 0;
+  row-gap: 0;
+  margin-top: 10px;
   color: var(--muted);
 }
 .essay-filter-primary + .essay-subfilter {
-  padding-top: 12px;
+  padding-top: 8px;
 }
 .essay-type-filter {
   margin-top: 8px;
 }
 .essay-subfilter .ef-label {
-  min-width: 38px;
-  margin-right: 8px;
+  width: auto;
+  min-width: 0;
+  margin-right: 0;
   font-family: 'Inter', 'Noto Sans SC', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: .08em;
-  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  color: color-mix(in srgb, var(--muted) 74%, var(--bg));
+}
+.essay-subfilter .ef-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  min-width: 0;
 }
 .essay-filter .ef-chip {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
@@ -597,29 +607,31 @@ html.dark .leaflet-popup { filter: none; }
 }
 .essay-subfilter .ef-chip {
   min-height: auto;
-  padding: 3px 10px;
-  margin: 0 2px 0 0;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  font-size: 11px;
+  padding: 3px 0 4px;
+  margin: 0 24px 0 0;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 0;
+  font-size: 13px;
   font-weight: 600;
   color: var(--muted);
-  background: color-mix(in srgb, var(--bg) 86%, var(--line));
+  background: transparent;
+  transition: color .16s ease, border-color .16s ease;
 }
 .essay-subfilter .ef-chip:hover {
   color: var(--fg);
-  border-color: color-mix(in srgb, var(--c3) 45%, var(--line));
+  border-color: transparent;
 }
 .essay-subfilter .ef-chip.active {
   color: var(--fg);
-  border-color: color-mix(in srgb, var(--c3) 70%, var(--line));
-  background: color-mix(in srgb, var(--c3) 13%, var(--bg));
+  border-color: var(--c3);
+  background: transparent;
   box-shadow: none;
 }
 .essay-subfilter .ef-chip.active:hover { color: var(--fg); }
 .essay-type-filter .ef-chip {
-  font-weight: 500;
-  color: color-mix(in srgb, var(--muted) 82%, var(--fg));
+  font-weight: 600;
+  color: var(--muted);
 }
 .essay-type-filter .ef-chip.active {
   color: var(--fg);
@@ -870,4 +882,17 @@ html.dark .hero h1 mark { color: #1a1a1c; }
 
   /* Filter chips */
   .essay-filter .ef-chip { font-size: 10px; padding: 2px 10px; }
+  .essay-filter-shell { margin-bottom: 44px; }
+  .essay-subfilter { grid-template-columns: 58px minmax(0, 1fr); margin-top: 8px; }
+  .essay-subfilter .ef-label { width: auto; min-width: 0; font-size: 11px; font-weight: 500; }
+  .essay-subfilter .ef-chip {
+    padding: 2px 0 4px;
+    margin-right: 18px;
+    border: 0;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    background: transparent;
+    font-size: 12px;
+  }
+  .essay-subfilter .ef-chip.active { border-color: var(--c3); background: transparent; }
 }

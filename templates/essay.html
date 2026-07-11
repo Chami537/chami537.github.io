@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css">
 	<link rel="stylesheet" href="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.css">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github.min.css">
 <style>
 {% include 'includes/base.css' %}
 .progress { background: var(--c3); }
@@ -161,6 +162,131 @@ div.arithmatex {
   padding: 0.5em 0;
 }
 .katex-mathml { display: none; }
+
+.essay-body pre {
+  --code-text: #27272a;
+  --code-keyword: #a6485f;
+  --code-function: #175b82;
+  --code-string: #56743d;
+  --code-number: #555b9b;
+  --code-directive: #5f6673;
+  --code-preprocessor: #697386;
+  --code-comment: #9a9a92;
+  position: relative;
+  overflow-x: auto;
+  margin: 2.2em 0;
+  padding: 34px 24px 24px;
+  border: 1px solid rgba(224,220,213,0.9);
+  border-top: 2px solid rgba(255,184,0,0.9);
+  border-radius: 5px;
+  background: rgba(255,255,255,0.58);
+  box-shadow: 0 12px 32px rgba(17,17,17,0.035);
+  line-height: 1.68;
+}
+.essay-body pre code {
+  display: block;
+  font-family: "JetBrains Mono", "Cascadia Code", ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  font-size: 14px;
+  color: var(--code-text);
+  background: transparent;
+  padding: 0;
+  overflow: visible;
+}
+.essay-body .code-language {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: #8b97a3;
+  font-family: 'Inter', 'Noto Sans SC', sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .09em;
+  line-height: 1;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid rgba(224,220,213,0.85);
+  border-radius: 999px;
+  background: rgba(250,250,248,0.82);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color .18s ease, border-color .18s ease, background .18s ease;
+}
+.essay-body .code-language::after {
+  content: attr(data-action);
+  position: absolute;
+  right: 30px;
+  top: 50%;
+  transform: translate(4px, -50%);
+  opacity: 0;
+  pointer-events: none;
+  color: #9aa1a9;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  white-space: nowrap;
+  transition: opacity .16s ease, transform .16s ease;
+}
+.essay-body pre:hover .code-language::after,
+.essay-body .code-language:focus-visible::after {
+  opacity: 1;
+  transform: translate(0, -50%);
+}
+.essay-body .code-language:hover,
+.essay-body .code-language:focus-visible {
+  color: #6f5b20;
+  border-color: rgba(255,184,0,0.46);
+  background: rgba(255,250,229,0.9);
+}
+.essay-body .hljs-meta { color: var(--code-directive); }
+.essay-body .hljs-keyword { color: var(--code-keyword); }
+.essay-body .hljs-title,
+.essay-body .hljs-built_in { color: var(--code-function); }
+.essay-body .hljs-string { color: var(--code-string); }
+.essay-body .hljs-number { color: var(--code-number); }
+.essay-body .hljs-type,
+.essay-body .hljs-property { color: var(--code-preprocessor); }
+.essay-body .hljs-comment { color: var(--code-comment); }
+html.dark .essay-body pre {
+  --code-text: #e4dfd8;
+  --code-keyword: #d68aa0;
+  --code-function: #9cc4dc;
+  --code-string: #abc98c;
+  --code-number: #b9add6;
+  --code-directive: #a1a8b1;
+  --code-preprocessor: #93a4b6;
+  --code-comment: #86867f;
+  border-color: #343230;
+  border-top-color: rgba(255,184,0,0.62);
+  background: rgba(255,255,255,0.035);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.22);
+}
+html.dark .essay-body pre code { color: var(--code-text); }
+html.dark .essay-body .code-language {
+  color: #8794a3;
+  border-color: #343230;
+  background: rgba(26,26,28,0.72);
+}
+html.dark .essay-body .code-language::after {
+  color: #818b98;
+}
+html.dark .essay-body .code-language:hover,
+html.dark .essay-body .code-language:focus-visible {
+  color: #d8c895;
+  border-color: rgba(255,184,0,0.32);
+  background: rgba(255,184,0,0.08);
+}
+html.dark .essay-body .hljs-meta { color: var(--code-directive); }
+html.dark .essay-body .hljs-keyword { color: var(--code-keyword); }
+html.dark .essay-body .hljs-title,
+html.dark .essay-body .hljs-built_in { color: var(--code-function); }
+html.dark .essay-body .hljs-string { color: var(--code-string); }
+html.dark .essay-body .hljs-number { color: var(--code-number); }
+html.dark .essay-body .hljs-type,
+html.dark .essay-body .hljs-property { color: var(--code-preprocessor); }
+html.dark .essay-body .hljs-comment { color: var(--code-comment); }
 
 .essay-body::after {
   content: "✦";
@@ -400,12 +526,9 @@ div.arithmatex {
         var plainBuf = await crypto.subtle.decrypt({name: 'AES-CBC', iv: iv}, encKey, ct);
 
         var decrypted = new TextDecoder().decode(plainBuf);
-        // Escape raw HTML chars so <script> in essay text stays as text,
-        // not interpreted as HTML by marked or stripped by DOMPurify
-        decrypted = decrypted.replace(/</g, '&lt;');
         // Render markdown to HTML if the encrypted body is markdown (new format)
         var html = (typeof _encryptedIsMd !== 'undefined' && _encryptedIsMd)
-          ? DOMPurify.sanitize(marked.parse(decrypted))
+          ? DOMPurify.sanitize(marked.parse(markMathForKatex(escapeHtmlOutsideCode(decrypted))))
           : DOMPurify.sanitize(decrypted);
         // Append last-edited timestamp (not part of encrypted markdown source)
         if (typeof _lastEdited !== 'undefined') {
@@ -417,6 +540,7 @@ div.arithmatex {
         content.style.display = 'block';
         // Re-render KaTeX in decrypted content
         renderKatexIn(content);
+        highlightCodeBlocks(content);
         // Trigger scroll reveal on decrypted elements
         var observer = new IntersectionObserver(function(entries) {
           entries.forEach(function(e) {
@@ -667,6 +791,7 @@ window.addEventListener('message', function(e) {
 <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.5/dist/purify.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/common.min.js"></script>
 <script>
 function renderKatexIn(el) {
   (el.querySelectorAll ? el.querySelectorAll('.arithmatex') : []).forEach(function(sp) {
@@ -684,7 +809,106 @@ function renderKatexIn(el) {
     }
   });
 }
-document.addEventListener("DOMContentLoaded", function() { renderKatexIn(document); });
+function highlightCodeBlocks(el) {
+  (el.querySelectorAll ? el.querySelectorAll('pre code[class*="language-"]') : []).forEach(function(code) {
+    var langClass = Array.prototype.find.call(code.classList, function(cls) {
+      return cls.indexOf('language-') === 0;
+    });
+    var lang = '';
+    if (langClass && code.parentElement) {
+      lang = langClass.replace('language-', '');
+      code.parentElement.dataset.language = lang ? lang.charAt(0).toUpperCase() + lang.slice(1) : '';
+      attachCodeLanguageButton(code, code.parentElement.dataset.language);
+    }
+    if (window.hljs) hljs.highlightElement(code);
+    if (!code.querySelector('.hljs-keyword, .hljs-string, .hljs-meta, .hljs-built_in, .hljs-title')) {
+      fallbackHighlightCodeBlock(code, lang);
+    }
+  });
+}
+function attachCodeLanguageButton(code, label) {
+  var pre = code.parentElement;
+  if (!pre || pre.querySelector('.code-language')) return;
+  var btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'code-language';
+  btn.setAttribute('aria-label', 'Copy ' + label + ' code');
+  btn.dataset.action = 'COPY';
+  btn.textContent = label;
+  btn.addEventListener('click', function() {
+    var text = code.textContent || '';
+    var done = function() {
+      btn.dataset.action = 'COPIED';
+      window.setTimeout(function() { btn.dataset.action = 'COPY'; }, 1200);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function() {});
+    } else {
+      done();
+    }
+  });
+  pre.appendChild(btn);
+}
+function escapeCodeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function fallbackHighlightCodeBlock(code, lang) {
+  var text = code.textContent || '';
+  var escaped = '';
+  if (lang === 'c' || lang === 'cpp') {
+    escaped = highlightPlainCode(text, /^(#\s*include\b.*)$/gm,
+      /\b(int|void|return|char|float|double|if|else|for|while|struct|typedef|const|static)\b/g,
+      /\b(printf|scanf|main)\b/g);
+  } else if (lang === 'python' || lang === 'py') {
+    escaped = highlightPlainCode(text, null,
+      /\b(def|return|if|elif|else|for|while|import|from|class|in|with|as|try|except|pass|None|True|False)\b/g,
+      /\b(print|len|range|str|int|float|list|dict|set)\b/g);
+  } else {
+    escaped = escapeCodeHtml(text);
+  }
+  code.innerHTML = escaped;
+  code.classList.add('hljs');
+}
+function highlightPlainCode(text, metaRe, keywordRe, builtinRe) {
+  return text.split('\n').map(function(line) {
+    if (metaRe) {
+      metaRe.lastIndex = 0;
+      if (metaRe.test(line)) {
+        return escapeCodeHtml(line).replace(/^(#\s*include\b)(.*)$/g, '<span class="hljs-meta">$1</span><span class="hljs-property">$2</span>');
+      }
+    }
+    return line.split(/("[^"\n]*"|'[^'\n]*')/g).map(function(part) {
+      if (/^("[^"\n]*"|'[^'\n]*')$/.test(part)) {
+        return '<span class="hljs-string">' + escapeCodeHtml(part) + '</span>';
+      }
+      return escapeCodeHtml(part)
+        .replace(keywordRe, '<span class="hljs-keyword">$1</span>')
+        .replace(builtinRe, '<span class="hljs-built_in">$1</span>')
+        .replace(/\b(\d+)\b/g, '<span class="hljs-number">$1</span>');
+    }).join('');
+  }).join('\n');
+}
+function escapeHtmlOutsideCode(md) {
+  return md.split(/(```[\s\S]*?```)/g).map(function(part) {
+    if (part.indexOf('```') === 0 && part.lastIndexOf('```') === part.length - 3) return part;
+    return part.split(/(`+[^`\n]+?`+)/g).map(function(inline) {
+      return inline.indexOf('`') === 0 && inline.lastIndexOf('`') === inline.length - 1
+        ? inline
+        : inline.replace(/</g, '&lt;');
+    }).join('');
+  }).join('');
+}
+function markMathForKatex(md) {
+  return md.replace(/\$\$([\s\S]+?)\$\$/g, function(_, math) {
+    return '<div class="arithmatex">\\[' + math.trim() + '\\]</div>';
+  }).replace(/(^|[^$])\$([^$\n]+?)\$/g, function(_, prefix, math) {
+    return prefix + '<span class="arithmatex">\\(' + math.trim() + '\\)</span>';
+  });
+}
+document.addEventListener("DOMContentLoaded", function() {
+  renderKatexIn(document);
+  highlightCodeBlocks(document);
+});
 </script>
 
 </body>

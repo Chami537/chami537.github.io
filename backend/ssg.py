@@ -7,9 +7,9 @@ import json
 import re
 import urllib.request
 from datetime import datetime
-from markdown import markdown as md_to_html
 from markupsafe import Markup
 from PIL import Image, ExifTags
+from backend.markdown_utils import render_markdown
 
 # ── Encryption helpers (cryptography Fernet: AES-128-CBC + HMAC-SHA256) ──
 
@@ -499,8 +499,7 @@ def _sync_essay_html(essay, raw_md_memory=None, essays=None):
         else:
             password_protected = False
             encrypted_body = ''
-            raw_md = raw_md.replace('<', '&lt;')
-            rendered_html = md_to_html(raw_md, extensions=['extra', 'fenced_code', 'sane_lists', 'pymdownx.arithmatex'], extension_configs={'pymdownx.arithmatex': {'generic': True}})
+            rendered_html = render_markdown(raw_md)
             body_html = f"{rendered_html}\n<p class=\"essay-updated\">Last edited at {last_edited}</p>"
             og_image = _extract_first_image(raw_md)
     else:

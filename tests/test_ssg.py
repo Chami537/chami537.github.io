@@ -222,7 +222,20 @@ def test_sync_essay_html_without_password(tmp_path, monkeypatch):
 
     # Save markdown
     with open(md_dir / 'test.md', 'w') as f:
-        f.write('Hello World')
+        f.write("\n".join([
+            'Hello World',
+            '',
+            '~~deleted~~',
+            '',
+            '- [ ] todo',
+            '- [x] done',
+            '',
+            '```c',
+            '#include <stdio.h>',
+            '',
+            'int main(void) { return 0; }',
+            '```',
+        ]))
 
     _sync_essay_html(essay)
 
@@ -230,6 +243,18 @@ def test_sync_essay_html_without_password(tmp_path, monkeypatch):
     assert 'id="essay-gate"' not in html
     assert 'essay-body' in html
     assert 'Hello World' in html
+    assert '<del>deleted</del>' in html
+    assert 'type="checkbox"' in html
+    assert 'checked' in html
+    assert 'class="language-c"' in html
+    assert '#include &lt;stdio.h&gt;' in html
+    assert '#include &amp;lt;stdio.h&amp;gt;' not in html
+    assert 'highlight.js' in html
+    assert 'common.min.js' in html
+    assert 'highlightCodeBlocks' in html
+    assert 'fallbackHighlightCodeBlock' in html
+    assert 'code-language' in html
+    assert 'COPY' in html
     assert '_encryptedBody' not in html
 
 
