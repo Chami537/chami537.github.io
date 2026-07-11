@@ -416,7 +416,7 @@ document.getElementById('commit-form').addEventListener('submit', async (e) => {
 
 async function confirmRevert() {  const confirmed = await confirmDialog('确定撤销所有未提交的改动？此操作不可恢复。');
   if (!confirmed) return;
-  await api('POST', '/api/git/revert');
+  await api('POST', '/api/git/revert', { confirm: true });
   toast('已撤销');
   refreshGitStatus();
   loadWork(); loadEssays(); loadPhotos(); loadFriends(); loadContact(); loadMusic();

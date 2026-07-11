@@ -1,11 +1,11 @@
 import os
 
-from PIL import Image
 from flask import request, jsonify
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, BASE_DIR, get_image_ext
+from backend.data import load_json, atomic_write_json, BASE_DIR
 from backend.crud import require_json
+from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
 
 @app.route('/api/about', methods=['GET'])
@@ -14,20 +14,11 @@ def get_about():
 
 @app.route('/api/about/upload-avatar', methods=['POST'])
 def upload_avatar():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file"}), 400
-    file = request.files['file']
-    if not file.filename:
-        return jsonify({"error": "No filename"}), 400
-    ext = get_image_ext(file.filename)
-    if not ext:
-        return jsonify({"error": "不支持的文件类型"}), 400
     try:
-        img = Image.open(file.stream)
-        img.verify()
-        file.stream.seek(0)
-    except Exception:
-        return jsonify({"error": "Invalid or corrupted image file"}), 400
+        file = request.files.get('file')
+        ext, _img = validate_image_upload(file)
+    except UploadValidationError as exc:
+        return upload_error_response(exc)
     # Clean up old avatar files with different extensions
     for old_ext in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
         if old_ext != ext:

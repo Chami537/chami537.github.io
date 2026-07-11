@@ -6,6 +6,7 @@ from flask import request, jsonify
 from backend.app import app
 from backend.data import load_json, BASE_DIR
 from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id, require_json
+from backend.upload_utils import UploadValidationError, upload_error_response, validate_music_upload
 
 
 @app.route('/api/music', methods=['GET'])
@@ -27,12 +28,12 @@ def update_music(id):
 
 @app.route('/api/music/upload', methods=['POST'])
 def upload_music():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file"}), 400
-    file = request.files['file']
-    if not file.filename or not file.filename.lower().endswith('.mp3'):
-        return jsonify({"error": "Only .mp3 files"}), 400
-    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else 'mp3'
+    try:
+        file = request.files.get('file')
+        ext = validate_music_upload(file)
+    except UploadValidationError as exc:
+        return upload_error_response(exc)
+
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
     music_dir = os.path.join(BASE_DIR, 'music')
     os.makedirs(music_dir, exist_ok=True)

@@ -2,12 +2,12 @@ import json
 import os
 import uuid
 
-from PIL import Image
 from flask import request, jsonify
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR, get_image_ext
+from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
 from backend.ssg import _extract_exif, _set_gps, IMAGES_DIR
+from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
 @app.route('/api/photos', methods=['GET'])
 def list_photos():
@@ -30,23 +30,13 @@ def reorder_photos():
 
 @app.route('/api/photos/upload', methods=['POST'])
 def upload_photo():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file"}), 400
-    file = request.files['file']
-    if not file.filename:
-        return jsonify({"error": "No filename"}), 400
-
-    ext = get_image_ext(file.filename)
-    if not ext:
-        return jsonify({"error": "不支持的文件类型"}), 400
-    filename = f"{uuid.uuid4().hex[:8]}.{ext}"
     try:
-        img = Image.open(file.stream)
-        img.verify()
-        file.stream.seek(0)
-        img = Image.open(file.stream)
-    except Exception:
-        return jsonify({"error": "Invalid or corrupted image file"}), 400
+        file = request.files.get('file')
+        ext, img = validate_image_upload(file)
+    except UploadValidationError as exc:
+        return upload_error_response(exc)
+
+    filename = f"{uuid.uuid4().hex[:8]}.{ext}"
 
     # Extract EXIF (shared helper in ssg.py)
     exif_data = _extract_exif(img)

@@ -11,3 +11,4 @@ _stars_etag.json
 .git-rewrite/
 /data/essay_passwords.json
 .env
+.tokensave

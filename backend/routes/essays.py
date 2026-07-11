@@ -9,13 +9,14 @@ from flask import request, jsonify
 from markdown import markdown as md_to_html
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, DATA_DIR, get_essay_password, set_essay_password as store_password, has_essay_password, get_image_ext
+from backend.data import load_json, atomic_write_json, DATA_DIR, get_essay_password, set_essay_password as store_password, has_essay_password
 from backend.crud import require_json
 from backend.ssg import (
     _calc_read_time, _parse_date, _parse_tags, _sync_essay_html, _generate_feeds,
     _encrypt_content, _decrypt_content,
     ESSAYS_DIR, MD_DIR, IMAGES_DIR,
 )
+from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
 
 @app.route('/api/tags/order', methods=['GET'])
@@ -279,14 +280,12 @@ def update_essay_content(slug):
 
 @app.route('/api/essays/upload-image', methods=['POST'])
 def upload_essay_image():
-    if 'file' not in request.files:
-        return jsonify({"error": "No file"}), 400
-    file = request.files['file']
-    if not file.filename:
-        return jsonify({"error": "No filename"}), 400
-    ext = get_image_ext(file.filename)
-    if not ext:
-        return jsonify({"error": "不支持的文件类型"}), 400
+    try:
+        file = request.files.get('file')
+        ext, _img = validate_image_upload(file)
+    except UploadValidationError as exc:
+        return upload_error_response(exc)
+
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
     slug = request.form.get('slug', '') or request.args.get('slug', '')
     if slug:

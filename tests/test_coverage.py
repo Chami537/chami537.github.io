@@ -1,5 +1,8 @@
 """Additional test coverage."""
+import io
 import os
+from types import SimpleNamespace
+
 from backend.data import DATA_DIR
 
 
@@ -66,7 +69,7 @@ def test_map_html_exists():
 
 
 def test_git_revert(client):
-    r = client.post('/api/git/revert')
+    r = client.post('/api/git/revert', json={'confirm': True})
     assert r.status_code == 200
 
 
@@ -99,3 +102,111 @@ def test_photo_upload_no_file(client):
 def test_essay_image_upload_no_file(client):
     r = client.post('/api/essays/upload-image')
     assert r.status_code == 400
+
+
+def test_essay_image_upload_rejects_fake_image(client, monkeypatch):
+    """Essay image uploads must validate file contents, not just the extension."""
+    from backend.data import IMAGES_DIR
+    import backend.routes.essays as essays_route
+
+    monkeypatch.setattr(essays_route.uuid, 'uuid4', lambda: SimpleNamespace(hex='badimagebadimage'))
+    path = os.path.join(IMAGES_DIR, 'essays', 'badimage.jpg')
+    try:
+        r = client.post(
+            '/api/essays/upload-image',
+            data={'file': (io.BytesIO(b'not really a jpeg'), 'bad.jpg')},
+            content_type='multipart/form-data',
+        )
+        assert r.status_code == 400
+        assert 'Invalid' in r.json.get('error', '')
+        assert not os.path.exists(path)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_music_upload_rejects_fake_mp3(client, monkeypatch):
+    """MP3 uploads must do a minimal content check, not just trust .mp3."""
+    import backend.routes.music as music_route
+
+    monkeypatch.setattr(music_route.uuid, 'uuid4', lambda: SimpleNamespace(hex='badmusicbadmusic'))
+    path = os.path.join(DATA_DIR, '..', 'music', 'badmusic.mp3')
+    try:
+        r = client.post(
+            '/api/music/upload',
+            data={'file': (io.BytesIO(b'not an mp3'), 'bad.mp3')},
+            content_type='multipart/form-data',
+        )
+        assert r.status_code == 400
+        assert 'Invalid' in r.json.get('error', '')
+        assert not os.path.exists(path)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_music_upload_rejects_large_file(client, monkeypatch):
+    import backend.routes.music as music_route
+
+    monkeypatch.setattr(music_route.uuid, 'uuid4', lambda: SimpleNamespace(hex='bigmusicbigmusic'))
+    path = os.path.join(DATA_DIR, '..', 'music', 'bigmusic.mp3')
+    try:
+        r = client.post(
+            '/api/music/upload',
+            data={'file': (io.BytesIO(b'ID3' + (b'0' * (26 * 1024 * 1024))), 'big.mp3')},
+            content_type='multipart/form-data',
+        )
+        assert r.status_code == 413
+        assert not os.path.exists(path)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_music_upload_accepts_basic_mp3(client, monkeypatch):
+    import backend.routes.music as music_route
+
+    monkeypatch.setattr(music_route.uuid, 'uuid4', lambda: SimpleNamespace(hex='okmusicokmusic'))
+    path = os.path.join(DATA_DIR, '..', 'music', 'okmusico.mp3')
+    try:
+        r = client.post(
+            '/api/music/upload',
+            data={'file': (io.BytesIO(b'ID3' + (b'\0' * 32)), 'ok.mp3')},
+            content_type='multipart/form-data',
+        )
+        assert r.status_code == 201
+        assert r.json['filename'] == 'okmusico.mp3'
+        assert os.path.exists(path)
+    finally:
+        if os.path.exists(path):
+            os.remove(path)
+
+
+def test_git_revert_requires_confirmation(client):
+    r = client.post('/api/git/revert', json={})
+    assert r.status_code == 400
+    assert 'confirm' in r.json.get('error', '')
+
+
+def test_git_revert_checks_stash_failure(monkeypatch):
+    from backend.app import app
+    import backend.routes.git_api as git_api
+
+    calls = []
+
+    def fake_run(args):
+        calls.append(args)
+        return SimpleNamespace(returncode=1, stderr='stash failed', stdout='')
+
+    monkeypatch.setattr(git_api, '_run_git', fake_run)
+    old_testing = app.config.get('TESTING')
+    app.config['TESTING'] = False
+    try:
+        with app.test_request_context('/api/git/revert', method='POST', json={'confirm': True}):
+            response, status = git_api.git_revert()
+    finally:
+        app.config['TESTING'] = old_testing
+
+    assert status == 500
+    assert 'git stash failed' in response.get_json()['error']
+    assert calls == [['stash', 'push', '--include-untracked', '-m', 'auto-backup-before-revert']]

@@ -11,6 +11,17 @@ def _run_git(args):
     return subprocess.run(['git'] + args, cwd=BASE_DIR, capture_output=True, text=True, encoding='utf-8')
 
 
+def _git_error(action, result):
+    return jsonify({"error": f"git {action} failed: {result.stderr.strip()}"}), 500
+
+
+def _require_confirmed():
+    data = request.get_json(silent=True) or {}
+    if data.get('confirm') is True:
+        return None
+    return jsonify({"error": "confirm=true required"}), 400
+
+
 @app.route('/api/git/status', methods=['GET'])
 def git_status():
     r = _run_git(['status', '--short'])
@@ -31,7 +42,7 @@ def git_commit():
         return jsonify({"error": "Commit message required"}), 400
     add_r = _run_git(['add', '-A'])
     if add_r.returncode != 0:
-        return jsonify({"error": "git add failed: " + add_r.stderr.strip()}), 500
+        return _git_error('add', add_r)
     r = _run_git(['commit', '-m', msg])
     if r.returncode != 0:
         return jsonify({"error": r.stderr.strip()}), 500
@@ -39,16 +50,21 @@ def git_commit():
 
 @app.route('/api/git/revert', methods=['POST'])
 def git_revert():
+    confirm_error = _require_confirmed()
+    if confirm_error:
+        return confirm_error
     # In test mode, don't actually run destructive git operations
     if app.config.get('TESTING'):
         return jsonify({"status": "reverted"})
-    _run_git(['stash', 'push', '--include-untracked', '-m', 'auto-backup-before-revert'])
+    stash_r = _run_git(['stash', 'push', '--include-untracked', '-m', 'auto-backup-before-revert'])
+    if stash_r.returncode != 0:
+        return _git_error('stash', stash_r)
     r = _run_git(['checkout', '.'])
     if r.returncode != 0:
-        return jsonify({"error": "git checkout failed: " + r.stderr.strip()}), 500
+        return _git_error('checkout', r)
     clean_r = _run_git(['clean', '-fd'])
     if clean_r.returncode != 0:
-        return jsonify({"error": "git clean failed: " + clean_r.stderr.strip()}), 500
+        return _git_error('clean', clean_r)
     return jsonify({"status": "reverted"})
 
 @app.route('/api/git/diff', methods=['GET'])
@@ -71,7 +87,7 @@ def git_push():
         return jsonify({"status": "success", "output": "test mode"})
     fetch_r = _run_git(['fetch'])
     if fetch_r.returncode != 0:
-        return jsonify({"error": "git fetch failed: " + fetch_r.stderr.strip()}), 500
+        return _git_error('fetch', fetch_r)
     status = _run_git(['status', '-sb']).stdout
     if 'behind' in status:
         return jsonify({"error": "检测到远程仓库有更新，请先通过终端执行 git pull 解决潜在冲突。"}), 409
