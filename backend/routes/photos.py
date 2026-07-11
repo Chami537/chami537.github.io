@@ -1,11 +1,12 @@
-import json
 import os
+import re
 import uuid
 
 from flask import request, jsonify
+from PIL import Image
 
 from backend.app import app
-from backend.data import load_json, atomic_write_json, BASE_DIR, DATA_DIR
+from backend.data import load_json, atomic_write_json, BASE_DIR
 from backend.ssg import _extract_exif, _set_gps, IMAGES_DIR
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
@@ -146,15 +147,73 @@ def update_photo_gps():
     return jsonify({"status": "ok", "lat": lat, "lng": lng})
 
 
+_STORY_ID_RE = re.compile(r'^[A-Za-z0-9_-]{1,80}$')
+
+
+def _clean_story_text(value, limit=240):
+    return str(value or '').strip()[:limit]
+
+
+def _normalize_photo_stories(data):
+    """Validate and normalize manually curated photo stories."""
+    photo_index = {p.get('filename'): p for p in load_json('photos.json') if p.get('filename')}
+    valid_filenames = set(photo_index)
+    seen_ids = set()
+    normalized = []
+
+    for i, raw in enumerate(data):
+        if not isinstance(raw, dict):
+            return None, f"Story #{i + 1} must be an object"
+
+        story_id = _clean_story_text(raw.get('id'), 80)
+        if not story_id or not _STORY_ID_RE.match(story_id):
+            return None, f"Story #{i + 1} has an invalid id"
+        if story_id in seen_ids:
+            return None, f"Duplicate story id: {story_id}"
+        seen_ids.add(story_id)
+
+        photos = []
+        for filename in raw.get('photos') or []:
+            if not isinstance(filename, str):
+                return None, f"Story {story_id} has a non-string photo filename"
+            safe_name = os.path.basename(filename)
+            if safe_name != filename or safe_name not in valid_filenames:
+                return None, f"Story {story_id} references unknown photo: {filename}"
+            if safe_name not in photos:
+                photos.append(safe_name)
+        if not photos:
+            return None, f"Story {story_id} must contain at least one photo"
+
+        raw_cover = _clean_story_text(raw.get('cover'), 160)
+        cover = os.path.basename(raw_cover) if raw_cover else photos[0]
+        if raw_cover and cover != raw_cover:
+            return None, f"Story {story_id} has an invalid cover filename"
+        if cover not in photos:
+            return None, f"Story {story_id} cover must be one of its photos"
+
+        normalized.append({
+            'id': story_id,
+            'name': _clean_story_text(raw.get('name'), 80) or story_id,
+            'date': _clean_story_text(raw.get('date'), 40),
+            'caption': _clean_story_text(raw.get('caption'), 180),
+            'cover': cover,
+            'photos': photos,
+            'photo_count': len(photos),
+        })
+    return normalized, None
+
+
 # ── Photo stories (manually curated) ──
 
 @app.route('/api/photo-stories', methods=['GET'])
 def get_photo_stories():
-    stories_path = os.path.join(DATA_DIR, 'photo_stories.json')
-    if os.path.exists(stories_path):
-        with open(stories_path, 'r', encoding='utf-8') as f:
-            return jsonify(json.load(f))
-    return jsonify([])
+    data = load_json('photo_stories.json')
+    if not isinstance(data, list):
+        return jsonify([])
+    stories, error = _normalize_photo_stories(data)
+    if error:
+        return jsonify(data)
+    return jsonify(stories)
 
 
 @app.route('/api/photo-stories', methods=['PUT'])
@@ -162,5 +221,8 @@ def save_photo_stories():
     data = request.get_json(silent=True)
     if not isinstance(data, list):
         return jsonify({"error": "Expected a list of stories"}), 400
-    atomic_write_json('photo_stories.json', data)
-    return jsonify({"status": "saved", "count": len(data)})
+    stories, error = _normalize_photo_stories(data)
+    if error:
+        return jsonify({"error": error}), 400
+    atomic_write_json('photo_stories.json', stories)
+    return jsonify({"status": "saved", "count": len(stories), "stories": stories})

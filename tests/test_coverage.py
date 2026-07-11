@@ -4,6 +4,7 @@ import os
 from types import SimpleNamespace
 
 from backend.data import DATA_DIR
+from backend.data import load_json
 
 
 def test_photo_stories_get(client):
@@ -13,16 +14,42 @@ def test_photo_stories_get(client):
 
 
 def test_photo_stories_put(client, data_backup):
-    stories = [{'id': 'x', 'name': 'T', 'date': '2026-01', 'cover': 'p.jpg', 'caption': 'x', 'photos': ['p.jpg']}]
+    filename = load_json('photos.json')[0]['filename']
+    stories = [{'id': 'x', 'name': 'T', 'date': '2026-01', 'cover': filename, 'caption': 'x', 'photos': [filename, filename]}]
     r = client.put('/api/photo-stories', json=stories)
     assert r.status_code == 200
     r2 = client.get('/api/photo-stories')
     assert len(r2.json) == 1
+    assert r2.json[0]['photos'] == [filename]
+    assert r2.json[0]['photo_count'] == 1
 
 
 def test_photo_stories_put_rejects_non_list(client):
     r = client.put('/api/photo-stories', json={'x': 1})
     assert r.status_code == 400
+
+
+def test_photo_stories_put_rejects_unknown_photo(client, data_backup):
+    stories = [{'id': 'x', 'name': 'T', 'photos': ['missing.jpg']}]
+    r = client.put('/api/photo-stories', json=stories)
+    assert r.status_code == 400
+    assert 'unknown photo' in r.json['error']
+
+
+def test_photo_stories_put_defaults_cover(client, data_backup):
+    filename = load_json('photos.json')[0]['filename']
+    stories = [{'id': 'x', 'name': 'T', 'photos': [filename]}]
+    r = client.put('/api/photo-stories', json=stories)
+    assert r.status_code == 200
+    assert r.json['stories'][0]['cover'] == filename
+
+
+def test_photo_stories_put_rejects_path_cover(client, data_backup):
+    filename = load_json('photos.json')[0]['filename']
+    stories = [{'id': 'x', 'name': 'T', 'cover': '../' + filename, 'photos': [filename]}]
+    r = client.put('/api/photo-stories', json=stories)
+    assert r.status_code == 400
+    assert 'invalid cover' in r.json['error']
 
 
 def test_essay_preview_html(client):

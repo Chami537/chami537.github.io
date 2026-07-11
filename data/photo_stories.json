@@ -1,32 +1,35 @@
 [
   {
-    "caption": "",
+    "caption": "山城街面、坡道和潮湿的夏天。",
     "cover": "0bd452bc.jpg",
     "date": "Jul 2025",
     "id": "chongqing_jul2025",
     "name": "重庆 · 解放碑",
+    "photo_count": 2,
     "photos": [
       "0bd452bc.jpg",
       "11f6710f.jpg"
     ]
   },
   {
-    "caption": "",
+    "caption": "夜色里一点冷光，梧桐影子压低。",
     "cover": "3a8a4acc.jpg",
     "date": "May 2026",
     "id": "shanghai_may2026",
     "name": "上海 · 梧桐区",
+    "photo_count": 2,
     "photos": [
       "3a8a4acc.jpg",
       "736e3c65.jpg"
     ]
   },
   {
-    "caption": "",
+    "caption": "河边夜饮，玻璃杯里留住一点深圳。",
     "cover": "68b93d07a342daef4f8483cdb249c4f7.jpg",
     "date": "May 2026",
     "id": "shenzhen_may2026",
     "name": "深圳 · 大沙河",
+    "photo_count": 2,
     "photos": [
       "15a70814318ed74d5ec2448532f7fab5.jpg",
       "68b93d07a342daef4f8483cdb249c4f7.jpg"

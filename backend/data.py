@@ -2,6 +2,7 @@
 
 import os
 import json
+import time
 
 from dotenv import load_dotenv
 
@@ -104,8 +105,18 @@ def atomic_write_json(filename, data):
     try:
         with open(tmp_filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
-        os.replace(tmp_filepath, filepath)
+        for attempt in range(5):
+            try:
+                os.replace(tmp_filepath, filepath)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.05 * (attempt + 1))
     except Exception:
         if os.path.exists(tmp_filepath):
-            os.remove(tmp_filepath)
+            try:
+                os.remove(tmp_filepath)
+            except OSError:
+                pass
         raise

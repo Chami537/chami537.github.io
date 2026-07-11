@@ -200,6 +200,13 @@ function _orderedEssayTags(tags, preferred) {
   return known.concat(rest.sort(function(a, b) { return a.localeCompare(b, 'zh-CN'); }));
 }
 
+function _restartContentMotion(el) {
+  if (!el || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  el.classList.remove('content-swap');
+  void el.offsetWidth;
+  el.classList.add('content-swap');
+}
+
 function buildEssayFilter() {
   var tags = new Set(_allTags);
   var techTopicSet = new Set();
@@ -327,8 +334,10 @@ function renderEssayList() {
   if (hidden > 0) {
     html += '<a class="essay-row" href="archive.html" style="justify-content:center;color:var(--muted);font-size:13px;text-decoration:none;">查看全部（' + hidden + ' 篇）→</a>';
   }
-  document.getElementById('essays-list').innerHTML = html;
-  document.getElementById('essays-list').classList.remove('skeleton-loading');
+  var listEl = document.getElementById('essays-list');
+  listEl.innerHTML = html;
+  listEl.classList.remove('skeleton-loading');
+  _restartContentMotion(listEl);
 }
 
 function _essayTagDisplay(e) {
@@ -343,6 +352,9 @@ function _essayTagDisplay(e) {
 }
 
 function renderPhotos(data) {
+  if (!data || !data.length) {
+    return '<div class="photo-empty">这一组暂时没有匹配的照片。</div>';
+  }
   return data.map(function(p) {
     var fn = encodeURIComponent(p.filename);
     var srcset = 'images/sm/' + fn + ' 400w, images/md/' + fn + ' 800w, images/lg/' + fn + ' 1920w';
@@ -380,41 +392,46 @@ function renderPhotoStories(data) {
   var html = '';
   _photoStories.forEach(function(story, i) {
     var loc = story.gps ? _gpsStr(story.gps.lat, story.gps.lng, 2) : '';
-    html += '<div class="story-card' + (_currentStory === i ? ' active' : '') + '" onclick="filterByStory(' + i + ')">' +
-      '<img src="images/sm/' + story.cover + '" alt="" loading="lazy">' +
+    var active = _currentStory === i;
+    var photoCount = story.photos ? story.photos.length : 0;
+    var countText = photoCount + ' photo' + (photoCount === 1 ? '' : 's');
+    var cover = story.cover ? encodeURIComponent(story.cover) : '';
+    html += '<button type="button" class="story-card' + (active ? ' active' : '') + '" aria-pressed="' + (active ? 'true' : 'false') + '" aria-label="' + htmlEncode(story.name || 'Photo story') + ', ' + countText + '" onclick="filterByStory(' + i + ')">' +
+      '<span class="story-cover">' + (cover ? '<img src="images/sm/' + cover + '" alt="" loading="lazy">' : '') + '<span class="story-count">' + countText + '</span></span>' +
       '<div class="story-info">' +
       '<span class="story-name">' + htmlEncode(story.name) + '</span>' +
       (story.caption ? '<span class="story-caption">' + htmlEncode(story.caption) + '</span>' : '') +
-      '<span class="story-meta">' + story.photos.length + ' photos' + (story.date ? ' · ' + story.date : '') + '</span>' +
+      '<span class="story-meta">' + (story.date ? story.date : 'Untitled story') + '</span>' +
       (loc ? '<span class="story-loc">' + loc + '</span>' : '') +
-      '</div></div>';
+      '</div></button>';
   });
   el.innerHTML = html;
 }
 
 function filterByStory(idx) {
-  // Toggle active story card
   var wasActive = _currentStory === idx;
   _currentStory = wasActive ? -1 : idx;
-  document.querySelectorAll('.story-card').forEach(function(c, i) { c.classList.toggle('active', i === _currentStory); });
-  if (wasActive || _currentStory < 0) return;
-  // Scroll to first photo in story and briefly highlight
-  var story = _photoStories[_currentStory];
-  if (!story || !story.photos.length) return;
-  var firstFn = story.photos[0];
-  // CSS.escape prevents selector syntax error from special chars in filenames
-  try {
-    var escapedFn = CSS.escape(firstFn);
-  } catch(e) { return; }
-  var target = document.querySelector('.photo-item img[src*="' + escapedFn + '"]');
-  if (target) {
-    target.closest('.photo-item').scrollIntoView({behavior: 'smooth', block: 'center'});
-    target.closest('.photo-item').style.transition = 'box-shadow 0.4s';
-    target.closest('.photo-item').style.boxShadow = '0 0 0 4px #0066ff';
-    setTimeout(function() {
-      target.closest('.photo-item').style.boxShadow = '';
-    }, 2000);
-  }
+  document.querySelectorAll('.story-card').forEach(function(c, i) {
+    var active = i === _currentStory;
+    c.classList.toggle('active', active);
+    c.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+  _renderAllPhotos();
+  _syncMapMarkers();
+  _syncPhotoLocationCount();
+  _syncStoryNote();
+}
+
+function clearStoryFilter() {
+  _currentStory = -1;
+  document.querySelectorAll('.story-card').forEach(function(c) {
+    c.classList.remove('active');
+    c.setAttribute('aria-pressed', 'false');
+  });
+  _renderAllPhotos();
+  _syncMapMarkers();
+  _syncPhotoLocationCount();
+  _syncStoryNote();
 }
 
 function buildPhotoTagFilter() {
@@ -476,11 +493,8 @@ function filterPhotosByTag(tag) {
   });
   _renderAllPhotos();
   _syncMapMarkers();
-  var pool = _getFilteredPhotos();
-  var gc2 = pool.filter(function(p){return p.exif&&p.exif.gps;}).length;
-  var elGc = document.getElementById('gps-count');
-  if (gc2) { elGc.textContent = '· ' + gc2 + ' location' + (gc2>1?'s':''); elGc.style.display = ''; }
-  else { elGc.style.display = 'none'; }
+  _syncPhotoLocationCount();
+  _syncStoryNote();
 }
 var _photoMapLoading = false;
 var _photoMapCallbacks = [];
@@ -625,16 +639,55 @@ function switchView(view, cb) {
 
 function _getFilteredPhotos() {
   if (!window._photoData) return [];
-  if (!_currentPhotoTag) return window._photoData;
   return window._photoData.filter(function(p) {
-    return (p.tags || []).indexOf(_currentPhotoTag) >= 0;
+    var story = _photoStories[_currentStory];
+    if (story && story.photos && story.photos.indexOf(p.filename) < 0) return false;
+    return !_currentPhotoTag || (p.tags || []).indexOf(_currentPhotoTag) >= 0;
   });
+}
+
+function _syncPhotoLocationCount() {
+  var pool = _getFilteredPhotos();
+  var count = pool.filter(function(p){ return p.exif && p.exif.gps; }).length;
+  var el = document.getElementById('gps-count');
+  if (!el) return;
+  if (count) {
+    el.textContent = '· ' + count + ' location' + (count > 1 ? 's' : '');
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+function _syncStoryNote() {
+  var el = document.getElementById('photo-story-note');
+  if (!el) return;
+  var story = _photoStories[_currentStory];
+  if (!story) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
+  }
+  var count = _getFilteredPhotos().length;
+  var meta = [];
+  if (story.date) meta.push(htmlEncode(story.date));
+  meta.push(count + ' photo' + (count === 1 ? '' : 's'));
+  if (_currentPhotoTag) meta.push(htmlEncode(_currentPhotoTag));
+  el.innerHTML =
+    '<span class="story-note-kicker">Story</span>' +
+    '<strong>' + htmlEncode(story.name || story.id || 'Untitled story') + '</strong>' +
+    (story.caption ? '<span>' + htmlEncode(story.caption) + '</span>' : '') +
+    '<em>' + meta.join(' · ') + '</em>' +
+    '<button type="button" onclick="clearStoryFilter()" aria-label="清除故事筛选">×</button>';
+  el.style.display = 'flex';
 }
 
 function _renderAllPhotos() {
   var pool = _getFilteredPhotos();
   var masonry = document.getElementById('photo-masonry');
+  masonry.classList.toggle('is-empty', pool.length === 0);
   masonry.innerHTML = renderPhotos(pool);
+  _restartContentMotion(masonry);
   initLB();
 }
 
