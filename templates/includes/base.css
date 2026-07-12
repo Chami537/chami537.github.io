@@ -38,7 +38,7 @@ nav .inner {
   max-width: 1200px; margin: 0 auto; display: flex; align-items: center;
   justify-content: space-between; height: 56px;
 }
-nav .logo { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; text-decoration: none; color: var(--fg); }
+nav .logo { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; text-decoration: none; color: var(--fg); flex-shrink: 0; }
 nav .theme-btn {
   width: 32px; height: 32px; border-radius: 50%;
   border: 1px solid var(--line); background: none;
@@ -50,6 +50,14 @@ nav .theme-btn {
 }
 nav .theme-btn:hover { background: var(--line); }
 html.dark nav .theme-btn { border-color: #666; color: #ffd43b; }
+
+@media (max-width: 768px) {
+  nav { padding: 0 16px; }
+  nav .inner {
+    height: 56px;
+    gap: 14px;
+  }
+}
 
 footer {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;

@@ -57,9 +57,9 @@ html.dark .essay-body blockquote { background: rgba(255,184,0,0.08); }
 
 .essay-meta {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  display: flex; gap: 16px; align-items: baseline;
+  display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap;
   font-size: 12px; color: var(--muted); font-weight: 500;
-  line-height: 1;
+  line-height: 1.35;
   margin-bottom: 40px;
 }
 .essay-meta .dot { color: var(--muted); }
@@ -384,7 +384,7 @@ html.dark .essay-body .hljs-comment { color: var(--code-comment); }
   border-top: 1px dashed var(--line);
   width: 100%;
   max-width: 100%;
-  overflow: hidden;
+  overflow-x: clip;
 }
 .comments-section .giscus,
 .comments-section .giscus-frame {
@@ -408,7 +408,7 @@ html.dark .comments-section { color-scheme: dark; }
 .gate-input-wrap input {
   padding: 10px 14px; border: 1px solid var(--line);
   border-radius: 6px; background: var(--bg); color: var(--fg);
-  font-size: 14px; width: 200px; outline: none;
+  font-size: 14px; width: 200px; min-width: 0; outline: none;
 }
 .gate-input-wrap input:focus { border-color: var(--c3); }
 .dark .gate-input-wrap input { background: #1a1a2e; color: #eee; }
@@ -416,13 +416,43 @@ html.dark .comments-section { color-scheme: dark; }
   padding: 10px 20px; background: var(--c3); color: #fff;
   border: none; border-radius: 6px; cursor: pointer;
   font-size: 14px; font-weight: 600; transition: opacity .2s;
+  min-width: 72px;
+  white-space: nowrap;
 }
 .gate-btn:hover { opacity: 0.85; }
 .gate-error { color: var(--danger); font-size: 13px; margin-top: 12px; }
 
 @media (max-width: 768px) {
-  nav { padding: 0 16px; }
-  .reading { padding: 100px 24px 80px; }
+  .reading { padding: 96px 24px 80px; }
+  .essay-title { font-size: clamp(34px, 10vw, 46px); line-height: 1.08; letter-spacing: 0; }
+  .essay-epigraph { font-size: 14px; margin-bottom: 24px; }
+  .essay-meta { gap: 7px 10px; margin-bottom: 32px; }
+  .essay-meta .dot { display: none; }
+  .essay-meta-tag { flex-basis: 100%; }
+  .essay-divider { margin-bottom: 32px; }
+  .essay-body p { font-size: 16px; line-height: 1.85; }
+  .essay-body pre {
+    width: calc(100vw - 48px);
+    margin-left: 50%;
+    transform: translateX(-50%);
+    padding: 32px 16px 20px;
+  }
+  .comments-section { margin-top: 64px; padding-top: 32px; }
+  .essay-gate {
+    width: 100%;
+    max-width: 320px;
+    margin: 0 auto 0 0;
+    padding: 64px 0;
+  }
+  .gate-icon { font-size: 46px; }
+  .gate-title { font-size: 22px; }
+  .gate-input-wrap {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+  }
+  .gate-input-wrap input { width: 100%; min-height: 48px; }
+  .gate-btn { width: 100%; min-width: 0; min-height: 48px; padding-inline: 12px; }
   .lb-prev, .lb-next { font-size: 36px; }
   .lb-close { font-size: 28px; }
 }
