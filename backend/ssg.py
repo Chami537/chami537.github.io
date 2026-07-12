@@ -66,8 +66,9 @@ def _cache_bust_assets():
     Uses regex to safely replace existing version strings — idempotent, no stacking.
     """
     for html_fn, css_fn, js_fns in [
-        ('index.html', 'assets/css/index.css', ('assets/js/index.js',)),
+        ('index.html', 'assets/css/index.css', ('assets/js/theme.js', 'assets/js/index.js')),
         ('admin.html', 'assets/css/admin.css', (
+            'assets/js/theme.js',
             'assets/js/admin.js',
             'assets/js/admin-content.js',
             'assets/js/admin-essays.js',

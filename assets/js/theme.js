@@ -13,11 +13,39 @@ function _applyTheme(mode) {
   }
 }
 
+function _themeMode() {
+  var saved = localStorage.getItem('theme');
+  if (saved === 'dark' || saved === 'light') return saved;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function _notifyThemeChange(mode) {
+  window.dispatchEvent(new CustomEvent('themechange', {detail: {mode: mode}}));
+}
+
 function toggleTheme() {
   var isDark = document.documentElement.classList.contains('dark');
   var next = isDark ? 'light' : 'dark';
   localStorage.setItem('theme', next);
   _applyTheme(next);
-  // Dispatch for page-specific listeners (e.g. map invalidation)
-  window.dispatchEvent(new CustomEvent('themechange', {detail: {mode: next}}));
+  _notifyThemeChange(next);
 }
+
+_applyTheme(_themeMode());
+
+window.addEventListener('storage', function(event) {
+  if (event.key !== 'theme') return;
+  var mode = event.newValue === 'dark' || event.newValue === 'light'
+    ? event.newValue
+    : _themeMode();
+  _applyTheme(mode);
+  _notifyThemeChange(mode);
+});
+
+var _themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+_themeMediaQuery.addEventListener('change', function(event) {
+  if (localStorage.getItem('theme')) return;
+  var mode = event.matches ? 'dark' : 'light';
+  _applyTheme(mode);
+  _notifyThemeChange(mode);
+});

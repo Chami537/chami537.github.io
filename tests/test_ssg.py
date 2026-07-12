@@ -1,6 +1,7 @@
 """Tests for SSG functions and EXIF helpers."""
 import os
 import json
+from pathlib import Path
 import pytest
 from PIL import Image
 from backend.ssg import (
@@ -117,8 +118,9 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
 
     # Create temp copies of all HTML, CSS, JS files
     configs = [
-        ('index.html', 'assets/css/index.css', ('assets/js/index.js',)),
+        ('index.html', 'assets/css/index.css', ('assets/js/theme.js', 'assets/js/index.js')),
         ('admin.html', 'assets/css/admin.css', (
+            'assets/js/theme.js',
             'assets/js/admin.js',
             'assets/js/admin-content.js',
             'assets/js/admin-essays.js',
@@ -315,6 +317,23 @@ def test_sync_essay_html_giscus_loads_in_preview_and_full_width(tmp_path, monkey
     assert '<div class="comments-section" id="giscus-container"></div>' in html
     assert '.comments-section .giscus-frame' in html
     assert 'width: 100% !important' in html
+
+
+def test_theme_sync_covers_system_tabs_and_giscus_initial_state():
+    """Theme changes should propagate beyond the page that initiated them."""
+    theme_js = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'theme.js').read_text(encoding='utf-8')
+    essay_template = (Path(__file__).resolve().parents[1] / 'templates' / 'essay.html').read_text(encoding='utf-8')
+    archive_template = (Path(__file__).resolve().parents[1] / 'templates' / 'archive.html').read_text(encoding='utf-8')
+    map_template = (Path(__file__).resolve().parents[1] / 'templates' / 'map.html').read_text(encoding='utf-8')
+
+    assert "window.addEventListener('storage'" in theme_js
+    assert "event.key !== 'theme'" in theme_js
+    assert "matchMedia('(prefers-color-scheme: dark)')" in theme_js
+    assert "window.addEventListener('themechange', syncGiscusTheme)" in essay_template
+    assert "gs.setAttribute('data-theme', document.documentElement.classList.contains('dark')" in essay_template
+    assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in essay_template
+    assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in archive_template
+    assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in map_template
 
 
 def test_sync_essay_html_with_password(tmp_path, monkeypatch):

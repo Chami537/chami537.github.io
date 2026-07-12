@@ -829,25 +829,12 @@ document.addEventListener('DOMContentLoaded', async function() {
   document.querySelectorAll('.skeleton-loading').forEach(function(el) { el.classList.remove('skeleton-loading'); });
 
   initMusicPlayer();
-  initThemeBtn();
   initLB();
 
 });
 
 // ═══ Dark Mode ═══
-// Priority: manual toggle > system preference > default (light)
-function initThemeBtn() {
-  var mq = window.matchMedia('(prefers-color-scheme: dark)');
-  var saved = localStorage.getItem('theme');
-  if (saved === 'dark' || (!saved && mq.matches)) {
-    _applyTheme('dark');
-  }
-  mq.addEventListener('change', function(e) {
-    if (localStorage.getItem('theme')) return;
-    _applyTheme(e.matches ? 'dark' : 'light');
-  });
-}
-// Listen for theme changes to sync photo map
+// Listen for shared theme changes to sync photo map
 window.addEventListener('themechange', function(e) {
   if (_photoMap) {
     _photoMap.invalidateSize();

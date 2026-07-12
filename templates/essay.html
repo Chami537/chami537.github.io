@@ -640,7 +640,9 @@ html.dark .comments-section { color-scheme: dark; }
     gs.setAttribute('data-reactions-enabled', '1');
     gs.setAttribute('data-emit-metadata', '0');
     gs.setAttribute('data-input-position', 'top');
-    gs.setAttribute('data-theme', 'https://chami537.github.io/data/giscus.css');
+    gs.setAttribute('data-theme', document.documentElement.classList.contains('dark')
+      ? 'https://chami537.github.io/data/giscus-dark.css'
+      : 'https://chami537.github.io/data/giscus.css');
     gs.setAttribute('data-lang', 'zh-CN');
     gs.crossOrigin = 'anonymous';
     gs.async = true;
@@ -778,7 +780,7 @@ if (lbEl) {
 }
 
 </script>
-<script src="/assets/js/theme.js"></script>
+<script src="/assets/js/theme.js?v={{ build_ts }}"></script>
 <script>
 
 // Nav sticky: hide on scroll down, show on scroll up
@@ -810,12 +812,7 @@ function syncGiscusTheme() {
     );
   }
 }
-// Override toggleTheme to also sync Giscus
-var _origToggleTheme = toggleTheme;
-toggleTheme = function() {
-  _origToggleTheme();
-  syncGiscusTheme();
-};
+window.addEventListener('themechange', syncGiscusTheme);
 // Listen for Giscus load
 window.addEventListener('message', function(e) {
   if (e.origin !== 'https://giscus.app' || !e.data || !e.data.giscus) return;
