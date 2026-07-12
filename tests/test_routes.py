@@ -632,10 +632,21 @@ def test_content_api_decrypt_corrupted_ciphertext(client, data_backup):
 
 # ── Session security config ──
 
-def test_session_cookie_secure():
-    """SESSION_COOKIE_SECURE should be True."""
+def test_password_store_is_not_served_as_public_data(client_no_auth, tmp_path, monkeypatch):
+    """The local plaintext essay password store must not be exposed by /data."""
+    password_store = tmp_path / 'essay_passwords.json'
+    password_store.write_text('{"secret-slug": "secret"}', encoding='utf-8')
+    monkeypatch.setattr('backend.app.DATA_DIR', str(tmp_path))
+
+    response = client_no_auth.get('/data/essay_passwords.json')
+
+    assert response.status_code == 404
+
+
+def test_session_cookie_is_usable_over_local_http():
+    """Local HTTP admin sessions must not be marked Secure by default."""
     from backend.app import app
-    assert app.config.get('SESSION_COOKIE_SECURE') is True
+    assert app.config.get('SESSION_COOKIE_SECURE') is False
 
 
 # ── Tagless essay re-sync ──
@@ -817,12 +828,11 @@ def test_encrypted_essay_is_hidden_in_html(client, data_backup):
     assert '此内容已隐藏' in html
     assert '这是隐藏内容' not in html
 
-    # essays_public.json must strip password
+    # essays_public.json must exclude password-protected essays entirely
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
     public = json.load(open(public_path, encoding='utf-8'))
     essay = next((e for e in public['essays'] if e['slug'] == slug), None)
-    assert essay is not None
-    assert 'password' not in essay
+    assert essay is None
 
     # Cleanup
     client.delete(f'/api/essays/{slug}')

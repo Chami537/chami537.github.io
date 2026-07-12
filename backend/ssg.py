@@ -219,6 +219,8 @@ def _generate_public_essays():
     visible = []
     all_tags = set()
     for e in essays:
+        if get_essay_password(e.get('slug', '')):
+            continue
         tag_str = e.get('tag', '')
         if tag_str:
             for t in tag_str.replace(',', '，').split('，'):

@@ -3,7 +3,7 @@
 import os
 import secrets
 from urllib.parse import urlparse
-from flask import Flask, request, send_from_directory
+from flask import Flask, abort, request, send_from_directory
 from flask import jsonify, session
 
 from backend.data import BASE_DIR, DATA_DIR, ESSAYS_DIR, IMAGES_DIR
@@ -20,7 +20,8 @@ else:
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
-app.config['SESSION_COOKIE_SECURE'] = True
+_secure_cookie = os.environ.get('SESSION_COOKIE_SECURE', '').strip().lower()
+app.config['SESSION_COOKIE_SECURE'] = _secure_cookie in ('1', 'true', 'yes', 'on')
 
 
 # ── Auth guard: all /api/* requires login except /api/login (skipped in test mode) ──
@@ -59,6 +60,8 @@ def serve_assets(filename):
 
 @app.route('/data/<path:filename>')
 def serve_data(filename):
+    if os.path.basename(filename) == 'essay_passwords.json':
+        abort(404)
     return send_from_directory(DATA_DIR, filename)
 
 

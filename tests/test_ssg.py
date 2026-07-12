@@ -12,6 +12,7 @@ from backend.ssg import (
     ESSAYS_DIR, MD_DIR,
 )
 from backend.data import load_json
+from backend.markdown_utils import render_markdown
 
 
 # ── _calc_read_time ──
@@ -176,14 +177,15 @@ def test_decrypt_wrong_password():
 
 # ── Public essays generation ──
 
-def test_generate_public_essays_strips_passwords(tmp_path, monkeypatch):
-    """Verify _generate_public_essays includes all essays but strips password field."""
+def test_generate_public_essays_excludes_password_protected_essays(tmp_path, monkeypatch):
+    """Protected essays must not leak metadata into the public JSON feed."""
     test_essays = [
         {'slug': 'a', 'title': 'Visible', 'password': 'secret123'},
         {'slug': 'b', 'title': 'Protected', 'password': 'top'},
         {'slug': 'c', 'title': 'Also Visible'},
     ]
     monkeypatch.setattr('backend.ssg.load_json', lambda f: test_essays)
+    monkeypatch.setattr('backend.ssg.get_essay_password', lambda slug: 'secret' if slug in ('a', 'b') else '')
     public_path = tmp_path / 'essays_public.json'
     monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path))
 
@@ -193,12 +195,18 @@ def test_generate_public_essays_strips_passwords(tmp_path, monkeypatch):
         data = json.load(f)
     # New format: {_tags: [...], essays: [...]}
     visible = data['essays']
-    assert len(visible) == 3  # all visible
+    assert len(visible) == 1
     slugs = [e['slug'] for e in visible]
-    assert 'a' in slugs and 'b' in slugs and 'c' in slugs
+    assert slugs == ['c']
     # Password must be stripped
     for e in visible:
         assert 'password' not in e
+
+
+def test_render_markdown_blocks_javascript_links():
+    html = render_markdown('[unsafe](javascript:alert(1))')
+
+    assert 'javascript:' not in html.lower()
 
 
 # ── _sync_essay_html password / no-password output ──

@@ -1,11 +1,8 @@
 {
   "_tags": [
-    "生活",
     "随笔",
     "感悟",
     "阅读",
-    "Obsidian",
-    "学习日志",
     "安全",
     "技术",
     "项目复盘"
@@ -34,17 +31,6 @@
       "date_display": "Jun 26, 2026"
     },
     {
-      "slug": "essay-032f74a6",
-      "title": "记录一次dating",
-      "tag": "生活",
-      "date": "2026-07-07 00:26",
-      "epigraph": "A Happy Day",
-      "excerpt": "没什么好写的ww",
-      "readTime": 1,
-      "pinned": false,
-      "date_display": "Jul 07, 2026"
-    },
-    {
       "slug": "essay-c8f2c3c1",
       "title": "金钱，时间，复利与个人成长",
       "tag": "感悟",
@@ -56,16 +42,6 @@
       "date_display": "Jun 30, 2026"
     },
     {
-      "slug": "essay-47430450",
-      "title": "Agent时代怎么学CS?",
-      "tag": "技术",
-      "date": "2026-07-07 11:40",
-      "epigraph": "占位",
-      "excerpt": "占位",
-      "readTime": 1,
-      "date_display": "Jul 07, 2026"
-    },
-    {
       "slug": "essay-ca510106",
       "title": "如何构建一把不碰服务器的锁",
       "tag": "技术, 安全, 项目复盘",
@@ -74,16 +50,6 @@
       "excerpt": "密码不该碰服务器——加密、解密，还有要不要加密这件事本身。",
       "readTime": 7,
       "date_display": "Jul 07, 2026"
-    },
-    {
-      "slug": "essay-876e8911",
-      "title": "从零开始学习obsidian",
-      "tag": "技术, Obsidian, 学习日志",
-      "date": "2026-07-12 02:01",
-      "epigraph": "学习",
-      "excerpt": "占位",
-      "readTime": 1,
-      "date_display": "Jul 12, 2026"
     }
   ]
 }

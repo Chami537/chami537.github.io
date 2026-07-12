@@ -37,8 +37,15 @@ def _escape_html_outside_fenced_code(md_content):
 
 
 def render_markdown(md_content):
-    return md_to_html(
+    rendered = md_to_html(
         _escape_html_outside_fenced_code(md_content),
         extensions=MARKDOWN_EXTENSIONS,
         extension_configs=MARKDOWN_EXTENSION_CONFIGS,
+    )
+    # Markdown's URL parser permits scriptable schemes; neutralize them before
+    # the HTML is inserted into public pages or the admin preview.
+    return re.sub(
+        r'(?i)(href\s*=\s*["\'])\s*(?:javascript|vbscript|data):',
+        r'\1#blocked:',
+        rendered,
     )
