@@ -93,6 +93,9 @@ input, button, select, textarea, optgroup, option { color: inherit; }
 .dashboard-stat-row strong, .dashboard-tag-row strong { font-variant-numeric: tabular-nums; }
 .dashboard-columns { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: 24px; }
 .dashboard-tag-list, .dashboard-recent-list { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.dashboard-tag-group { margin-bottom: 12px; }
+.dashboard-tag-group:last-child { margin-bottom: 0; }
+.dashboard-tag-group h4 { margin: 0 0 6px; font-size: 11px; font-weight: 600; color: var(--muted); }
 .dashboard-tag-row:last-child { border-bottom: 0; }
 .dashboard-recent-item {
   display: flex; flex-direction: column; gap: 2px; padding: 10px 12px;

@@ -52,23 +52,28 @@ function _renderDashboard(data) {
 
   var statusBox = document.getElementById('dashboard-essay-status');
   statusBox.replaceChildren();
-  [['公开', essays.public], ['隐藏', essays.hidden], ['加密', essays.encrypted]].forEach(function(item) {
+  [['公开', essays.public], ['加密', essays.encrypted]].forEach(function(item) {
     statusBox.appendChild(_dashboardRow(item[0], item[1]));
   });
 
-  var tagBox = document.getElementById('dashboard-tags');
-  tagBox.replaceChildren();
-  (data.tags || []).forEach(function(tag) {
-    var row = document.createElement('div');
-    row.className = 'dashboard-tag-row';
-    var name = document.createElement('span');
-    name.textContent = tag.name;
-    var count = document.createElement('strong');
-    count.textContent = tag.count;
-    row.append(name, count);
-    tagBox.appendChild(row);
-  });
-  if (!tagBox.children.length) tagBox.appendChild(_dashboardEmpty('暂无标签'));
+  function renderTagList(id, tags) {
+    var tagBox = document.getElementById(id);
+    tagBox.replaceChildren();
+    (tags || []).forEach(function(tag) {
+      var row = document.createElement('div');
+      row.className = 'dashboard-tag-row';
+      var name = document.createElement('span');
+      name.textContent = tag.name;
+      var count = document.createElement('strong');
+      count.textContent = tag.count;
+      row.append(name, count);
+      tagBox.appendChild(row);
+    });
+    if (!tagBox.children.length) tagBox.appendChild(_dashboardEmpty('暂无标签'));
+  }
+  var tags = data.tags || {};
+  renderTagList('dashboard-primary-tags', tags.primary);
+  renderTagList('dashboard-secondary-tags', tags.secondary);
 
   var recentBox = document.getElementById('dashboard-recent');
   recentBox.replaceChildren();

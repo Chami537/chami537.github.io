@@ -10,6 +10,7 @@ _STAT_DATA_FILES = (
     'essays.json', 'photos.json', 'photo_stories.json', 'work.json',
     'music.json', 'friends.json', 'stack.json',
 )
+_ESSAY_MAIN_TAGS = {'随笔', '生活', '摄影', '阅读', '感悟', '技术'}
 
 
 def _build_counts(essays, photos, stories, work, music, friends, stack):
@@ -18,8 +19,7 @@ def _build_counts(essays, photos, stories, work, music, friends, stack):
     return {
         'essays': {
             'total': len(essays),
-            'public': sum(1 for essay in essays if not essay.get('hidden') and not has_essay_password(essay.get('slug', ''))),
-            'hidden': hidden,
+            'public': len(essays) - hidden - encrypted,
             'encrypted': encrypted,
         },
         'photos': len(photos),
@@ -38,16 +38,23 @@ def _has_gps(photo):
 
 
 def _essay_tag_counts(essays):
-    counts = {}
+    primary = {}
+    secondary = {}
     for essay in essays:
-        for raw_tag in str(essay.get('tag', '')).split(','):
+        tags = [raw_tag.strip() for raw_tag in str(essay.get('tag', '')).split(',') if raw_tag.strip()]
+        is_technical = '技术' in tags
+        for raw_tag in tags:
             tag = raw_tag.strip()
-            if tag:
-                counts[tag] = counts.get(tag, 0) + 1
-    return [
-        {'name': name, 'count': count}
-        for name, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
-    ]
+            bucket = secondary if is_technical and tag not in _ESSAY_MAIN_TAGS else primary
+            bucket[tag] = bucket.get(tag, 0) + 1
+
+    def sort_counts(counts):
+        return [
+            {'name': name, 'count': count}
+            for name, count in sorted(counts.items(), key=lambda item: (-item[1], item[0]))
+        ]
+
+    return {'primary': sort_counts(primary), 'secondary': sort_counts(secondary)}
 
 
 def _date_key(value):

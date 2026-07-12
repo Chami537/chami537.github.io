@@ -15,7 +15,7 @@ def test_dashboard_stats_aggregates_content(client, monkeypatch):
     datasets = {
         'essays.json': [
             {'slug': 'a', 'title': 'A', 'date': '2026-07-01', 'tag': '技术, Python'},
-            {'slug': 'b', 'title': 'B', 'date': '2026-07-02', 'tag': '技术, Python, 教程', 'hidden': True},
+            {'slug': 'b', 'title': 'B', 'date': '2026-07-02', 'tag': '技术, Python, 教程'},
             {'slug': 'c', 'title': 'C', 'date': '2026-07-03', 'tag': '生活'},
         ],
         'photos.json': [
@@ -38,7 +38,7 @@ def test_dashboard_stats_aggregates_content(client, monkeypatch):
     assert response.status_code == 200
     body = response.get_json()
     assert body['counts'] == {
-        'essays': {'total': 3, 'public': 2, 'hidden': 1, 'encrypted': 1},
+        'essays': {'total': 3, 'public': 2, 'encrypted': 1},
         'photos': 2,
         'photo_stories': 1,
         'places': 1,
@@ -47,12 +47,13 @@ def test_dashboard_stats_aggregates_content(client, monkeypatch):
         'friends': 1,
         'stack': 2,
     }
-    assert body['tags'] == [
-        {'name': 'Python', 'count': 2},
-        {'name': '技术', 'count': 2},
-        {'name': '教程', 'count': 1},
-        {'name': '生活', 'count': 1},
-    ]
+    assert body['tags'] == {
+        'primary': [{'name': '技术', 'count': 2}, {'name': '生活', 'count': 1}],
+        'secondary': [
+            {'name': 'Python', 'count': 2},
+            {'name': '教程', 'count': 1},
+        ],
+    }
     assert [item['type'] for item in body['recent']] == ['essay', 'essay', 'essay', 'photo_story']
     assert body['recent'][0]['title'] == 'C'
 

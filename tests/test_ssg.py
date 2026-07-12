@@ -345,14 +345,16 @@ def test_admin_dashboard_stats_ui_is_registered():
     assert 'data-tab="dashboard"' in admin_html
     assert 'id="tab-dashboard"' in admin_html
     assert 'id="dashboard-counts"' in admin_html
-    assert 'id="dashboard-tags"' in admin_html
+    assert 'id="dashboard-primary-tags"' in admin_html
+    assert 'id="dashboard-secondary-tags"' in admin_html
     assert 'id="dashboard-recent"' in admin_html
     assert 'assets/js/admin-dashboard.js' in admin_html
     assert "if (name === 'dashboard') loadDashboard();" in admin_js
     assert "/api/dashboard-stats" in dashboard_js
     assert 'dashboard-error' in dashboard_js
     assert 'data.counts' in dashboard_js
-    assert 'data.tags' in dashboard_js
+    assert 'tags.primary' in dashboard_js
+    assert 'tags.secondary' in dashboard_js
     assert 'data.recent' in dashboard_js
 
 
