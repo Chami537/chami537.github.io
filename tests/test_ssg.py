@@ -336,6 +336,26 @@ def test_theme_sync_covers_system_tabs_and_giscus_initial_state():
     assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in map_template
 
 
+def test_admin_dashboard_stats_ui_is_registered():
+    root = Path(__file__).resolve().parents[1]
+    admin_html = (root / 'admin.html').read_text(encoding='utf-8')
+    admin_js = (root / 'assets' / 'js' / 'admin.js').read_text(encoding='utf-8')
+    dashboard_js = (root / 'assets' / 'js' / 'admin-dashboard.js').read_text(encoding='utf-8')
+
+    assert 'data-tab="dashboard"' in admin_html
+    assert 'id="tab-dashboard"' in admin_html
+    assert 'id="dashboard-counts"' in admin_html
+    assert 'id="dashboard-tags"' in admin_html
+    assert 'id="dashboard-recent"' in admin_html
+    assert 'assets/js/admin-dashboard.js' in admin_html
+    assert "if (name === 'dashboard') loadDashboard();" in admin_js
+    assert "/api/dashboard-stats" in dashboard_js
+    assert 'dashboard-error' in dashboard_js
+    assert 'data.counts' in dashboard_js
+    assert 'data.tags' in dashboard_js
+    assert 'data.recent' in dashboard_js
+
+
 def test_theme_toggle_cycles_between_system_light_and_dark_preferences():
     """The shared theme module must offer an explicit route back to system mode."""
     root = Path(__file__).resolve().parents[1]

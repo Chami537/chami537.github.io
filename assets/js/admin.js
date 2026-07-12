@@ -182,6 +182,7 @@ function switchTab(name) {
   var tabBtn = document.querySelector('.tab-btn[data-tab="' + name + '"]');
   if (tabBtn) tabBtn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
+  if (name === 'dashboard') loadDashboard();
   if (name === 'work') loadWork();
   if (name === 'essays') loadEssays();
   else clearInterval(window._autosaveInterval);  // stop autosave when leaving editor

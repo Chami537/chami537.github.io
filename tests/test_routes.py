@@ -4,6 +4,73 @@ import os
 from backend.data import DATA_DIR
 
 
+def test_dashboard_stats_requires_auth(client_no_auth):
+    response = client_no_auth.get('/api/dashboard-stats')
+    assert response.status_code == 401
+
+
+def test_dashboard_stats_aggregates_content(client, monkeypatch):
+    import backend.routes.dashboard as dashboard
+
+    datasets = {
+        'essays.json': [
+            {'slug': 'a', 'title': 'A', 'date': '2026-07-01', 'tag': '技术, Python'},
+            {'slug': 'b', 'title': 'B', 'date': '2026-07-02', 'tag': '技术, Python, 教程', 'hidden': True},
+            {'slug': 'c', 'title': 'C', 'date': '2026-07-03', 'tag': '生活'},
+        ],
+        'photos.json': [
+            {'filename': 'with-gps.jpg', 'exif': {'gps': {'lat': 1, 'lng': 2}}},
+            {'filename': 'without-gps.jpg', 'exif': {}},
+        ],
+        'photo_stories.json': [
+            {'id': 'story', 'name': 'Story', 'date': 'Jul 2026', 'photos': ['with-gps.jpg']},
+        ],
+        'work.json': [{'id': 1}],
+        'music.json': [{'id': 1}, {'id': 2}],
+        'friends.json': [{'id': 1}],
+        'stack.json': ['Python', 'Flask'],
+    }
+    monkeypatch.setattr(dashboard, 'load_json', lambda name: datasets[name])
+    monkeypatch.setattr(dashboard, 'has_essay_password', lambda slug: slug == 'b')
+
+    response = client.get('/api/dashboard-stats')
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body['counts'] == {
+        'essays': {'total': 3, 'public': 2, 'hidden': 1, 'encrypted': 1},
+        'photos': 2,
+        'photo_stories': 1,
+        'places': 1,
+        'work': 1,
+        'music': 2,
+        'friends': 1,
+        'stack': 2,
+    }
+    assert body['tags'] == [
+        {'name': 'Python', 'count': 2},
+        {'name': '技术', 'count': 2},
+        {'name': '教程', 'count': 1},
+        {'name': '生活', 'count': 1},
+    ]
+    assert [item['type'] for item in body['recent']] == ['essay', 'essay', 'essay', 'photo_story']
+    assert body['recent'][0]['title'] == 'C'
+
+
+def test_dashboard_stats_returns_500_when_data_cannot_be_read(client, monkeypatch):
+    import backend.routes.dashboard as dashboard
+
+    def fail_to_read(_name):
+        raise OSError('data unavailable')
+
+    monkeypatch.setattr(dashboard, 'load_json', fail_to_read)
+
+    response = client.get('/api/dashboard-stats')
+
+    assert response.status_code == 500
+    assert response.get_json() == {'error': '无法读取统计数据'}
+
+
 # ── Data listing endpoints (GET) ──
 
 def test_list_work(client):

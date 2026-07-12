@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' cdn.staticfile.net cdn.jsdelivr.net; script-src 'self' 'unsafe-inline' cdn.staticfile.net cdn.jsdelivr.net; font-src 'self' cdn.staticfile.net; img-src 'self' data: blob:; connect-src 'self'">
 <title>Chami — Site Admin</title>
-<link rel="stylesheet" href="assets/css/admin.css?v=1783828616">
+<link rel="stylesheet" href="assets/css/admin.css?v=1783834045">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github.min.css">
 <script>
   var _saved = localStorage.getItem('theme');
@@ -34,8 +34,9 @@
 </div>
 
 <nav class="tabs">
+  <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">Dashboard</button>
   <button class="tab-btn" data-tab="about" onclick="switchTab('about')">About</button>
-  <button class="tab-btn active" data-tab="work" onclick="switchTab('work')">Work</button>
+  <button class="tab-btn" data-tab="work" onclick="switchTab('work')">Work</button>
   <button class="tab-btn" data-tab="essays" onclick="switchTab('essays')">Essays</button>
   <button class="tab-btn" data-tab="photos" onclick="switchTab('photos')">Photos</button>
   <button class="tab-btn" data-tab="contact" onclick="switchTab('contact')">Contact</button>
@@ -48,6 +49,38 @@
 </nav>
 
 <div class="content">
+
+  <!-- ═══ DASHBOARD ═══ -->
+  <div id="tab-dashboard" class="tab-panel active">
+    <div class="dashboard-heading">
+      <div>
+        <h2>内容概览</h2>
+        <p>当前站点内容和最近更新</p>
+      </div>
+    </div>
+    <div id="dashboard-loading" class="dashboard-state">加载中...</div>
+    <div id="dashboard-error" class="dashboard-state dashboard-error" hidden></div>
+    <div id="dashboard-content" hidden>
+      <section class="dashboard-section">
+        <h3>内容数量</h3>
+        <div id="dashboard-counts" class="dashboard-count-grid"></div>
+      </section>
+      <section class="dashboard-section">
+        <h3>随笔状态</h3>
+        <div id="dashboard-essay-status" class="dashboard-stat-list"></div>
+      </section>
+      <div class="dashboard-columns">
+        <section class="dashboard-section">
+          <h3>标签分布</h3>
+          <div id="dashboard-tags" class="dashboard-tag-list"></div>
+        </section>
+        <section class="dashboard-section">
+          <h3>最近更新</h3>
+          <div id="dashboard-recent" class="dashboard-recent-list"></div>
+        </section>
+      </div>
+    </div>
+  </div>
 
   <!-- ═══ WORK ═══ -->
   <!-- ═══ ABOUT ═══ -->
@@ -80,7 +113,7 @@
     </div>
   </div>
 
-  <div id="tab-work" class="tab-panel active">
+  <div id="tab-work" class="tab-panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
       <h2 style="font-size:18px;">Work 项目</h2>
       <button class="btn btn-primary" onclick="showWorkForm()">+ 添加项目</button>
@@ -433,12 +466,13 @@
 
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/lib/common.min.js"></script>
-<script src="assets/js/theme.js?v=1783828616"></script>
-<script src="assets/js/admin.js?v=1783828616"></script>
-<script src="assets/js/admin-content.js?v=1783828616"></script>
-<script src="assets/js/admin-essays.js?v=1783828616"></script>
-<script src="assets/js/admin-photos.js?v=1783828616"></script>
-<script>refreshGitStatus();loadWork();</script>
+<script src="assets/js/theme.js?v=1783834045"></script>
+<script src="assets/js/admin-dashboard.js?v=1783834045"></script>
+<script src="assets/js/admin.js?v=1783834045"></script>
+<script src="assets/js/admin-content.js?v=1783834045"></script>
+<script src="assets/js/admin-essays.js?v=1783834045"></script>
+<script src="assets/js/admin-photos.js?v=1783834045"></script>
+<script>refreshGitStatus();loadDashboard();</script>
 
 <!-- Password Dialog -->
 <dialog id="password-dialog">
