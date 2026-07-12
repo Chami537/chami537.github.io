@@ -336,6 +336,36 @@ def test_theme_sync_covers_system_tabs_and_giscus_initial_state():
     assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in map_template
 
 
+def test_theme_toggle_cycles_between_system_light_and_dark_preferences():
+    """The shared theme module must offer an explicit route back to system mode."""
+    root = Path(__file__).resolve().parents[1]
+    theme_js = (root / 'assets' / 'js' / 'theme.js').read_text(encoding='utf-8')
+    theme_heads = [
+        root / 'index.html',
+        root / 'admin.html',
+        root / 'templates' / 'essay.html',
+        root / 'templates' / 'archive.html',
+        root / 'templates' / 'map.html',
+    ]
+
+    assert "saved === 'system'" in theme_js
+    assert "? 'light' : 'system'" in theme_js
+    assert "_notifyThemeChange(nextMode, next)" in theme_js
+    for path in theme_heads:
+        assert "_saved === 'system' || !_saved" in path.read_text(encoding='utf-8')
+
+
+def test_mobile_essay_rows_keep_metadata_on_one_centered_line():
+    """Mobile essay rows should not leave an orphaned 'read' label below the date."""
+    index_js = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'index.js').read_text(encoding='utf-8')
+    index_css = (Path(__file__).resolve().parents[1] / 'assets' / 'css' / 'index.css').read_text(encoding='utf-8')
+
+    assert " + ' min</span>'" in index_js
+    assert " + ' min read</span>'" not in index_js
+    assert '.essay-row    { padding: 18px 0; align-items: center; }' in index_css
+    assert '.essay-right  { flex-direction: row; align-items: center;' in index_css
+
+
 def test_sync_essay_html_with_password(tmp_path, monkeypatch):
     """Password set → generated HTML has gate with encrypted body."""
     md_dir = tmp_path / 'md'

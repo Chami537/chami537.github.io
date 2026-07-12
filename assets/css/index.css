@@ -851,12 +851,12 @@ html.dark .hero h1 mark { color: #1a1a1c; }
   .work-card .line-tag { font-size: 10px; margin-top: 12px; }
 
   /* Essays */
-  .essay-row    { padding: 18px 0; align-items: flex-start; }
+  .essay-row    { padding: 18px 0; align-items: center; }
   .essay-title  { font-size: 15px; }
   .essay-excerpt { font-size: 12px; }
-  .essay-right  { flex-direction: column; align-items: flex-end; gap: 8px; padding-top: 2px; }
+  .essay-right  { flex-direction: row; align-items: center; gap: 9px; padding-top: 0; }
   .essay-tag    { display: none; }
-  .essay-meta   { font-size: 11px; white-space: normal; text-align: right; line-height: 1.35; max-width: 116px; }
+  .essay-meta   { font-size: 11px; white-space: nowrap; text-align: right; line-height: 1.35; max-width: none; }
   .essay-arr    { line-height: 1; }
 
   /* Music */
