@@ -69,25 +69,7 @@ function renderEssayTagGroup(element, tags, allLabel, switchFn) {
   element.style.display = 'flex';
 }
 
-function renderEssayTagTabs(ordered, groups, primaryTags) {
-  const main = document.getElementById('essay-tag-tabs');
-  main.innerHTML = primaryTags.map(function(tag) {
-    const action = 'switchEssayTag(\'' + esc(tag) + '\')';
-    return essayTagButton(tag, tag === currentEssayTag, action, essayDeleteTagMode && !ESSAY_MAIN_TAGS.includes(tag));
-  }).join('');
-
-  const childTags = _orderedEssayTags(ordered.filter(t => groups.topicSet.has(t)), ESSAY_TECH_TOPICS);
-  const typeTags = _orderedEssayTags(ordered.filter(t => groups.typeSet.has(t)), ESSAY_TECH_TYPES);
-  const subTabs = document.getElementById('essay-subtag-tabs');
-  const typeTabs = document.getElementById('essay-type-tabs');
-  if (currentEssayTag === '技术') {
-    renderEssayTagGroup(subTabs, childTags, '全部主题', {name:'switchEssayChildTag', current:currentEssayChildTag});
-    renderEssayTagGroup(typeTabs, typeTags, '全部类型', {name:'switchEssayTypeTag', current:currentEssayTypeTag});
-  } else {
-    renderEssayTagGroup(subTabs, [], '全部主题', {name:'switchEssayChildTag', current:null});
-    renderEssayTagGroup(typeTabs, [], '全部类型', {name:'switchEssayTypeTag', current:null});
-  }
-
+function _bindEssayTagEvents() {
   document.querySelectorAll('#essay-tag-tabs .tag-tab-btn, #essay-subtag-tabs .tag-tab-btn, #essay-type-tabs .tag-tab-btn').forEach(function(el) {
     el.addEventListener('dragstart', tagDragStart);
     el.addEventListener('dragover', tagDragOver);
@@ -100,6 +82,34 @@ function renderEssayTagTabs(ordered, groups, primaryTags) {
       else switchEssayTag(el.getAttribute('data-tag'));
     });
   });
+}
+
+function _renderEssayPrimaryTabs(primaryTags) {
+  const main = document.getElementById('essay-tag-tabs');
+  main.innerHTML = primaryTags.map(function(tag) {
+    const action = 'switchEssayTag(\'' + esc(tag) + '\')';
+    return essayTagButton(tag, tag === currentEssayTag, action, essayDeleteTagMode && !ESSAY_MAIN_TAGS.includes(tag));
+  }).join('');
+}
+
+function _renderEssaySubTabs(ordered, groups) {
+  const childTags = _orderedEssayTags(ordered.filter(t => groups.topicSet.has(t)), ESSAY_TECH_TOPICS);
+  const typeTags = _orderedEssayTags(ordered.filter(t => groups.typeSet.has(t)), ESSAY_TECH_TYPES);
+  const subTabs = document.getElementById('essay-subtag-tabs');
+  const typeTabs = document.getElementById('essay-type-tabs');
+  if (currentEssayTag === '技术') {
+    renderEssayTagGroup(subTabs, childTags, '全部主题', {name:'switchEssayChildTag', current:currentEssayChildTag});
+    renderEssayTagGroup(typeTabs, typeTags, '全部类型', {name:'switchEssayTypeTag', current:currentEssayTypeTag});
+  } else {
+    renderEssayTagGroup(subTabs, [], '全部主题', {name:'switchEssayChildTag', current:null});
+    renderEssayTagGroup(typeTabs, [], '全部类型', {name:'switchEssayTypeTag', current:null});
+  }
+}
+
+function renderEssayTagTabs(ordered, groups, primaryTags) {
+  _renderEssayPrimaryTabs(primaryTags);
+  _renderEssaySubTabs(ordered, groups);
+  _bindEssayTagEvents();
 }
 
 function filterEssayData(data) {

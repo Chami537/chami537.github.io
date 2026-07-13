@@ -134,44 +134,36 @@ function filterEssayType(tag) {
   renderEssayList();
 }
 
-function renderEssayList() {
-  var filtered = _essayData;
-  if (_essayPrimaryFilter) {
-    filtered = _essayData.filter(function(e) {
-      var tags = _essayTagsFor(e);
-      if (tags.indexOf(_essayPrimaryFilter) < 0) return false;
-      if (_essayTopicFilter && tags.indexOf(_essayTopicFilter) < 0) return false;
-      if (_essayTypeFilter && tags.indexOf(_essayTypeFilter) < 0) return false;
-      return true;
-    });
-  } else {
-    // Show pinned articles (default "置顶" view)
-    filtered = _essayData.filter(function(e) {
-      return e.pinned === true;
-    });
-  }
-  var MAX = 5;
-  var html = '';
-  var shown = filtered.slice(0, MAX);
-  var hidden = filtered.length - MAX;
-  shown.forEach(function(e) {
-    var tagParam = '?tag=' + encodeURIComponent(_essayTopicFilter || _essayTypeFilter || _essayPrimaryFilter || '置顶');
-    var tagText = _essayTagDisplay(e);
-    html += '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html' + tagParam + '">' +
-      '<div class="essay-left">' +
-      '<span class="essay-title">' + htmlEncode(e.title) + (e.password_protected ? ' <span class="essay-lock" title="需要密码">🔒</span>' : '') + '</span>' +
-      (e.excerpt ? '<span class="essay-excerpt">' + htmlEncode(e.excerpt) + '</span>' : '') +
-      '</div>' +
-      '<div class="essay-right">' +
-      '<span class="essay-tag">' + htmlEncode(tagText) + '</span>' +
-      '<span class="essay-meta">' + (e.date_display || '') + ' · ' + (e.readTime || 1) + ' min</span>' +
-      '<span class="essay-arr">→</span>' +
-      '</div>' +
-      '</a>';
+function _filteredEssayData() {
+  if (!_essayPrimaryFilter) return _essayData.filter(function(e) { return e.pinned === true; });
+  return _essayData.filter(function(e) {
+    var tags = _essayTagsFor(e);
+    return tags.indexOf(_essayPrimaryFilter) >= 0 &&
+      (!_essayTopicFilter || tags.indexOf(_essayTopicFilter) >= 0) &&
+      (!_essayTypeFilter || tags.indexOf(_essayTypeFilter) >= 0);
   });
-  if (hidden > 0) {
-    html += '<a class="essay-row" href="archive.html" style="justify-content:center;color:var(--muted);font-size:13px;text-decoration:none;">查看全部（' + hidden + ' 篇）→</a>';
-  }
+}
+
+function _essayRowHtml(e) {
+  var tagParam = '?tag=' + encodeURIComponent(_essayTopicFilter || _essayTypeFilter || _essayPrimaryFilter || '置顶');
+  return '<a class="essay-row" href="essays/' + htmlEncode(e.slug) + '.html' + tagParam + '">' +
+    '<div class="essay-left"><span class="essay-title">' + htmlEncode(e.title) +
+    (e.password_protected ? ' <span class="essay-lock" title="需要密码">🔒</span>' : '') + '</span>' +
+    (e.excerpt ? '<span class="essay-excerpt">' + htmlEncode(e.excerpt) + '</span>' : '') +
+    '</div><div class="essay-right"><span class="essay-tag">' + htmlEncode(_essayTagDisplay(e)) +
+    '</span><span class="essay-meta">' + (e.date_display || '') + ' · ' + (e.readTime || 1) + ' min</span>' +
+    '<span class="essay-arr">→</span></div></a>';
+}
+
+function _essayOverflowHtml(hidden) {
+  return hidden > 0 ? '<a class="essay-row" href="archive.html" style="justify-content:center;color:var(--muted);font-size:13px;text-decoration:none;">查看全部（' + hidden + ' 篇）→</a>' : '';
+}
+
+function renderEssayList() {
+  var filtered = _filteredEssayData();
+  var MAX = 5;
+  var shown = filtered.slice(0, MAX);
+  var html = shown.map(_essayRowHtml).join('') + _essayOverflowHtml(filtered.length - MAX);
   var listEl = document.getElementById('essays-list');
   listEl.innerHTML = html;
   listEl.classList.remove('skeleton-loading');

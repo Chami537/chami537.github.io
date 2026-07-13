@@ -46,20 +46,46 @@ function togglePwdVis(inputId, btn) {
   }
 }
 
-function setPassword(slug, hasPwd) {
+function _resetPasswordDialog(hasPwd) {
   document.getElementById('pwd-current').textContent = hasPwd ? '(已设置)' : '(未设置)';
   var pwdNew = document.getElementById('pwd-new');
   var pwdConfirm = document.getElementById('pwd-confirm');
-  var pwdError = document.getElementById('pwd-error');
-  var saveBtn = document.getElementById('pwd-save');
   pwdNew.value = '';
   pwdNew.type = 'password';
   pwdConfirm.value = '';
   pwdConfirm.type = 'password';
-  pwdError.style.display = 'none';
+  document.getElementById('pwd-error').style.display = 'none';
   // Reset eye icons
   document.querySelectorAll('.pwd-toggle').forEach(function(b) { b.textContent = '\u{1F441}'; b.title = '显示密码'; });
 
+}
+
+function _passwordFormState() {
+  return {
+    newPassword: document.getElementById('pwd-new'),
+    confirmation: document.getElementById('pwd-confirm'),
+    error: document.getElementById('pwd-error'),
+    saveButton: document.getElementById('pwd-save'),
+  };
+}
+
+function _validatePasswordChange(pwd, confirm, hasPwd, error) {
+  if (pwd && pwd !== confirm) {
+    error.textContent = '两次输入的密码不一致';
+    error.style.display = 'block';
+    return false;
+  }
+  if (!pwd && hasPwd && !window.confirm('确定清除密码？文章将变为公开可见。')) return false;
+  return true;
+}
+
+function setPassword(slug, hasPwd) {
+  _resetPasswordDialog(hasPwd);
+  var state = _passwordFormState();
+  var pwdNew = state.newPassword;
+  var pwdConfirm = state.confirmation;
+  var pwdError = state.error;
+  var saveBtn = state.saveButton;
   var dialog = document.getElementById('password-dialog');
   var form = document.getElementById('password-form');
   var saving = false;
@@ -75,15 +101,7 @@ function setPassword(slug, hasPwd) {
     var pwd = pwdNew.value;
     var confirm = pwdConfirm.value;
 
-    if (pwd && pwd !== confirm) {
-      pwdError.textContent = '两次输入的密码不一致';
-      pwdError.style.display = 'block';
-      return false;
-    }
-    // Confirm before clearing password
-    if (!pwd && hasPwd && !confirm('确定清除密码？文章将变为公开可见。')) {
-      return false;
-    }
+    if (!_validatePasswordChange(pwd, confirm, hasPwd, pwdError)) return false;
 
     saving = true;
     saveBtn.disabled = true;
@@ -116,4 +134,3 @@ function updatePinCount(data) {
   var c = data.filter(function(e) { return e.pinned; }).length;
   document.getElementById('pin-count').textContent = c > 0 ? '\u{1F4CC} \u5DF2\u7F6E\u9876 ' + c + '/5' : '';
 }
-

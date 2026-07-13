@@ -68,16 +68,18 @@ async function loadPhotos() {
   } catch(e) { toast(e.message, true); }
 }
 
-function renderAdminPhotos() {
-  document.getElementById('photo-grid').innerHTML = _photoData.map(function(p, i) {
+function _photoDisplayDate(p) {
+  var displayDate = p.date || (p.exif && p.exif.date) || '';
+  if (!p.date && displayDate) {
+    var dateMatch = displayDate.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+    if (dateMatch) displayDate = MONTHS_ARR[+dateMatch[2] - 1] + ' ' + (+dateMatch[3]) + ', ' + dateMatch[1];
+  }
+  return displayDate;
+}
+
+function _photoCardHtml(p, i) {
     var tagCount = (p.tags || []).length;
-    var displayDate = p.date || (p.exif && p.exif.date) || '';
-    if (!p.date && displayDate) {
-      var dateMatch = displayDate.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-      if (dateMatch) {
-        displayDate = MONTHS_ARR[+dateMatch[2] - 1] + ' ' + (+dateMatch[3]) + ', ' + dateMatch[1];
-      }
-    }
+    var displayDate = _photoDisplayDate(p);
     var tagBtn = '<button class="btn btn-sm" onclick="event.stopPropagation();openPhotoTagModal(' + i + ')" style="font-size:10px;padding:1px 6px;margin-top:4px;">' +
       '🏷 ' + (tagCount > 0 ? tagCount + ' 标签' : '加标签') + '</button>';
     return '<div class="photo-card' + (_selectedPhotoIdx === i ? ' selected' : '') + '" draggable="true" data-index="' + i + '"' +
@@ -98,7 +100,10 @@ function renderAdminPhotos() {
         tagBtn +
       '</div>' +
       '</div>';
-  }).join('');
+}
+
+function renderAdminPhotos() {
+  document.getElementById('photo-grid').innerHTML = _photoData.map(_photoCardHtml).join('');
 }
 
 var _tagModalIdx = -1;
@@ -285,4 +290,3 @@ async function deletePhoto(filename) {  const confirmed = await confirmDialog('�
   loadPhotos();
   toast('照片已删除');
 }
-
