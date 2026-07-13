@@ -382,6 +382,7 @@ html.dark .comments-section { color-scheme: dark; }
 .gate-input-wrap input {
   padding: 10px 14px; border: 1px solid var(--line);
   border-radius: 6px; background: var(--bg); color: var(--fg);
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-size: 14px; width: 200px; min-width: 0; outline: none;
 }
 .gate-input-wrap input:focus { border-color: var(--c3); }
@@ -389,6 +390,7 @@ html.dark .comments-section { color-scheme: dark; }
 .gate-btn {
   padding: 10px 20px; background: var(--c3); color: #fff;
   border: none; border-radius: 6px; cursor: pointer;
+  font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-size: 14px; font-weight: 600; transition: opacity .2s;
   min-width: 72px;
   white-space: nowrap;
@@ -443,4 +445,3 @@ html.dark .comments-section { color-scheme: dark; }
 @media (prefers-reduced-motion: reduce) {
   .reveal { opacity: 1; transform: none; transition: none; }
 }
-

@@ -93,10 +93,36 @@
       return base64ToBytes(b64);
     }
 
+    var _unlockInFlight = false;
+
+    function waitForEssayDependencies() {
+      if (window.DOMPurify && window.marked && window.katex) return Promise.resolve();
+      return new Promise(function(resolve, reject) {
+        var timer = window.setInterval(function() {
+          if (window.DOMPurify && window.marked && window.katex) {
+            window.clearInterval(timer);
+            window.clearTimeout(timeout);
+            resolve();
+          }
+        }, 25);
+        var timeout = window.setTimeout(function() {
+          window.clearInterval(timer);
+          reject(new Error('essay dependencies did not load'));
+        }, 10000);
+      });
+    }
+
     async function unlockEssay() {
       var pwd = document.getElementById('essay-password-input').value;
-      if (!pwd) return;
+      var button = document.querySelector('.gate-btn');
+      var error = document.getElementById('gate-error');
+      if (!pwd || _unlockInFlight) return;
+      _unlockInFlight = true;
+      button.disabled = true;
+      error.style.display = 'none';
       try {
+        // A fast click can happen before bottom-of-page CDN scripts finish loading.
+        await waitForEssayDependencies();
         // v3 Fernet: standard_base64(version_byte(2) + salt(16) + fernet_token_b64url)
         var outer = base64ToBytes(_encryptedBody);
         var salt = outer.slice(1, 17);
@@ -158,7 +184,12 @@
           pageHeight = document.documentElement.scrollHeight - innerHeight;
         }
       } catch(e) {
-        document.getElementById('gate-error').style.display = 'block';
+        error.style.display = 'block';
+      } finally {
+        _unlockInFlight = false;
+        if (document.getElementById('essay-gate').style.display !== 'none') {
+          button.disabled = false;
+        }
       }
     }
   </script>

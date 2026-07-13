@@ -402,6 +402,7 @@ def test_sync_essay_html_giscus_loads_in_preview_and_full_width(tmp_path, monkey
     essay_css = (Path(__file__).resolve().parents[1] / 'assets' / 'css' / 'essay.css').read_text(encoding='utf-8')
     assert '.comments-section .giscus-frame' in essay_css
     assert 'width: 100% !important' in essay_css
+    assert "font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif" in essay_css
 
 
 def test_theme_sync_covers_system_tabs_and_giscus_initial_state():
@@ -505,6 +506,9 @@ def test_sync_essay_html_with_password(tmp_path, monkeypatch):
     assert 'id="essay-gate"' in html
     assert '_encryptedBody' in html
     assert '此内容已隐藏' in html
+    assert 'waitForEssayDependencies' in html
+    assert 'await waitForEssayDependencies()' in html
+    assert '_unlockInFlight' in html
     # Plaintext body must NOT be in the HTML
     assert 'Hello World' not in html
     # MD file must be encrypted
