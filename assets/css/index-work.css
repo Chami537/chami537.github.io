@@ -1,0 +1,33 @@
+/* Main page Work section. */
+.work-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+.work-card {
+  display: block; text-decoration: none; color: inherit;
+  padding: 40px 32px; border-right: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  position: relative; cursor: pointer;
+  transition: background .3s;
+}
+.work-card:nth-child(3n) { border-right: none; }
+.work-card::before {
+  content: ''; position: absolute; left: 0; top: 0; width: 3px; height: 40px;
+  transition: height .3s ease;
+}
+.work-card:nth-child(5n+1)::before { background: var(--c1); }
+.work-card:nth-child(5n+2)::before { background: var(--c2); }
+.work-card:nth-child(5n+3)::before { background: var(--c3); }
+.work-card:nth-child(5n+4)::before { background: var(--c4); }
+.work-card:nth-child(5n)::before { background: var(--c5); }
+.work-card:hover::before { height: 100%; }
+.work-card:hover { background: #fff; }
+.work-card .num { font-size: 48px; font-weight: 900; color: #eee; position: absolute; top: 28px; right: 28px; }
+.work-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.02em; }
+.work-card p { font-size: 13px; color: var(--muted); line-height: 1.6; }
+.work-card .line-tag {
+  display: inline-flex; align-items: center; gap: 8px; margin-top: 18px; font-size: 11px; font-weight: 600;
+}
+.work-card .line-tag::before { content: ''; width: 16px; height: 2px; }
+.work-card:nth-child(5n+1) .line-tag::before { background: var(--c1); }
+.work-card:nth-child(5n+2) .line-tag::before { background: var(--c2); }
+.work-card:nth-child(5n+3) .line-tag::before { background: var(--c3); }
+.work-card:nth-child(5n+4) .line-tag::before { background: var(--c4); }
+.work-card:nth-child(5n) .line-tag::before { background: var(--c5); }

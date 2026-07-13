@@ -44,8 +44,8 @@ if __name__ == '__main__':
             _cache_bust_assets()
 
             # Pre-fetch GitHub stars (rate-limited, only on full or when work data changed)
-            from backend.ssg import _fetch_stars
-            _fetch_stars()
+            from backend.github_sync import fetch_stars
+            fetch_stars()
 
             print()
             print(f"Done: {rebuilt} rebuilt, {skipped} skipped — {len(essays)} essays + feeds + cache bust.")
@@ -54,7 +54,7 @@ if __name__ == '__main__':
             import process_images
             process_images.process_all_images()
         elif sys.argv[1] == 'set-gps':
-            from backend.ssg import _set_gps
+            from backend.photo_metadata import set_gps as _set_gps
             if len(sys.argv) < 5:
                 print("Usage: python manage.py set-gps <filename> <lat> <lng>")
             else:

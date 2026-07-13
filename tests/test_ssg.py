@@ -109,6 +109,43 @@ def test_extract_exif_no_exif():
     assert result == {}
 
 
+def test_extract_exif_reads_nested_ifds():
+    import io
+
+    source = Image.new('RGB', (10, 10), color='red')
+    exif = source.getexif()
+    exif[271] = 'OnePlus'
+    exif[272] = 'OnePlus 13'
+    exif[34665] = {
+        33434: 0.02,
+        33437: 2.6,
+        34855: 3200,
+        37386: 13.85,
+        36867: '2026:07:11 21:23:27',
+    }
+    exif[34853] = {
+        1: 'N',
+        2: (22.0, 35.0, 11.85),
+        3: 'E',
+        4: (113.0, 57.0, 54.65),
+    }
+    buf = io.BytesIO()
+    source.save(buf, 'JPEG', exif=exif.tobytes())
+    buf.seek(0)
+
+    with Image.open(buf) as img:
+        result = _extract_exif(img)
+
+    assert result['camera'] == 'OnePlus'
+    assert result['model'] == 'OnePlus 13'
+    assert result['shutter'] == '1/50s'
+    assert result['aperture'] == 'f/2.6'
+    assert result['iso'] == '3200'
+    assert result['focal'] == '13mm'
+    assert result['date'] == '2026-07-11 21:23'
+    assert result['gps'] == {'lat': 22.586625, 'lng': 113.965181}
+
+
 # ── _cache_bust_assets ──
 
 def test_cache_bust_assets(tmp_path, monkeypatch):
@@ -119,23 +156,54 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
 
     # Create temp copies of all HTML, CSS, JS files
     configs = [
-        ('index.html', 'assets/css/index.css', ('assets/js/theme.js', 'assets/js/index.js')),
-        ('admin.html', 'assets/css/admin.css', (
+        ('index.html', (
+            'assets/css/index-foundation.css',
+            'assets/css/index-work.css',
+            'assets/css/index-photos.css',
+            'assets/css/index-content.css',
+            'assets/css/index-essays.css',
+            'assets/css/index-polish.css',
+        ), (
+            'assets/js/theme.js',
+            'assets/js/index-core.js',
+            'assets/js/index-essays.js',
+            'assets/js/index-photo-gallery.js',
+            'assets/js/index-photo-map.js',
+            'assets/js/index-content.js',
+            'assets/js/index-lightbox.js',
+            'assets/js/index.js',
+        )),
+        ('admin.html', (
+            'assets/css/admin-foundation.css',
+            'assets/css/admin-photo.css',
+            'assets/css/admin-git.css',
+            'assets/css/admin-essay.css',
+        ), (
             'assets/js/theme.js',
             'assets/js/admin.js',
-            'assets/js/admin-content.js',
-            'assets/js/admin-essays.js',
-            'assets/js/admin-photos.js',
+            'assets/js/admin-work.js',
+            'assets/js/admin-social.js',
+            'assets/js/admin-music.js',
+            'assets/js/admin-stack.js',
+            'assets/js/admin-git.js',
+            'assets/js/admin-essay-tags.js',
+            'assets/js/admin-essay-security.js',
+            'assets/js/admin-about.js',
+            'assets/js/admin-essay-editor.js',
+            'assets/js/admin-photo-editor.js',
+            'assets/js/admin-photo-stories.js',
         )),
     ]
-    for html_fn, css_fn, js_fns in configs:
-        (tmp_path / css_fn).parent.mkdir(parents=True, exist_ok=True)
-        (tmp_path / css_fn).write_text('/* css */')
+    for html_fn, css_fns, js_fns in configs:
+        for css_fn in css_fns:
+            (tmp_path / css_fn).parent.mkdir(parents=True, exist_ok=True)
+            (tmp_path / css_fn).write_text('/* css */')
         for js_fn in js_fns:
             (tmp_path / js_fn).parent.mkdir(parents=True, exist_ok=True)
             (tmp_path / js_fn).write_text('/* js */')
+        css_tags = '\n'.join(f'<link href="{css_fn}?v=999" rel="stylesheet">' for css_fn in css_fns)
         js_tags = '\n'.join(f'<script src="{js_fn}?v=999"></script>' for js_fn in js_fns)
-        (tmp_path / html_fn).write_text(f'<link href="{css_fn}?v=999" rel="stylesheet">\n{js_tags}')
+        (tmp_path / html_fn).write_text(f'{css_tags}\n{js_tags}')
 
     now = int(time.time())
     monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
@@ -144,9 +212,10 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
 
     _cache_bust_assets()
 
-    for html_fn, css_fn, js_fns in configs:
+    for html_fn, css_fns, js_fns in configs:
         result = (tmp_path / html_fn).read_text()
-        assert f'{css_fn}?v={now}' in result
+        for css_fn in css_fns:
+            assert f'{css_fn}?v={now}' in result
         for js_fn in js_fns:
             assert f'{js_fn}?v={now}' in result
             assert '?v=999' not in result
@@ -177,8 +246,8 @@ def test_decrypt_wrong_password():
 
 # ── Public essays generation ──
 
-def test_generate_public_essays_excludes_password_protected_essays(tmp_path, monkeypatch):
-    """Protected essays must not leak metadata into the public JSON feed."""
+def test_generate_public_essays_lists_protected_essays_without_passwords(tmp_path, monkeypatch):
+    """Protected essays remain discoverable while their passwords stay private."""
     test_essays = [
         {'slug': 'a', 'title': 'Visible', 'password': 'secret123'},
         {'slug': 'b', 'title': 'Protected', 'password': 'top'},
@@ -195,9 +264,10 @@ def test_generate_public_essays_excludes_password_protected_essays(tmp_path, mon
         data = json.load(f)
     # New format: {_tags: [...], essays: [...]}
     visible = data['essays']
-    assert len(visible) == 1
+    assert len(visible) == 3
     slugs = [e['slug'] for e in visible]
-    assert slugs == ['c']
+    assert slugs == ['a', 'b', 'c']
+    assert [e['password_protected'] for e in visible] == [True, True, False]
     # Password must be stripped
     for e in visible:
         assert 'password' not in e
@@ -260,11 +330,13 @@ def test_sync_essay_html_without_password(tmp_path, monkeypatch):
     assert '#include &lt;stdio.h&gt;' in html
     assert '#include &amp;lt;stdio.h&amp;gt;' not in html
     assert 'highlight.js' in html
-    assert 'common.min.js' in html
-    assert 'highlightCodeBlocks' in html
-    assert 'fallbackHighlightCodeBlock' in html
-    assert 'code-language' in html
-    assert 'COPY' in html
+    assert 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js' in html
+    assert '<script src="/assets/js/essay-code.js?v=' in html
+    essay_code = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'essay-code.js').read_text(encoding='utf-8')
+    assert 'highlightCodeBlocks' in essay_code
+    assert 'fallbackHighlightCodeBlock' in essay_code
+    assert 'code-language' in essay_code
+    assert 'COPY' in essay_code
     assert '_encryptedBody' not in html
 
 
@@ -294,6 +366,9 @@ def test_sync_essay_html_csp_allows_giscus(tmp_path, monkeypatch):
     csp = html.split('Content-Security-Policy" content="', 1)[1].split('"', 1)[0]
     assert 'script-src' in csp
     assert 'https://giscus.app' in csp
+    assert 'style-src-elem' in csp
+    assert 'connect-src \'self\' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://giscus.app' in csp
+    assert 'https://cdnjs.cloudflare.com' in csp
     assert 'frame-src https://giscus.app' in csp
 
 
@@ -323,22 +398,28 @@ def test_sync_essay_html_giscus_loads_in_preview_and_full_width(tmp_path, monkey
     assert "location.hostname !== 'localhost'" not in html
     assert "location.hostname !== '127.0.0.1'" not in html
     assert '<div class="comments-section" id="giscus-container"></div>' in html
-    assert '.comments-section .giscus-frame' in html
-    assert 'width: 100% !important' in html
+    assert '<link rel="stylesheet" href="/assets/css/essay.css?v=' in html
+    essay_css = (Path(__file__).resolve().parents[1] / 'assets' / 'css' / 'essay.css').read_text(encoding='utf-8')
+    assert '.comments-section .giscus-frame' in essay_css
+    assert 'width: 100% !important' in essay_css
 
 
 def test_theme_sync_covers_system_tabs_and_giscus_initial_state():
     """Theme changes should propagate beyond the page that initiated them."""
     theme_js = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'theme.js').read_text(encoding='utf-8')
     essay_template = (Path(__file__).resolve().parents[1] / 'templates' / 'essay.html').read_text(encoding='utf-8')
+    giscus_js = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'essay-giscus.js').read_text(encoding='utf-8')
+    comments_js = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'essay-comments.js').read_text(encoding='utf-8')
     archive_template = (Path(__file__).resolve().parents[1] / 'templates' / 'archive.html').read_text(encoding='utf-8')
     map_template = (Path(__file__).resolve().parents[1] / 'templates' / 'map.html').read_text(encoding='utf-8')
 
     assert "window.addEventListener('storage'" in theme_js
     assert "event.key !== 'theme'" in theme_js
     assert "matchMedia('(prefers-color-scheme: dark)')" in theme_js
-    assert "window.addEventListener('themechange', syncGiscusTheme)" in essay_template
-    assert "gs.setAttribute('data-theme', document.documentElement.classList.contains('dark')" in essay_template
+    assert 'src="/assets/js/essay-giscus.js?v={{ build_ts }}"' in essay_template
+    assert "window.addEventListener('themechange', syncGiscusTheme)" in giscus_js
+    assert 'src="/assets/js/essay-comments.js?v={{ build_ts }}"' in essay_template
+    assert "gs.setAttribute('data-theme', document.documentElement.classList.contains('dark')" in comments_js
     assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in essay_template
     assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in archive_template
     assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in map_template
@@ -387,8 +468,8 @@ def test_theme_toggle_cycles_between_system_light_and_dark_preferences():
 
 def test_mobile_essay_rows_keep_metadata_on_one_centered_line():
     """Mobile essay rows should not leave an orphaned 'read' label below the date."""
-    index_js = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'index.js').read_text(encoding='utf-8')
-    index_css = (Path(__file__).resolve().parents[1] / 'assets' / 'css' / 'index.css').read_text(encoding='utf-8')
+    index_js = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'index-essays.js').read_text(encoding='utf-8')
+    index_css = (Path(__file__).resolve().parents[1] / 'assets' / 'css' / 'index-polish.css').read_text(encoding='utf-8')
 
     assert " + ' min</span>'" in index_js
     assert " + ' min read</span>'" not in index_js

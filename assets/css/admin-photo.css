@@ -1,0 +1,127 @@
+/* Admin photo grid, stories, and dialogs. */
+.photo-grid-admin {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+}
+.photo-card {
+  background: var(--card-bg); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; position: relative;
+  cursor: pointer; transition: border-color .2s, box-shadow .2s;
+}
+.photo-card.selected {
+  border-color: var(--c3); box-shadow: 0 0 0 2px rgba(255,184,0,0.3);
+}
+.photo-card img { width: 100%; aspect-ratio: 1; object-fit: cover; display: block; }
+.photo-info { padding: 8px; font-size: 11px; }
+.photo-info .fn { font-weight: 600; word-break: break-all; }
+.photo-info .sz { color: var(--muted); }
+.photo-card .del-btn {
+  position: absolute; top: 4px; right: 4px;
+  width: 24px; height: 24px; border-radius: 50%;
+  background: rgba(0,0,0,0.5); color: #fff; border: none;
+  font-size: 14px; cursor: pointer; display: flex;
+  align-items: center; justify-content: center; line-height: 1;
+}
+.photo-exif { font-size: 10px; color: var(--muted); margin-top: 4px; }
+
+/* Photo story editor */
+.story-empty {
+  display: flex; align-items: center; gap: 10px;
+  color: var(--muted); font-size: 12px;
+}
+.story-edit-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.story-edit-head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 10px;
+}
+.story-id-input {
+  width: 190px;
+  font-weight: 700;
+  font-size: 13px;
+}
+.story-edit-count {
+  margin-right: auto;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+.story-edit-fields {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 150px;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.story-edit-card input,
+.story-caption-input {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: inherit;
+  font-size: 12px;
+  padding: 5px 8px;
+}
+.story-edit-help {
+  color: var(--muted);
+  font-size: 11px;
+  margin-bottom: 6px;
+}
+.story-cover-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 152px;
+  overflow: auto;
+  padding: 2px 2px 8px;
+}
+.story-photo-pick {
+  position: relative;
+  flex: 0 0 auto;
+  width: 58px;
+  height: 58px;
+  border-radius: 7px;
+  border: 2px solid transparent;
+  opacity: .36;
+  transition: opacity .15s, border-color .15s, transform .15s;
+}
+.story-photo-pick:hover { opacity: .82; transform: translateY(-1px); }
+.story-photo-pick.in-story { opacity: 1; }
+.story-photo-pick.is-cover { border-color: var(--fg); }
+.story-photo-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+  display: block;
+  cursor: pointer;
+}
+.story-photo-toggle {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  color: #fff;
+  border: 2px solid var(--card-bg);
+  font-size: 10px;
+  line-height: 14px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: 800;
+}
+.story-photo-pick.in-story .story-photo-toggle { background: var(--fg); }
+.story-caption-input {
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+  margin-top: 8px;
+}
+.story-add-btn { margin-top: 4px; }

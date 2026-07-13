@@ -828,11 +828,13 @@ def test_encrypted_essay_is_hidden_in_html(client, data_backup):
     assert '此内容已隐藏' in html
     assert '这是隐藏内容' not in html
 
-    # essays_public.json must exclude password-protected essays entirely
+    # essays_public.json lists protected essays but never exposes their password
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
     public = json.load(open(public_path, encoding='utf-8'))
     essay = next((e for e in public['essays'] if e['slug'] == slug), None)
-    assert essay is None
+    assert essay is not None
+    assert essay['password_protected'] is True
+    assert 'password' not in essay
 
     # Cleanup
     client.delete(f'/api/essays/{slug}')

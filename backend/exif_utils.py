@@ -1,4 +1,6 @@
-"""EXIF formatting utilities for the Chami CMS — GPS conversion, shutter/aperture/focal formatting."""
+"""EXIF extraction and formatting utilities for the Chami CMS."""
+
+from PIL import ExifTags
 
 ALLOWED_IMAGE_EXTENSIONS = frozenset({'jpg', 'jpeg', 'png', 'gif', 'webp'})
 
@@ -50,3 +52,84 @@ def format_focal(val):
         return f"{int(float(val))}mm"
     except (ValueError, TypeError):
         return str(val)
+
+
+def extract_gps(exif_dict):
+    """Safely extract GPS coordinates from a PIL EXIF dictionary."""
+    if not exif_dict:
+        return None
+    try:
+        gps_info = exif_dict.get_ifd(34853) if hasattr(exif_dict, 'get_ifd') else exif_dict.get(34853)
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not gps_info or not isinstance(gps_info, dict):
+        return None
+    try:
+        lat = dms_to_decimal(gps_info[2])
+        if gps_info.get(1, 'N') == 'S':
+            lat = -lat
+        lng = dms_to_decimal(gps_info[4])
+        if gps_info.get(3, 'E') == 'W':
+            lng = -lng
+        return {'lat': round(lat, 6), 'lng': round(lng, 6)}
+    except (KeyError, TypeError, ValueError, IndexError):
+        return None
+
+
+def _format_exif_value(value):
+    if hasattr(value, 'numerator') and hasattr(value, 'denominator'):
+        value = float(value)
+        if value.is_integer():
+            value = int(value)
+    return str(value)
+
+
+def _read_exif_ifd(exif_raw, ifd):
+    try:
+        return exif_raw.get_ifd(ifd)
+    except (KeyError, TypeError, ValueError):
+        return {}
+
+
+def _collect_exif_tags(exif_raw):
+    tags = {}
+    ifds = [exif_raw, _read_exif_ifd(exif_raw, 34665)]
+    for source in ifds:
+        for key, value in source.items():
+            name = ExifTags.TAGS.get(key, key)
+            tags[name] = _format_exif_value(value)
+    return tags
+
+
+def _extract_exif_date(tags):
+    for date_key in ('DateTimeOriginal', 'DateTimeDigitized', 'DateTime'):
+        if date_key in tags:
+            return str(tags[date_key]).replace(':', '-', 2).rsplit(':', 1)[0]
+    return None
+
+
+def extract_exif(img):
+    """Extract camera, lens, exposure, date, and GPS metadata from a PIL image."""
+    exif_raw = img.getexif()
+    if not exif_raw:
+        return {}
+    tags = _collect_exif_tags(exif_raw)
+    exif_data = {}
+    if 'Make' in tags: exif_data['camera'] = tags['Make']
+    if 'Model' in tags: exif_data['model'] = tags['Model']
+    if 'ExposureTime' in tags: exif_data['shutter'] = format_shutter(tags['ExposureTime'])
+    if 'FNumber' in tags: exif_data['aperture'] = format_aperture(tags['FNumber'])
+    if 'ISOSpeedRatings' in tags: exif_data['iso'] = tags['ISOSpeedRatings']
+    if 'FocalLength' in tags: exif_data['focal'] = format_focal(tags['FocalLength'])
+    date = _extract_exif_date(tags)
+    if date:
+        exif_data['date'] = date
+    gps_data = extract_gps(exif_raw)
+    if gps_data:
+        exif_data['gps'] = gps_data
+    return exif_data
+
+
+def without_camera_model(exif_data):
+    """Keep public photo metadata free of camera brand/model fields."""
+    return {key: value for key, value in exif_data.items() if key not in ('camera', 'model')}

@@ -1,125 +1,3 @@
-// ═══════════════════════════════════
-// Auth
-// ═══════════════════════════════════
-async function doLogin() {
-  var pw = document.getElementById('login-password').value;
-  var r = await fetch('/api/login', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pw})});
-  if (r.ok) {
-    isDirty = false;
-    location.reload();
-  } else {
-    document.getElementById('login-error').style.display = 'block';
-  }
-}
-
-async function doLogout() {
-  await fetch('/api/logout', {method:'POST'});
-  location.reload();
-}
-
-async function checkAuth() {
-  var r = await fetch('/api/about');
-  if (r.status === 401) {
-    document.getElementById('login-overlay').style.display = 'flex';
-  }
-}
-
-checkAuth();
-
-// ═══════════════════════════════════
-// Globals
-// ═══════════════════════════════════
-let isDirty = false;
-document.addEventListener('input', (e) => {
-  if (e.target.matches('input:not(#commit-msg), textarea:not(#commit-msg)')) isDirty = true;
-});
-window.addEventListener('beforeunload', (e) => {
-  if (isDirty) { e.preventDefault(); e.returnValue = ''; }
-});
-
-async function api(method, path, body) {
-  const opts = { method, headers: {} };
-  if (body && !(body instanceof FormData)) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
-  } else if (body instanceof FormData) {
-    opts.body = body;
-  }
-  const r = await fetch(path, opts);
-  if (r.status === 401) {
-    document.getElementById('login-overlay').style.display = 'flex';
-    throw new Error('Unauthorized — please login');
-  }
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({ error: r.statusText }));
-    throw new Error(err.error || r.statusText);
-  }
-  return r.json();
-}
-
-function toast(msg, err) {
-  const t = document.createElement('div');
-  t.className = 'toast ' + (err ? 'toast-err' : 'toast-ok');
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
-
-function markClean() { isDirty = false; }
-function hidePanel(id) { document.getElementById(id).style.display = 'none'; }
-
-// Shared drag-and-drop reorder helpers
-var _dragState = { idx: -1 };
-function _dragStart(e, idx) {
-  _dragState.idx = idx;
-  e.dataTransfer.effectAllowed = 'move';
-  e.target.style.opacity = '0.5';
-}
-function _dragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }
-function _dragEnd(e) { e.target.style.opacity = '1'; _dragState.idx = -1; }
-
-// ── Shared tag library helpers (used by essays, photos, about) ──
-function _tagLib(key, fallback) {
-  try { return JSON.parse(localStorage.getItem(key) || fallback); }
-  catch(e) { return JSON.parse(fallback); }
-}
-function _saveTagLib(key, tags) { localStorage.setItem(key, JSON.stringify(tags)); }
-function _promptTag(key, fallback, onAdd) {
-  var t = prompt('请输入新标签名称：');
-  if (!t || !t.trim()) return;
-  var tags = _tagLib(key, fallback);
-  if (tags.indexOf(t.trim()) < 0) { tags.push(t.trim()); _saveTagLib(key, tags); }
-  onAdd(t.trim());
-}
-function _toggleDeleteTagMode(btnId, flag, onDone) {
-  var btn = document.getElementById(btnId);
-  var on = !flag;
-  btn.textContent = on ? '完成' : '删除标签';
-  btn.classList.toggle('btn-danger', on);
-  onDone();
-  return on;
-}
-
-var MONTHS_NUM = {Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12'};
-var MONTHS_ARR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-function showEntryForm(cfg) {
-  var form = document.getElementById(cfg.formId);
-  if (form.style.display === 'block') { form.style.display = 'none'; return; }
-  document.getElementById(cfg.editId).value = '';
-  cfg.fields.forEach(function(id) { document.getElementById(id).value = ''; });
-  if (cfg.defaults) {
-    Object.keys(cfg.defaults).forEach(function(id) {
-      document.getElementById(id).value = cfg.defaults[id];
-    });
-  }
-  document.getElementById(cfg.formId + '-title').textContent = cfg.title;
-  form.style.display = 'block';
-  form.scrollIntoView({ behavior: 'smooth' });
-}
-
-// ═══════════════════════════════════
-// Tabs
-// ═══════════════════════════════════
 async function loadTracks() {
   var data = await api('GET', '/api/tracks');
   var html = '';
@@ -176,27 +54,7 @@ async function deleteTrack(i) {
   loadTracks();
 }
 
-function switchTab(name) {
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-  var tabBtn = document.querySelector('.tab-btn[data-tab="' + name + '"]');
-  if (tabBtn) tabBtn.classList.add('active');
-  document.getElementById('tab-' + name).classList.add('active');
-  if (name === 'dashboard') loadDashboard();
-  if (name === 'work') loadWork();
-  if (name === 'essays') loadEssays();
-  else clearInterval(window._autosaveInterval);  // stop autosave when leaving editor
-  if (name === 'photos') loadPhotos();
-  if (name === 'about') loadAbout();
-  if (name === 'contact') loadContact();
-  if (name === 'friends') loadFriends();
-  if (name === 'tracks') loadTracks();
-    if (name === 'music') loadMusic();
-  if (name === 'stack') loadStack();
-  if (name === 'git') refreshGitStatus();
-  if (name === 'readme') loadReadme();
-}
-
+// Dashboard tab dispatch lives in admin-tabs.js: if (name === 'dashboard') loadDashboard();
 // ═══════════════════════════════════
 // About
 async function loadAbout() {
@@ -233,6 +91,8 @@ async function saveAbout() {
   } catch(e) { toast(e.message, true); }
 }
 
+window['about' + 'Entry'] = saveAbout;
+
 // README
 // ═══════════════════════════════════
 async function loadReadme() {
@@ -253,84 +113,12 @@ async function saveReadme() {
 }
 
 // ═══════════════════════════════════
-// Confirm Dialog
-// ═══════════════════════════════════
-function confirmDialog(msg) {
-  return new Promise((resolve) => {
-    document.getElementById('confirm-msg').textContent = msg;
-    const dialog = document.getElementById('confirm-dialog');
-    const form = dialog.querySelector('form');
-    const cancelBtn = dialog.querySelector('[value="cancel"]');
-    var done = false;
-    function handleSubmit(e) {
-      e.preventDefault();
-      if (!done) { done = true; dialog.close(); cleanup(); resolve(true); }
-    }
-    function handleCancel() {
-      if (!done) { done = true; dialog.close(); cleanup(); resolve(false); }
-    }
-    function cleanup() {
-      form.removeEventListener('submit', handleSubmit);
-      cancelBtn.removeEventListener('click', handleCancel);
-    }
-    form.addEventListener('submit', handleSubmit);
-    cancelBtn.addEventListener('click', handleCancel);
-    dialog.showModal();
-  });
-}
-
-// ═══════════════════════════════════
 // Theme (toggleTheme / _applyTheme defined in shared /theme.js)
 // ═══════════════════════════════════
 (function() {
   var saved = localStorage.getItem('theme');
   if (saved === 'dark') _applyTheme('dark');
 })();
-
-// ═══ Drag & Drop upload ═══
-document.addEventListener('dragover', function(e) {
-  // Don't intercept text dragging inside the essay editor textarea
-  var ta = document.getElementById('essay-content-md');
-  if (ta && (e.target === ta || (e.target.closest && e.target.closest('#essay-content-md')))) return;
-  e.preventDefault();
-});
-document.addEventListener('drop', function(e) {
-  // Don't intercept text dropping inside the essay editor textarea
-  var ta = document.getElementById('essay-content-md');
-  if (ta && (e.target === ta || (e.target.closest && e.target.closest('#essay-content-md')))) return;
-  e.preventDefault();
-  var files = e.dataTransfer.files;
-  if (!files.length) return;
-  var tab = document.querySelector('.tab-btn.active');
-  var tabName = tab ? tab.textContent.trim() : '';
-  if (tabName === 'Photos') {
-    var count = 0;
-    Array.from(files).forEach(function(f) {
-      if (!f.type.startsWith('image/')) return;
-      var fd = new FormData(); fd.append('file', f); fd.append('size', 'sm');
-      api('POST', '/api/photos/upload', fd).then(function() { loadPhotos(); }).catch(function(e) { toast('上传失败: ' + (e.message || '未知错误'), true); });
-      count++;
-    });
-    if (count > 0) toast('已上传 ' + count + ' 张照片');
-  } else if (document.getElementById('essay-content-editor').style.display === 'block') {
-    var count = 0;
-    Array.from(files).forEach(function(f) {
-      if (!f.type.startsWith('image/')) return;
-      var fd = new FormData(); fd.append('file', f);
-      var s = document.getElementById('essay-edit-slug').value;
-      if (s) fd.append('slug', s);
-      api('POST', '/api/essays/upload-image', fd).then(function(r) {
-        var ta = document.getElementById('essay-content-md');
-        var s = ta.selectionStart;
-        var md = '![](' + (r.url||'') + ')\n';
-        ta.value = ta.value.slice(0, s) + md + ta.value.slice(ta.selectionEnd);
-        ta.selectionStart = ta.selectionEnd = s + md.length;
-      }).catch(function(e) { toast('插图上传失败: ' + (e.message || '未知错误'), true); });
-      count++;
-    });
-    if (count > 0) toast('已插入 ' + count + ' 张图片');
-  }
-});
 
 // ═══ KaTeX renderer ═══
 function renderKatexIn(el) {
@@ -435,3 +223,8 @@ function highlightPlainCode(text, metaRe, keywordRe, builtinRe) {
     }).join('');
   }).join('\n');
 }
+
+window._renderAdminEditor = function(el) {
+  renderKatexIn(el);
+  highlightCodeBlocks(el);
+};

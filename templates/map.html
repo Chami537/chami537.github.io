@@ -128,7 +128,7 @@ html.dark .leaflet-popup {
 <script>
 var photos = {% endraw %}{{ photos_json }}{% raw %};
 
-var map = L.map('map').setView([{% endraw %}{{ center_lat }}{% raw %}, {% endraw %}{{ center_lng }}{% raw %}], 13);
+var map = L.map('map', {attributionControl: false}).setView([{% endraw %}{{ center_lat }}{% raw %}, {% endraw %}{{ center_lng }}{% raw %}], 13);
 L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
   maxZoom: 19, subdomains: 'abcd',
   attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> &copy; CARTO'

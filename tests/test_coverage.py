@@ -2,9 +2,73 @@
 import io
 import os
 from types import SimpleNamespace
+from pathlib import Path
+
+from PIL import Image
 
 from backend.data import DATA_DIR
 from backend.data import load_json
+
+
+def test_photo_cards_fall_back_to_exif_date():
+    source = Path('assets/js/index-photo-gallery.js').read_text(encoding='utf-8')
+    assert "var photoDate = p.date || ex.date || '';" in source
+    assert "var dateMatch = photoDate.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);" in source
+    assert "dateMonths[+dateMatch[2] - 1]" in source
+    assert "var dateHtml = photoDate ?" in source
+
+
+def test_admin_photo_cards_format_exif_date_without_camera_model():
+    source = Path('assets/js/admin-photo-editor.js').read_text(encoding='utf-8')
+    assert "var displayDate = p.date || (p.exif && p.exif.date) || '';" in source
+    assert "var dateMatch = displayDate.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);" in source
+    assert "MONTHS_ARR[+dateMatch[2] - 1]" in source
+    assert "p.exif.camera" not in source
+
+
+def test_admin_photo_editor_uses_exif_date_and_clears_stale_marker():
+    source = Path('assets/js/admin-photo-editor.js').read_text(encoding='utf-8')
+    assert "var curDate = p.date || (p.exif && p.exif.date) || '';" in source
+    assert "_editorMap.removeLayer(_editorMarker);" in source
+    assert "_editorMarker = null;" in source
+
+
+def test_photo_maps_use_reliable_tiles_and_marker_assets():
+    admin_source = Path('assets/js/admin-photo-editor.js').read_text(encoding='utf-8')
+    story_source = Path('assets/js/admin-photo-stories.js').read_text(encoding='utf-8')
+    index_source = Path('assets/js/index-photo-map.js').read_text(encoding='utf-8')
+    template_source = Path('templates/map.html').read_text(encoding='utf-8')
+    assert 'basemaps.cartocdn.com/light_all' in admin_source
+    assert 'basemaps.cartocdn.com/light_all' in index_source
+    assert 'basemaps.cartocdn.com/light_all' in template_source
+    assert "className: 'custom-marker'" in story_source
+    assert "className: 'custom-marker'" in index_source
+
+
+def test_admin_csp_allows_external_map_tiles():
+    source = Path('admin.html').read_text(encoding='utf-8')
+    assert "img-src 'self' data: blob: https:" in source
+
+
+def test_admin_highlight_uses_browser_build_and_cdn_csp():
+    source = Path('admin.html').read_text(encoding='utf-8')
+    assert 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js' in source
+    assert 'common.min.js' not in source
+    assert "connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com" in source
+
+
+def test_photo_gps_link_scrolls_map_into_view():
+    source = Path('assets/js/index-photo-map.js').read_text(encoding='utf-8')
+    assert "var mapContainer = document.getElementById('photo-map-container');" in source
+    assert "mapContainer.scrollIntoView({behavior:'smooth', block:'start'});" in source
+
+
+def test_photo_maps_hide_leaflet_attribution_control():
+    index_source = Path('assets/js/index-photo-map.js').read_text(encoding='utf-8')
+    admin_source = Path('assets/js/admin-photo-editor.js').read_text(encoding='utf-8')
+    template_source = Path('templates/map.html').read_text(encoding='utf-8')
+    for source in (index_source, admin_source, template_source):
+        assert 'attributionControl: false' in source
 
 
 def test_photo_stories_get(client):
@@ -131,6 +195,42 @@ def test_list_essays_has_password_set(client):
 def test_photo_upload_no_file(client):
     r = client.post('/api/photos/upload')
     assert r.status_code == 400
+
+
+def test_photo_upload_preserves_exif(client, tmp_path, monkeypatch):
+    import backend.routes.photos as photos_route
+
+    source = Image.new('RGB', (10, 10), color='red')
+    exif = source.getexif()
+    exif[271] = 'OnePlus'
+    exif[272] = 'OnePlus 13'
+    exif[34665] = {34855: 3200, 36867: '2026:06:26 18:40:00'}
+    source_bytes = io.BytesIO()
+    source.save(source_bytes, 'JPEG', exif=exif.tobytes())
+    source_bytes.seek(0)
+
+    image_dir = tmp_path / 'images'
+    base_dir = tmp_path
+    saved = []
+    monkeypatch.setattr(photos_route, 'IMAGES_DIR', str(image_dir))
+    monkeypatch.setattr(photos_route, 'BASE_DIR', str(base_dir))
+    monkeypatch.setattr(photos_route, 'load_json', lambda _name: saved.copy())
+    monkeypatch.setattr(photos_route, 'atomic_write_json', lambda _name, data: saved.extend(data))
+
+    response = client.post(
+        '/api/photos/upload',
+        data={'file': (source_bytes, 'camera.jpg')},
+        content_type='multipart/form-data',
+    )
+
+    assert response.status_code == 201
+    filename = response.json['filename']
+    assert response.json['exif']['date'] == '2026-06-26 18:40'
+    assert saved[0]['date'] == 'Jun 26, 2026'
+    assert 'camera' not in response.json['exif']
+    assert 'model' not in response.json['exif']
+    with Image.open(base_dir / 'raw_photos' / filename) as uploaded:
+        assert uploaded.getexif().get(272) == 'OnePlus 13'
 
 def test_essay_image_upload_no_file(client):
     r = client.post('/api/essays/upload-image')

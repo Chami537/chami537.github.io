@@ -10,7 +10,8 @@ import sys
 from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
 from backend.data import load_json, atomic_write_json
-from backend.ssg import _extract_exif
+from backend.ssg import _parse_date
+from backend.exif_utils import extract_exif as _extract_exif, without_camera_model as _without_camera_model
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_DIR = os.path.join(BASE_DIR, 'raw_photos')
@@ -55,7 +56,7 @@ def process_all_images():
         try:
             with Image.open(raw_path) as img:
                 # Always extract EXIF
-                exif_info = _extract_exif(img)
+                exif_info = _without_camera_model(_extract_exif(img))
 
                 # Generate thumbnails (skip if already exist)
                 for size_name, max_width in SIZES.items():
@@ -79,6 +80,10 @@ def process_all_images():
                 if old_entry:
                     if old_entry.get('date'):
                         entry['date'] = old_entry['date']
+                    elif exif_info.get('date'):
+                        entry['date'] = _parse_date(exif_info['date'])
+                elif exif_info.get('date'):
+                    entry['date'] = _parse_date(exif_info['date'])
                     if old_entry.get('size'):
                         entry['size'] = old_entry['size']
                     if old_entry.get('tags'):

@@ -165,6 +165,42 @@ def toggle_pin(slug):
     return jsonify({"pinned": target['pinned'], "count": pinned_count})
 
 
+def _rewrite_encrypted_essay(md_file, old_password, new_password):
+    """Decrypt an existing markdown file and encrypt it with a new password."""
+    if not os.path.exists(md_file) or not old_password:
+        return None
+    with open(md_file, 'r', encoding='utf-8') as f:
+        raw_md = f.read()
+    try:
+        raw_md = _decrypt_content(raw_md, old_password)
+    except (ValueError, UnicodeDecodeError):
+        return "旧密码错误，无法重新加密内容"
+    with open(md_file, 'w', encoding='utf-8') as f:
+        f.write(_encrypt_content(raw_md, new_password))
+    return None
+
+
+def _decrypt_essay_file(md_file, password):
+    """Decrypt an essay markdown file in place before removing its password."""
+    if not os.path.exists(md_file) or not password:
+        return None
+    with open(md_file, 'r', encoding='utf-8') as f:
+        raw_md = f.read()
+    try:
+        raw_md = _decrypt_content(raw_md, password)
+    except (ValueError, UnicodeDecodeError):
+        return "旧密码错误，无法解密内容"
+    with open(md_file, 'w', encoding='utf-8') as f:
+        f.write(raw_md)
+    return None
+
+
+def _strip_essay_passwords(essays):
+    """Remove transient password fields before persisting essay metadata."""
+    for essay in essays:
+        essay.pop('password', None)
+
+
 @app.route('/api/essays/<slug>/password', methods=['POST'])
 @require_json
 def set_essay_password(slug):
@@ -176,41 +212,19 @@ def set_essay_password(slug):
     new_password = request.json.get('password', '')
     old_password = get_essay_password(slug)
     md_file = os.path.join(MD_DIR, f"{slug}.md")
-    had_password = bool(old_password)
 
     if new_password:
-        # Re-encrypt .md if already encrypted
-        if had_password and os.path.exists(md_file):
-            with open(md_file, 'r', encoding='utf-8') as f:
-                raw_md = f.read()
-            if old_password:
-                try:
-                    raw_md = _decrypt_content(raw_md, old_password)
-                except ValueError:
-                    return jsonify({"error": "旧密码错误，无法重新加密内容"}), 400
-                except UnicodeDecodeError:
-                    return jsonify({"error": "旧密码错误，无法重新加密内容"}), 400
-            with open(md_file, 'w', encoding='utf-8') as f:
-                f.write(_encrypt_content(raw_md, new_password))
+        error = _rewrite_encrypted_essay(md_file, old_password, new_password)
+        if error:
+            return jsonify({"error": error}), 400
         store_password(slug, new_password)
     else:
-        # Clearing password: decrypt .md, remove from store
-        if os.path.exists(md_file) and old_password:
-            with open(md_file, 'r', encoding='utf-8') as f:
-                raw_md = f.read()
-            try:
-                raw_md = _decrypt_content(raw_md, old_password)
-                with open(md_file, 'w', encoding='utf-8') as f:
-                    f.write(raw_md)
-            except ValueError:
-                return jsonify({"error": "旧密码错误，无法解密内容"}), 400
-            except UnicodeDecodeError:
-                return jsonify({"error": "旧密码错误，无法解密内容"}), 400
+        error = _decrypt_essay_file(md_file, old_password)
+        if error:
+            return jsonify({"error": error}), 400
         store_password(slug, '')
 
-    # Strip password from essays.json (safety net)
-    for e in essays:
-        e.pop('password', None)
+    _strip_essay_passwords(essays)
     atomic_write_json('essays.json', essays)
 
     # Regenerate HTML (password gate or normal)

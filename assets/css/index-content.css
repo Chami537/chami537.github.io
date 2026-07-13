@@ -1,0 +1,12 @@
+/* Main page contact styles. */
+.contact-list { display: flex; flex-direction: column; }
+.contact-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 20px 0; border-bottom: 1px solid var(--line);
+  text-decoration: none; color: var(--fg);
+  transition: padding-left .3s, background .3s;
+}
+.contact-row:hover { padding-left: 24px; background: rgba(156,39,176,0.05); }
+.contact-row .value { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; font-weight: 600; }
+.contact-row .arr { font-size: 18px; transition: transform .2s ease; }
+.contact-row:hover .arr { transform: translateX(4px); }

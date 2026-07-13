@@ -7,7 +7,9 @@ from PIL import Image
 
 from backend.app import app
 from backend.data import load_json, atomic_write_json, BASE_DIR
-from backend.ssg import _extract_exif, _set_gps, IMAGES_DIR
+from backend.ssg import _parse_date, IMAGES_DIR
+from backend.photo_metadata import set_gps as _set_gps
+from backend.exif_utils import extract_exif as _extract_exif, without_camera_model as _without_camera_model
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
 @app.route('/api/photos', methods=['GET'])
@@ -40,7 +42,8 @@ def upload_photo():
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
 
     # Extract EXIF (shared helper in ssg.py)
-    exif_data = _extract_exif(img)
+    exif_data = _without_camera_model(_extract_exif(img))
+    exif_bytes = img.getexif().tobytes()
 
     # Generate thumbnails
     for size_name, max_w in [('lg', 1920), ('md', 800), ('sm', 400)]:
@@ -53,15 +56,18 @@ def upload_photo():
         thumb.save(os.path.join(out_dir, filename))
 
     # Save original to images/ and copy to raw_photos/
-    img.save(os.path.join(IMAGES_DIR, filename))
+    img.save(os.path.join(IMAGES_DIR, filename), exif=exif_bytes)
     raw_dir = os.path.join(BASE_DIR, 'raw_photos')
     os.makedirs(raw_dir, exist_ok=True)
-    img.save(os.path.join(raw_dir, filename))
+    img.save(os.path.join(raw_dir, filename), exif=exif_bytes)
 
     # Update JSON
     photos = load_json('photos.json')
     size = request.form.get('size', 'sm')
-    photos.append({"filename": filename, "size": size, "exif": exif_data})
+    entry = {"filename": filename, "size": size, "exif": exif_data}
+    if exif_data.get('date'):
+        entry['date'] = _parse_date(exif_data['date'])
+    photos.append(entry)
     atomic_write_json('photos.json', photos)
 
     return jsonify({"status": "success", "filename": filename, "exif": exif_data}), 201
@@ -154,52 +160,69 @@ def _clean_story_text(value, limit=240):
     return str(value or '').strip()[:limit]
 
 
+def _normalize_story_photos(raw_photos, story_id, valid_filenames):
+    photos = []
+    for filename in raw_photos or []:
+        if not isinstance(filename, str):
+            return None, f"Story {story_id} has a non-string photo filename"
+        safe_name = os.path.basename(filename)
+        if safe_name != filename or safe_name not in valid_filenames:
+            return None, f"Story {story_id} references unknown photo: {filename}"
+        if safe_name not in photos:
+            photos.append(safe_name)
+    if not photos:
+        return None, f"Story {story_id} must contain at least one photo"
+    return photos, None
+
+
+def _normalize_story(raw, position, valid_filenames):
+    if not isinstance(raw, dict):
+        return None, f"Story #{position + 1} must be an object"
+
+    story_id = _clean_story_text(raw.get('id'), 80)
+    if not story_id or not _STORY_ID_RE.match(story_id):
+        return None, f"Story #{position + 1} has an invalid id"
+
+    photos, error = _normalize_story_photos(raw.get('photos'), story_id, valid_filenames)
+    if error:
+        return None, error
+
+    raw_cover = _clean_story_text(raw.get('cover'), 160)
+    cover = os.path.basename(raw_cover) if raw_cover else photos[0]
+    if raw_cover and cover != raw_cover:
+        return None, f"Story {story_id} has an invalid cover filename"
+    if cover not in photos:
+        return None, f"Story {story_id} cover must be one of its photos"
+
+    return {
+        'id': story_id,
+        'name': _clean_story_text(raw.get('name'), 80) or story_id,
+        'date': _clean_story_text(raw.get('date'), 40),
+        'caption': _clean_story_text(raw.get('caption'), 180),
+        'cover': cover,
+        'photos': photos,
+        'photo_count': len(photos),
+    }, None
+
+
 def _normalize_photo_stories(data):
     """Validate and normalize manually curated photo stories."""
-    photo_index = {p.get('filename'): p for p in load_json('photos.json') if p.get('filename')}
-    valid_filenames = set(photo_index)
+    valid_filenames = {
+        photo.get('filename')
+        for photo in load_json('photos.json')
+        if photo.get('filename')
+    }
     seen_ids = set()
     normalized = []
 
-    for i, raw in enumerate(data):
-        if not isinstance(raw, dict):
-            return None, f"Story #{i + 1} must be an object"
-
-        story_id = _clean_story_text(raw.get('id'), 80)
-        if not story_id or not _STORY_ID_RE.match(story_id):
-            return None, f"Story #{i + 1} has an invalid id"
-        if story_id in seen_ids:
-            return None, f"Duplicate story id: {story_id}"
-        seen_ids.add(story_id)
-
-        photos = []
-        for filename in raw.get('photos') or []:
-            if not isinstance(filename, str):
-                return None, f"Story {story_id} has a non-string photo filename"
-            safe_name = os.path.basename(filename)
-            if safe_name != filename or safe_name not in valid_filenames:
-                return None, f"Story {story_id} references unknown photo: {filename}"
-            if safe_name not in photos:
-                photos.append(safe_name)
-        if not photos:
-            return None, f"Story {story_id} must contain at least one photo"
-
-        raw_cover = _clean_story_text(raw.get('cover'), 160)
-        cover = os.path.basename(raw_cover) if raw_cover else photos[0]
-        if raw_cover and cover != raw_cover:
-            return None, f"Story {story_id} has an invalid cover filename"
-        if cover not in photos:
-            return None, f"Story {story_id} cover must be one of its photos"
-
-        normalized.append({
-            'id': story_id,
-            'name': _clean_story_text(raw.get('name'), 80) or story_id,
-            'date': _clean_story_text(raw.get('date'), 40),
-            'caption': _clean_story_text(raw.get('caption'), 180),
-            'cover': cover,
-            'photos': photos,
-            'photo_count': len(photos),
-        })
+    for position, raw in enumerate(data):
+        story, error = _normalize_story(raw, position, valid_filenames)
+        if error:
+            return None, error
+        if story['id'] in seen_ids:
+            return None, f"Duplicate story id: {story['id']}"
+        seen_ids.add(story['id'])
+        normalized.append(story)
     return normalized, None
 
 
