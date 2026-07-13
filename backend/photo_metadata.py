@@ -1,11 +1,10 @@
 """Photo metadata persistence helpers."""
 
-import json
 import os
 
 from PIL import Image
 
-from backend.data import BASE_DIR, DATA_DIR
+from backend.data import BASE_DIR
 from backend.exif_utils import decimal_to_dms
 from backend.storage import repository_for
 
@@ -30,11 +29,7 @@ def set_gps(filename, lat, lng):
             img = img.convert('RGB')
         img.save(path, 'JPEG', quality=95, exif=exif.tobytes())
 
-    photos_json_path = os.path.join(DATA_DIR, 'photos.json')
-    photos_data = []
-    if os.path.exists(photos_json_path):
-        with open(photos_json_path, 'r', encoding='utf-8') as f:
-            photos_data = json.load(f)
+    photos_data = repository_for('photos.json').list()
 
     for photo in photos_data:
         if photo['filename'] == filename:

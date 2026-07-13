@@ -24,6 +24,7 @@ from backend.asset_cache import cache_bust_assets
 from backend.essay_feed_data import strip_enrich
 from backend.essay_repository import EssayRepository
 from backend.essay_service import EssayService
+from backend.essay_renderer import render_essay_html, write_essay_html
 from backend.storage import repository_for
 from jinja2 import Environment, FileSystemLoader
 
@@ -271,49 +272,13 @@ def _sync_essay_html(essay, raw_md_memory=None, essays=None):
     essays: optional pre-loaded essays list. When not provided, loaded from disk.
     """
     slug = essay['slug']
-    html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
-
-    # Persist edits, load the source, and prepare public/encrypted body data.
     if raw_md_memory is not None:
         _persist_essay_source(slug, raw_md_memory)
     raw_md = _read_essay_source(slug)
-    last_edited = _parse_date(essay.get('date', ''), include_time=True)
-    body_data = _prepare_essay_body(slug, raw_md, last_edited)
-
-    # 4. Prepare template data
-    if essays is None:
-        essays = ESSAY_REPOSITORY.list()
-    prev_nav, next_nav = _build_nav(essays, slug)
-
-    tag_raw = essay.get('tag', '')
-    tag_display = html_mod.escape(tag_raw.replace(', ', ' · ').replace(',', ' · '))
-    date_display = html_mod.escape(_parse_date(essay.get('date', '')))
-
-    # 5. Render template
-    template = _env.get_template('essay.html')
-    html = template.render(
-        title=html_mod.escape(essay.get('title', '')),
-        excerpt=html_mod.escape(essay.get('excerpt', '')),
-        epigraph=html_mod.escape(essay.get('epigraph', '')),
-        tag=tag_display,
-        date_display=date_display,
-        read_time=essay.get('readTime', 1),
-         body_html=Markup(body_data['body_html']),
-         encrypted_body=body_data['encrypted_body'],
-         password_protected=body_data['password_protected'],
-         encrypted_is_md=body_data['encrypted_is_md'],
-        last_edited=html_mod.escape(last_edited),
-        prev_nav=Markup(prev_nav),
-        next_nav=Markup(next_nav),
-        slug=slug,
-         og_image=html_mod.escape(body_data['og_image']),
-        build_ts=int(datetime.now().timestamp()),
-    )
-
-    # 6. Write output
-    os.makedirs(ESSAYS_DIR, exist_ok=True)
-    with open(html_file, 'w', encoding='utf-8') as f:
-        f.write(html)
+    body_data = _prepare_essay_body(slug, raw_md, _parse_date(essay.get('date', ''), include_time=True))
+    essays = ESSAY_REPOSITORY.list() if essays is None else essays
+    html = render_essay_html(essay, body_data, essays, _env.get_template('essay.html'), _parse_date)
+    write_essay_html(os.path.join(ESSAYS_DIR, f"{slug}.html"), html)
 
 
 def _fetch_stars():
