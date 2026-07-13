@@ -3,9 +3,9 @@ import hmac
 import os
 import time
 
-from flask import session, request, jsonify
+from flask import Blueprint, session, request, jsonify
 
-from backend.app import app
+bp = Blueprint('auth', __name__)
 
 ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'chami')
 if 'ADMIN_PASSWORD' not in os.environ:
@@ -15,7 +15,7 @@ if 'ADMIN_PASSWORD' not in os.environ:
 _LOGIN_ATTEMPTS = {}
 
 
-@app.route('/api/login', methods=['POST'])
+@bp.route('/api/login', methods=['POST'])
 def login():
     ip = request.remote_addr or '127.0.0.1'
     now = time.time()
@@ -35,7 +35,7 @@ def login():
     return jsonify({"error": "Wrong password"}), 401
 
 
-@app.route('/api/logout', methods=['POST'])
+@bp.route('/api/logout', methods=['POST'])
 def logout():
     session.pop('authenticated', None)
     return jsonify({"status": "logged out"})

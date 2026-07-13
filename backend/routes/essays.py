@@ -1,15 +1,16 @@
-import json
 import os
 import re
 import shutil
 import uuid
 from datetime import datetime
 
-from flask import request, jsonify
+from flask import Blueprint, request, jsonify
 
-from backend.app import app
-from backend.data import load_json, atomic_write_json, DATA_DIR, get_essay_password, set_essay_password as store_password, has_essay_password
+bp = Blueprint('essays', __name__)
+from backend.data import get_essay_password, set_essay_password as store_password, has_essay_password
 from backend.crud import require_json
+from backend.essay_repository import EssayRepository
+from backend.essay_service import EssayService
 from backend.markdown_utils import render_markdown
 from backend.ssg import (
     _calc_read_time, _parse_date, _parse_tags, _sync_essay_html, _generate_feeds,
@@ -18,39 +19,34 @@ from backend.ssg import (
 )
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
+ESSAY_REPOSITORY = EssayRepository()
+ESSAY_SERVICE = EssayService(ESSAY_REPOSITORY)
 
-@app.route('/api/tags/order', methods=['GET'])
+
+@bp.route('/api/tags/order', methods=['GET'])
 def get_tag_order():
-    tag_order_path = os.path.join(DATA_DIR, 'tags_order.json')
-    if os.path.exists(tag_order_path):
-        with open(tag_order_path, 'r', encoding='utf-8') as f:
-            return jsonify(json.load(f))
-    return jsonify([])
+    return jsonify(ESSAY_REPOSITORY.read_tag_order())
 
 
-@app.route('/api/tags/order', methods=['PUT'])
+@bp.route('/api/tags/order', methods=['PUT'])
 @require_json
 def save_tag_order():
     order = request.json.get('order', [])
     if not isinstance(order, list):
         return jsonify({"error": "order must be a list"}), 400
-    atomic_write_json('tags_order.json', order)
+    ESSAY_REPOSITORY.save_tag_order(order)
     _generate_feeds()
     return jsonify({"status": "saved"})
 
 
-@app.route('/api/essays', methods=['GET'])
+@bp.route('/api/essays', methods=['GET'])
 def list_essays():
-    essays = load_json('essays.json')
-    for e in essays:
-        e['date_display'] = _parse_date(e.get('date', ''))
-        e['password_set'] = has_essay_password(e['slug'])
-    return jsonify(essays)
+    return jsonify(ESSAY_SERVICE.list_for_admin(_parse_date, has_essay_password))
 
-@app.route('/api/essays', methods=['POST'])
+@bp.route('/api/essays', methods=['POST'])
 @require_json
 def create_essay():
-    essays = load_json('essays.json')
+    essays = ESSAY_REPOSITORY.list()
     item = request.json
     slug = item.get('slug', '')
     if not slug or not re.match(r'^[a-z0-9-]+$', slug):
@@ -66,7 +62,7 @@ def create_essay():
     read_time = _calc_read_time(item.get('body', '') or item.get('content', ''))
     item['readTime'] = read_time
     essays.append(item)
-    atomic_write_json('essays.json', essays)
+    ESSAY_REPOSITORY.save(essays)
 
     body_md = item.get('body', '')
     _sync_essay_html(item, raw_md_memory=body_md if body_md else None, essays=essays)
@@ -76,10 +72,10 @@ def create_essay():
 
     return jsonify(item), 201
 
-@app.route('/api/essays/<slug>', methods=['PUT'])
+@bp.route('/api/essays/<slug>', methods=['PUT'])
 @require_json
 def update_essay_meta(slug):
-    essays = load_json('essays.json')
+    essays = ESSAY_REPOSITORY.list()
     for i, e in enumerate(essays):
         if e['slug'] == slug:
             new_slug = request.json.get('slug', slug)
@@ -90,7 +86,7 @@ def update_essay_meta(slug):
             essays[i].update(request.json)
             essays[i].pop('password', None)  # password never stored in essays.json
             essays[i]['slug'] = new_slug
-            atomic_write_json('essays.json', essays)
+            ESSAY_REPOSITORY.save(essays)
             # Rename HTML + MD files if slug changed
             if new_slug != slug:
                 old_html = os.path.join(ESSAYS_DIR, f"{slug}.html")
@@ -111,9 +107,9 @@ def update_essay_meta(slug):
             return jsonify(essays[i])
     return jsonify({"error": "Not found"}), 404
 
-@app.route('/api/essays/<slug>', methods=['DELETE'])
+@bp.route('/api/essays/<slug>', methods=['DELETE'])
 def delete_essay(slug):
-    essays = load_json('essays.json')
+    essays = ESSAY_REPOSITORY.list()
     target = next((e for e in essays if e['slug'] == slug), None)
     if not target:
         return jsonify({"error": "Not found"}), 404
@@ -122,7 +118,7 @@ def delete_essay(slug):
     if '..' in title_folder.split(os.sep):
         return jsonify({"error": "Invalid title"}), 400
     essays = [e for e in essays if e['slug'] != slug]
-    atomic_write_json('essays.json', essays)
+    ESSAY_REPOSITORY.save(essays)
     html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
     if os.path.exists(html_file):
         os.remove(html_file)
@@ -141,9 +137,9 @@ def delete_essay(slug):
     _generate_feeds()
     return jsonify({"status": "deleted"})
 
-@app.route('/api/essays/<slug>/pin', methods=['POST'])
+@bp.route('/api/essays/<slug>/pin', methods=['POST'])
 def toggle_pin(slug):
-    essays = load_json('essays.json')
+    essays = ESSAY_REPOSITORY.list()
     for e in essays:
         e.setdefault('pinned', False)
 
@@ -159,7 +155,7 @@ def toggle_pin(slug):
     else:
         target['pinned'] = False
 
-    atomic_write_json('essays.json', essays)
+    ESSAY_REPOSITORY.save(essays)
     _generate_feeds()
     pinned_count = sum(1 for e in essays if e.get('pinned'))
     return jsonify({"pinned": target['pinned'], "count": pinned_count})
@@ -201,10 +197,10 @@ def _strip_essay_passwords(essays):
         essay.pop('password', None)
 
 
-@app.route('/api/essays/<slug>/password', methods=['POST'])
+@bp.route('/api/essays/<slug>/password', methods=['POST'])
 @require_json
 def set_essay_password(slug):
-    essays = load_json('essays.json')
+    essays = ESSAY_REPOSITORY.list()
     target = next((e for e in essays if e['slug'] == slug), None)
     if not target:
         return jsonify({"error": "Not found"}), 404
@@ -225,7 +221,7 @@ def set_essay_password(slug):
         store_password(slug, '')
 
     _strip_essay_passwords(essays)
-    atomic_write_json('essays.json', essays)
+    ESSAY_REPOSITORY.save(essays)
 
     # Regenerate HTML (password gate or normal)
     _sync_essay_html(target, essays=essays)
@@ -234,9 +230,9 @@ def set_essay_password(slug):
     return jsonify({"password_set": bool(new_password)})
 
 
-@app.route('/api/essays/<slug>/content', methods=['GET'])
+@bp.route('/api/essays/<slug>/content', methods=['GET'])
 def get_essay_content(slug):
-    essays = load_json('essays.json')
+    essays = ESSAY_REPOSITORY.list()
     target = next((e for e in essays if e['slug'] == slug), None)
     # 优先读 .md 文件
     md_file = os.path.join(MD_DIR, f"{slug}.md")
@@ -263,7 +259,7 @@ def get_essay_content(slug):
         return jsonify({"content": md_match.group(1), "format": "markdown"})
     return jsonify({"content": "", "format": "markdown"})
 
-@app.route('/api/essays/<slug>/content', methods=['PUT'])
+@bp.route('/api/essays/<slug>/content', methods=['PUT'])
 @require_json
 def update_essay_content(slug):
     md_content = request.json.get('content', '')
@@ -272,7 +268,7 @@ def update_essay_content(slug):
     read_time = _calc_read_time(md_content)
 
     # 2. 更新 JSON 数据
-    essays = load_json('essays.json')
+    essays = ESSAY_REPOSITORY.list()
     target_essay = None
     now = datetime.now().strftime('%Y-%m-%d %H:%M')
     for e in essays:
@@ -280,7 +276,7 @@ def update_essay_content(slug):
             e['readTime'] = read_time
             e['date'] = now
             target_essay = e
-            atomic_write_json('essays.json', essays)
+            ESSAY_REPOSITORY.save(essays)
             break
 
     if not target_essay:
@@ -292,7 +288,7 @@ def update_essay_content(slug):
 
     return jsonify({"status": "success", "message": f"{slug}.html updated"})
 
-@app.route('/api/essays/upload-image', methods=['POST'])
+@bp.route('/api/essays/upload-image', methods=['POST'])
 def upload_essay_image():
     try:
         file = request.files.get('file')
@@ -303,7 +299,7 @@ def upload_essay_image():
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
     slug = request.form.get('slug', '') or request.args.get('slug', '')
     if slug:
-        essays = load_json('essays.json')
+        essays = ESSAY_REPOSITORY.list()
         essay = next((e for e in essays if e.get('slug') == slug), None)
         folder = essay.get('title', slug) if essay else slug
         folder = folder.replace('/', '_').replace('\\', '_')
@@ -319,7 +315,7 @@ def upload_essay_image():
     file.save(os.path.join(img_dir, filename))
     return jsonify({"url": url, "status": "uploaded"}), 201
 
-@app.route('/api/essays/<slug>/html', methods=['GET', 'POST'])
+@bp.route('/api/essays/<slug>/html', methods=['GET', 'POST'])
 def preview_essay_html(slug):
     """Preview Markdown to HTML (no save). `slug` from URL path - required by Flask routing."""
     if request.method == 'POST':

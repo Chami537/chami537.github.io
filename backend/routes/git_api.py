@@ -1,8 +1,8 @@
 import subprocess
 
-from flask import request, jsonify
+from flask import Blueprint, current_app, request, jsonify
 
-from backend.app import app
+bp = Blueprint('git_api', __name__)
 from backend.data import BASE_DIR
 from backend.crud import require_json
 
@@ -22,7 +22,7 @@ def _require_confirmed():
     return jsonify({"error": "confirm=true required"}), 400
 
 
-@app.route('/api/git/status', methods=['GET'])
+@bp.route('/api/git/status', methods=['GET'])
 def git_status():
     r = _run_git(['status', '--short'])
     diff = _run_git(['diff', '--stat'])
@@ -34,7 +34,7 @@ def git_status():
         "clean": r.stdout.strip() == ''
     })
 
-@app.route('/api/git/commit', methods=['POST'])
+@bp.route('/api/git/commit', methods=['POST'])
 @require_json
 def git_commit():
     msg = request.json.get('message', '').strip()
@@ -48,13 +48,13 @@ def git_commit():
         return jsonify({"error": r.stderr.strip()}), 500
     return jsonify({"status": "success", "output": r.stdout.strip()})
 
-@app.route('/api/git/revert', methods=['POST'])
+@bp.route('/api/git/revert', methods=['POST'])
 def git_revert():
     confirm_error = _require_confirmed()
     if confirm_error:
         return confirm_error
     # In test mode, don't actually run destructive git operations
-    if app.config.get('TESTING'):
+    if current_app.config.get('TESTING'):
         return jsonify({"status": "reverted"})
     stash_r = _run_git(['stash', 'push', '--include-untracked', '-m', 'auto-backup-before-revert'])
     if stash_r.returncode != 0:
@@ -67,7 +67,7 @@ def git_revert():
         return _git_error('clean', clean_r)
     return jsonify({"status": "reverted"})
 
-@app.route('/api/git/diff', methods=['GET'])
+@bp.route('/api/git/diff', methods=['GET'])
 def git_diff():
     unstaged = _run_git(['diff', '--color=never'])
     staged = _run_git(['diff', '--cached', '--color=never'])
@@ -81,9 +81,9 @@ def git_diff():
     diff_text = '\n'.join(parts).strip() or '(no changes)'
     return jsonify({"diff": diff_text})
 
-@app.route('/api/git/push', methods=['POST'])
+@bp.route('/api/git/push', methods=['POST'])
 def git_push():
-    if app.config.get('TESTING'):
+    if current_app.config.get('TESTING'):
         return jsonify({"status": "success", "output": "test mode"})
     fetch_r = _run_git(['fetch'])
     if fetch_r.returncode != 0:

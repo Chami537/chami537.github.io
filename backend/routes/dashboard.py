@@ -1,8 +1,8 @@
 from datetime import datetime
 
-from flask import jsonify
+from flask import Blueprint, jsonify
 
-from backend.app import app
+bp = Blueprint('dashboard', __name__)
 from backend.data import has_essay_password, load_json
 
 
@@ -94,7 +94,7 @@ def _recent_items(essays, stories):
     return items[:8]
 
 
-@app.route('/api/dashboard-stats', methods=['GET'])
+@bp.route('/api/dashboard-stats', methods=['GET'])
 def dashboard_stats():
     try:
         data = {name: load_json(name) for name in _STAT_DATA_FILES}

@@ -59,9 +59,12 @@ from backend.github_sync import fetch_stars
 from backend.essay_navigation import parse_tags as _parse_tags, find_adjacent_siblings as _find_adjacent_siblings, build_nav as _build_nav
 from backend.asset_cache import cache_bust_assets
 from backend.essay_feed_data import strip_enrich
+from backend.essay_repository import EssayRepository
+from backend.essay_service import EssayService
 from jinja2 import Environment, FileSystemLoader
 
 _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
+ESSAY_SERVICE = EssayService(EssayRepository())
 
 # ═══════════════════════════════════════════
 
@@ -183,22 +186,7 @@ def _generate_map():
 
 
 def _public_essay_data(essays):
-    visible = []
-    all_tags = set()
-    for e in essays:
-        password_protected = bool(get_essay_password(e.get('slug', '')))
-        tag_str = e.get('tag', '')
-        if tag_str:
-            for t in tag_str.replace(',', '，').split('，'):
-                t = t.strip()
-                if t:
-                    all_tags.add(t)
-        item = {k: v for k, v in e.items() if k != 'password'}
-        item['date_display'] = _parse_date(e.get('date', ''))
-        # Publish listing metadata only; the encrypted body remains protected.
-        item['password_protected'] = password_protected
-        visible.append(item)
-    return visible, all_tags
+    return ESSAY_SERVICE.public_listing(essays, _parse_date, get_essay_password)
 
 
 def _ordered_public_tags(all_tags):

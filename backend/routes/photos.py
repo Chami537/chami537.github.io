@@ -2,21 +2,21 @@ import os
 import re
 import uuid
 
-from flask import request, jsonify
+from flask import Blueprint, request, jsonify
 from PIL import Image
 
-from backend.app import app
+bp = Blueprint('photos', __name__)
 from backend.data import load_json, atomic_write_json, BASE_DIR
 from backend.ssg import _parse_date, IMAGES_DIR
 from backend.photo_metadata import set_gps as _set_gps
 from backend.exif_utils import extract_exif as _extract_exif, without_camera_model as _without_camera_model
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
-@app.route('/api/photos', methods=['GET'])
+@bp.route('/api/photos', methods=['GET'])
 def list_photos():
     return jsonify(load_json('photos.json'))
 
-@app.route('/api/photos', methods=['PUT'])
+@bp.route('/api/photos', methods=['PUT'])
 def reorder_photos():
     """Replace entire photo array (for reordering). Validates no entries lost."""
     if not isinstance(request.json, list):
@@ -31,7 +31,7 @@ def reorder_photos():
     atomic_write_json('photos.json', new_data)
     return jsonify({"status": "reordered"})
 
-@app.route('/api/photos/upload', methods=['POST'])
+@bp.route('/api/photos/upload', methods=['POST'])
 def upload_photo():
     try:
         file = request.files.get('file')
@@ -73,7 +73,7 @@ def upload_photo():
     return jsonify({"status": "success", "filename": filename, "exif": exif_data}), 201
 
 
-@app.route('/api/photos/<filename>', methods=['DELETE'])
+@bp.route('/api/photos/<filename>', methods=['DELETE'])
 def delete_photo(filename):
     photos = load_json('photos.json')
     photos = [p for p in photos if p['filename'] != filename]
@@ -99,7 +99,7 @@ def _find_photo(filename):
     return None, photos
 
 
-@app.route('/api/photo-tags', methods=['PUT'])
+@bp.route('/api/photo-tags', methods=['PUT'])
 def update_photo_tags():
     d = request.json
     if not isinstance(d, dict) or 'filename' not in d or 'tags' not in d:
@@ -112,7 +112,7 @@ def update_photo_tags():
     return jsonify({"status": "ok", "tags": d['tags']})
 
 
-@app.route('/api/photo-date', methods=['PUT'])
+@bp.route('/api/photo-date', methods=['PUT'])
 def update_photo_date():
     d = request.json
     if not isinstance(d, dict) or 'filename' not in d:
@@ -129,7 +129,7 @@ def update_photo_date():
     return jsonify({"status": "ok", "date": dv})
 
 
-@app.route('/api/photo-gps', methods=['PUT'])
+@bp.route('/api/photo-gps', methods=['PUT'])
 def update_photo_gps():
     d = request.json
     if not isinstance(d, dict) or 'filename' not in d or 'lat' not in d or 'lng' not in d:
@@ -228,7 +228,7 @@ def _normalize_photo_stories(data):
 
 # ── Photo stories (manually curated) ──
 
-@app.route('/api/photo-stories', methods=['GET'])
+@bp.route('/api/photo-stories', methods=['GET'])
 def get_photo_stories():
     data = load_json('photo_stories.json')
     if not isinstance(data, list):
@@ -239,7 +239,7 @@ def get_photo_stories():
     return jsonify(stories)
 
 
-@app.route('/api/photo-stories', methods=['PUT'])
+@bp.route('/api/photo-stories', methods=['PUT'])
 def save_photo_stories():
     data = request.get_json(silent=True)
     if not isinstance(data, list):

@@ -97,6 +97,9 @@ for _f in _ROOTS:
     app.add_url_rule(f'/{_f}', _ep, lambda _f=_f: send_from_directory(BASE_DIR, _f))
 
 
-# Register all /api/* routes (side-effect imports — must come after app creation)
-from backend import routes       # noqa: E402,F401
-from backend import auth         # noqa: E402,F401  — login/logout endpoints
+# Register all API routes after app creation, without route modules importing the app.
+from backend import auth  # noqa: E402
+from backend.routes import register_blueprints  # noqa: E402
+
+register_blueprints(app)
+app.register_blueprint(auth.bp)

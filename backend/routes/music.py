@@ -1,32 +1,32 @@
 import os
 import uuid
 
-from flask import request, jsonify
+from flask import Blueprint, request, jsonify
 
-from backend.app import app
+bp = Blueprint('music', __name__)
 from backend.data import load_json, BASE_DIR
 from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id, require_json
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_music_upload
 
 
-@app.route('/api/music', methods=['GET'])
+@bp.route('/api/music', methods=['GET'])
 def list_music():
     return list_all('music.json')
 
 
-@app.route('/api/music', methods=['POST'])
+@bp.route('/api/music', methods=['POST'])
 @require_json
 def create_music():
     return create_item('music.json', request.json, auto_id=True)
 
 
-@app.route('/api/music/<int:id>', methods=['PUT'])
+@bp.route('/api/music/<int:id>', methods=['PUT'])
 @require_json
 def update_music(id):
     return update_item_by_id('music.json', id, request.json)
 
 
-@app.route('/api/music/upload', methods=['POST'])
+@bp.route('/api/music/upload', methods=['POST'])
 def upload_music():
     try:
         file = request.files.get('file')
@@ -41,7 +41,7 @@ def upload_music():
     return jsonify({"filename": filename, "status": "uploaded"}), 201
 
 
-@app.route('/api/music/<int:id>', methods=['DELETE'])
+@bp.route('/api/music/<int:id>', methods=['DELETE'])
 def delete_music(id):
     # Clean up MP3 file before deleting JSON entry
     music = load_json('music.json')

@@ -1,13 +1,13 @@
 import os
 
-from flask import request, jsonify
+from flask import Blueprint, request, jsonify
 
-from backend.app import app
+bp = Blueprint('readme', __name__)
 from backend.data import BASE_DIR
 from backend.crud import require_json
 
 
-@app.route('/api/readme', methods=['GET'])
+@bp.route('/api/readme', methods=['GET'])
 def get_readme():
     readme_path = os.path.join(BASE_DIR, 'README.md')
     if os.path.exists(readme_path):
@@ -17,7 +17,7 @@ def get_readme():
         content = ''
     return jsonify({"content": content})
 
-@app.route('/api/readme', methods=['PUT'])
+@bp.route('/api/readme', methods=['PUT'])
 @require_json
 def save_readme():
     content = request.json.get('content', '')
