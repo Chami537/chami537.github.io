@@ -4,12 +4,14 @@ import json
 import os
 import urllib.request
 
-from backend.data import atomic_write_json, load_json, DATA_DIR
+from backend.data import DATA_DIR
+from backend.storage import repository_for
 
 
 def fetch_stars():
     """Fetch GitHub star counts with conditional requests and an ETag cache."""
-    work = load_json('work.json')
+    repository = repository_for('work.json')
+    work = repository.list()
     etag_path = os.path.join(DATA_DIR, '_stars_etag.json')
     etags = {}
     if os.path.exists(etag_path):
@@ -46,7 +48,7 @@ def fetch_stars():
             print(f"  WARNING: failed to fetch stars for {repo}: {exc}")
 
     if updated:
-        atomic_write_json('work.json', work)
+        repository.save(work)
     etag_tmp = etag_path + '.tmp'
     with open(etag_tmp, 'w', encoding='utf-8') as f:
         json.dump(etags, f)

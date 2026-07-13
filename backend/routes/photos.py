@@ -6,11 +6,23 @@ from flask import Blueprint, request, jsonify
 from PIL import Image
 
 bp = Blueprint('photos', __name__)
-from backend.data import load_json, atomic_write_json, BASE_DIR
+from backend.data import BASE_DIR
+from backend.storage import repository_for
 from backend.ssg import _parse_date, IMAGES_DIR
 from backend.photo_metadata import set_gps as _set_gps
 from backend.exif_utils import extract_exif as _extract_exif, without_camera_model as _without_camera_model
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
+
+PHOTO_STORIES_REPOSITORY = repository_for('photo_stories.json')
+
+# Compatibility seams for existing tests and extensions; default behavior still
+# goes through the repository rather than backend.data's file implementation.
+def load_json(name):
+    return repository_for(name).list()
+
+
+def atomic_write_json(name, data):
+    repository_for(name).save(data)
 
 @bp.route('/api/photos', methods=['GET'])
 def list_photos():
@@ -230,7 +242,7 @@ def _normalize_photo_stories(data):
 
 @bp.route('/api/photo-stories', methods=['GET'])
 def get_photo_stories():
-    data = load_json('photo_stories.json')
+    data = PHOTO_STORIES_REPOSITORY.list()
     if not isinstance(data, list):
         return jsonify([])
     stories, error = _normalize_photo_stories(data)
@@ -247,5 +259,5 @@ def save_photo_stories():
     stories, error = _normalize_photo_stories(data)
     if error:
         return jsonify({"error": error}), 400
-    atomic_write_json('photo_stories.json', stories)
+    PHOTO_STORIES_REPOSITORY.save(stories)
     return jsonify({"status": "saved", "count": len(stories), "stories": stories})

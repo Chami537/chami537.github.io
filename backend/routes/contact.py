@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 bp = Blueprint('contact', __name__)
-from backend.data import atomic_write_json
+from backend.storage import repository_for
 from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id, require_json
 
 
@@ -17,7 +17,7 @@ def update_contact():
     for item in request.json:
         if not isinstance(item.get('id'), int):
             return jsonify({"error": "Each item must have a numeric id"}), 400
-    atomic_write_json('contact.json', request.json)
+    repository_for('contact.json').save(request.json)
     return jsonify({"status": "updated"})
 
 

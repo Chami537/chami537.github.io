@@ -4,7 +4,7 @@ from functools import wraps
 
 from flask import jsonify, request
 
-from backend.data import load_json, atomic_write_json
+from backend.storage import repository_for
 
 
 def require_json(f):
@@ -18,53 +18,58 @@ def require_json(f):
 
 
 def list_all(filename):
-    return jsonify(load_json(filename))
+    return jsonify(repository_for(filename).list())
 
 
 def create_item(filename, item, auto_id=False):
-    data = load_json(filename)
+    repository = repository_for(filename)
+    data = repository.list()
     if auto_id:
         item['id'] = max((i['id'] for i in data if isinstance(i.get('id'), int)), default=0) + 1
     data.append(item)
-    atomic_write_json(filename, data)
+    repository.save(data)
     return jsonify(item), 201
 
 
 def update_item_by_index(filename, index, updates):
-    data = load_json(filename)
+    repository = repository_for(filename)
+    data = repository.list()
     if index < 0 or index >= len(data):
         return jsonify({"error": "Index out of range"}), 404
     data[index].update(updates)
-    atomic_write_json(filename, data)
+    repository.save(data)
     return jsonify(data[index])
 
 
 def delete_item_by_index(filename, index):
-    data = load_json(filename)
+    repository = repository_for(filename)
+    data = repository.list()
     if index < 0 or index >= len(data):
         return jsonify({"error": "Index out of range"}), 404
     data.pop(index)
-    atomic_write_json(filename, data)
+    repository.save(data)
     return jsonify({"status": "deleted"})
 
 
 def update_item_by_id(filename, id_val, updates):
-    data = load_json(filename)
+    repository = repository_for(filename)
+    data = repository.list()
     for i, item in enumerate(data):
         if 'id' not in item:
             continue
         if item['id'] == id_val:
             updates['id'] = id_val
             data[i].update(updates)
-            atomic_write_json(filename, data)
+            repository.save(data)
             return jsonify(data[i])
     return jsonify({"error": "Not found"}), 404
 
 
 def delete_item_by_id(filename, id_val):
-    data = load_json(filename)
+    repository = repository_for(filename)
+    data = repository.list()
     new_data = [item for item in data if item.get('id') != id_val]
     if len(new_data) == len(data):
         return jsonify({"error": "Not found"}), 404
-    atomic_write_json(filename, new_data)
+    repository.save(new_data)
     return jsonify({"status": "deleted"})

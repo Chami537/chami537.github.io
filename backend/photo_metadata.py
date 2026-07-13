@@ -5,8 +5,9 @@ import os
 
 from PIL import Image
 
-from backend.data import atomic_write_json, BASE_DIR, DATA_DIR
+from backend.data import BASE_DIR, DATA_DIR
 from backend.exif_utils import decimal_to_dms
+from backend.storage import repository_for
 
 
 def set_gps(filename, lat, lng):
@@ -42,7 +43,7 @@ def set_gps(filename, lat, lng):
     else:
         photos_data.append({'filename': filename, 'exif': {'gps': {'lat': round(lat, 6), 'lng': round(lng, 6)}}})
 
-    atomic_write_json('photos.json', photos_data)
+    repository_for('photos.json').save(photos_data)
     print(f"GPS 已写入: {filename}")
     print(f"  纬度: {lat} ({'N' if lat >= 0 else 'S'})")
     print(f"  经度: {lng} ({'E' if lng >= 0 else 'W'})")

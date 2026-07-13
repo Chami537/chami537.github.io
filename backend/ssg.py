@@ -1,6 +1,5 @@
 """SSG generators and essay helpers for the Chami CMS."""
 
-import base64
 import html as html_mod
 import os
 import json
@@ -11,48 +10,12 @@ from backend.markdown_utils import render_markdown
 
 # ── Encryption helpers (cryptography Fernet: AES-128-CBC + HMAC-SHA256) ──
 
-from cryptography.fernet import Fernet, InvalidToken
-from cryptography.hazmat.primitives import hashes as _crypto_hashes
-from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from backend.essay_crypto import (
+    _derive_fernet, decrypt_content as _decrypt_content,
+    encrypt_content as _encrypt_content,
+)
 
-_ENCRYPT_V3 = b'\x02'  # version byte for Fernet-based format
-
-
-def _derive_fernet(password, salt):
-    """Derive a 32-byte Fernet key from password + salt via PBKDF2-SHA256 (100k iter)."""
-    kdf = PBKDF2HMAC(
-        algorithm=_crypto_hashes.SHA256(),
-        length=32,
-        salt=salt,
-        iterations=100000,
-    )
-    return base64.urlsafe_b64encode(kdf.derive(password.encode('utf-8')))
-
-
-def _encrypt_content(plaintext, password):
-    """PBKDF2 + Fernet (AES-128-CBC + HMAC-SHA256). Returns base64(version + salt + token)."""
-    salt = os.urandom(16)
-    key = _derive_fernet(password, salt)
-    token = Fernet(key).encrypt(plaintext.encode('utf-8'))
-    return base64.b64encode(_ENCRYPT_V3 + salt + token).decode('ascii')
-
-
-def _decrypt_content(encrypted_b64, password):
-    """Decrypt v3 Fernet format. Raises ValueError on wrong password or unknown format."""
-    raw = base64.b64decode(encrypted_b64)
-
-    if not raw or raw[0] != 2 or len(raw) <= 17:
-        raise ValueError('Unknown or legacy encryption format — re-encrypt with v3 Fernet')
-
-    salt = raw[1:17]
-    token = raw[17:]
-    key = _derive_fernet(password, salt)
-    try:
-        return Fernet(key).decrypt(token).decode('utf-8')
-    except InvalidToken:
-        raise ValueError('Wrong password or corrupted data')
-
-from backend.data import load_json, atomic_write_json, get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR
+from backend.data import get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR
 from backend.exif_utils import extract_exif, extract_gps, without_camera_model
 from backend.photo_metadata import set_gps
 from backend.github_sync import fetch_stars
@@ -61,10 +24,17 @@ from backend.asset_cache import cache_bust_assets
 from backend.essay_feed_data import strip_enrich
 from backend.essay_repository import EssayRepository
 from backend.essay_service import EssayService
+from backend.storage import repository_for
 from jinja2 import Environment, FileSystemLoader
 
 _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
-ESSAY_SERVICE = EssayService(EssayRepository())
+ESSAY_REPOSITORY = EssayRepository()
+ESSAY_SERVICE = EssayService(ESSAY_REPOSITORY)
+
+
+def load_json(name):
+    """Compatibility seam for SSG callers; reads through the repository layer."""
+    return repository_for(name).list()
 
 # ═══════════════════════════════════════════
 
@@ -120,7 +90,7 @@ def _strip_enrich(essays, date_key, date_fmt, limit=None):
 
 def _generate_rss():
     """Generate rss.xml from essays.json (Jinja2 template)."""
-    essays = load_json('essays.json')
+    essays = ESSAY_REPOSITORY.list()
     enriched = _strip_enrich(essays, 'pub_date', '%a, %d %b %Y %H:%M:%S +0800', 20)
     last_build = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0800')
     html = _env.get_template('rss.xml').render(essays=enriched, last_build=last_build)
@@ -130,7 +100,7 @@ def _generate_rss():
 
 def _generate_sitemap():
     """Generate sitemap.xml (Jinja2 template)."""
-    essays = load_json('essays.json')
+    essays = ESSAY_REPOSITORY.list()
     enriched = _strip_enrich(essays, 'lastmod', '%Y-%m-%d')
     html = _env.get_template('sitemap.xml').render(essays=enriched)
     with open(os.path.join(BASE_DIR, 'sitemap.xml'), 'w', encoding='utf-8') as f:
@@ -148,7 +118,7 @@ def _prepare_archive_data(essays):
 
 def _generate_archive():
     """Generate archive.html — timeline grouped by year (Jinja2 template)."""
-    context = _prepare_archive_data(load_json('essays.json'))
+    context = _prepare_archive_data(ESSAY_REPOSITORY.list())
     html = _env.get_template('archive.html').render(
         **context,
         build_ts=int(datetime.now().timestamp()))
@@ -177,7 +147,7 @@ def _prepare_map_data(photos):
 
 def _generate_map():
     """Generate map.html — Leaflet map with GPS-tagged photos (Jinja2 template)."""
-    context = _prepare_map_data(load_json('photos.json'))
+    context = _prepare_map_data(repository_for('photos.json').list())
     html = _env.get_template('map.html').render(
         **context,
         build_ts=int(datetime.now().timestamp()))
@@ -190,14 +160,11 @@ def _public_essay_data(essays):
 
 
 def _ordered_public_tags(all_tags):
-    tag_order_path = os.path.join(DATA_DIR, 'tags_order.json')
     ordered = []
-    if os.path.exists(tag_order_path):
-        with open(tag_order_path, 'r', encoding='utf-8') as f:
-            for t in json.load(f):
-                if t in all_tags:
-                    ordered.append(t)
-                    all_tags.discard(t)
+    for t in ESSAY_REPOSITORY.read_tag_order():
+        if t in all_tags:
+            ordered.append(t)
+            all_tags.discard(t)
     ordered.extend(sorted(all_tags))  # new tags not in saved order, alphabetical at end
     return ordered
 
@@ -244,6 +211,7 @@ def _set_gps(filename, lat, lng):
 def _is_encrypted_v3(content):
     """Detect v3 Fernet encrypted content by inspecting the first-line base64."""
     try:
+        import base64
         raw = base64.b64decode(content.split('\n')[0])
         return raw and raw[0] == 2
     except (ValueError, IndexError):
@@ -314,7 +282,7 @@ def _sync_essay_html(essay, raw_md_memory=None, essays=None):
 
     # 4. Prepare template data
     if essays is None:
-        essays = load_json('essays.json')
+        essays = ESSAY_REPOSITORY.list()
     prev_nav, next_nav = _build_nav(essays, slug)
 
     tag_raw = essay.get('tag', '')

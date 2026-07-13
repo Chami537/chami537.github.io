@@ -4,7 +4,8 @@ import uuid
 from flask import Blueprint, request, jsonify
 
 bp = Blueprint('music', __name__)
-from backend.data import load_json, BASE_DIR
+from backend.data import BASE_DIR
+from backend.storage import repository_for
 from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id, require_json
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_music_upload
 
@@ -44,7 +45,7 @@ def upload_music():
 @bp.route('/api/music/<int:id>', methods=['DELETE'])
 def delete_music(id):
     # Clean up MP3 file before deleting JSON entry
-    music = load_json('music.json')
+    music = repository_for('music.json').list()
     for m in music:
         if m['id'] == id:
             fn = m.get('filename', '')

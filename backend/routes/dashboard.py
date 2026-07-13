@@ -3,7 +3,12 @@ from datetime import datetime
 from flask import Blueprint, jsonify
 
 bp = Blueprint('dashboard', __name__)
-from backend.data import has_essay_password, load_json
+from backend.data import has_essay_password
+from backend.storage import repository_for
+
+
+def load_json(name):
+    return repository_for(name).list()
 
 
 _STAT_DATA_FILES = (

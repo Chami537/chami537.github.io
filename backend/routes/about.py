@@ -3,14 +3,15 @@ import os
 from flask import Blueprint, request, jsonify
 
 bp = Blueprint('about', __name__)
-from backend.data import load_json, atomic_write_json, BASE_DIR
+from backend.data import BASE_DIR
+from backend.storage import repository_for
 from backend.crud import require_json
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
 
 @bp.route('/api/about', methods=['GET'])
 def get_about():
-    return jsonify(load_json('about.json'))
+    return jsonify(repository_for('about.json').list())
 
 @bp.route('/api/about/upload-avatar', methods=['POST'])
 def upload_avatar():
@@ -34,5 +35,5 @@ def upload_avatar():
 @bp.route('/api/about', methods=['PUT'])
 @require_json
 def update_about():
-    atomic_write_json('about.json', request.json)
+    repository_for('about.json').save(request.json)
     return jsonify({"status": "updated"})
