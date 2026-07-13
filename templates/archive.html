@@ -91,6 +91,7 @@
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 17px; font-weight: 600; flex: 1;
 }
+.archive-lock { font-size: 12px; margin-left: 6px; }
 .archive-tag {
   font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--c3);
@@ -240,7 +241,7 @@ function renderArchiveEntries(data) {
       var md = monthDay(e.date);
       html += '<a href="essays/' + slug + '.html" class="archive-row">' +
         '<span class="archive-date">' + md + '</span>' +
-        '<span class="archive-title">' + title + '</span>' +
+        '<span class="archive-title">' + title + (e.password_protected ? ' <span class="archive-lock" title="需要密码">🔒</span>' : '') + '</span>' +
         '<span class="archive-tag">' + tag + '</span>' +
         '</a>';
     });
