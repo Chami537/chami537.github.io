@@ -31,37 +31,6 @@ window.addEventListener('beforeunload', (e) => {
   if (isDirty) { e.preventDefault(); e.returnValue = ''; }
 });
 
-async function api(method, path, body) {
-  const opts = { method, headers: {} };
-  if (body && !(body instanceof FormData)) {
-    opts.headers['Content-Type'] = 'application/json';
-    opts.body = JSON.stringify(body);
-  } else if (body instanceof FormData) {
-    opts.body = body;
-  }
-  const r = await fetch(path, opts);
-  if (r.status === 401) {
-    document.getElementById('login-overlay').style.display = 'flex';
-    throw new Error('Unauthorized — please login');
-  }
-  if (!r.ok) {
-    const err = await r.json().catch(() => ({ error: r.statusText }));
-    throw new Error(err.error || r.statusText);
-  }
-  return r.json();
-}
-
-function toast(msg, err) {
-  const t = document.createElement('div');
-  t.className = 'toast ' + (err ? 'toast-err' : 'toast-ok');
-  t.textContent = msg;
-  document.body.appendChild(t);
-  setTimeout(() => t.remove(), 3000);
-}
-
-function markClean() { isDirty = false; }
-function hidePanel(id) { document.getElementById(id).style.display = 'none'; }
-function onAdminDataReset(handler) { document.addEventListener('admin:data-reset', handler); }
 function esc(s) {
   const d = document.createElement('div');
   d.textContent = s != null ? s : '';
