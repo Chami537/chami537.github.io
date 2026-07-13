@@ -79,42 +79,41 @@ function _fmtTime(sec) {
   return m + ':' + (s < 10 ? '0' : '') + s;
 }
 
-function initMusicPlayer() {
-  player = document.getElementById('player');
-  if (!player) return;
-  curRow = null;
-  if (musicTimeHandler) player.removeEventListener('timeupdate', musicTimeHandler);
-  if (musicEndHandler) player.removeEventListener('ended', musicEndHandler);
+function _resetMusicRow(row) {
+  if (!row) return;
+  row.classList.remove('playing', 'paused');
+  row.style.removeProperty('--progress');
+}
 
-  var musicRows = document.querySelectorAll('.music-row');
-  musicRows.forEach(row => {
-    row.addEventListener('click', function(e) {
-      var src = row.dataset.src;
-      if (!src) return;
-      // If clicking on a playing row, seek to position
-      if (curRow === row && player.duration) {
-        var rect = row.getBoundingClientRect();
-        var pct = (e.clientX - rect.left) / rect.width;
-        player.currentTime = pct * player.duration;
-        if (player.paused) { player.play(); row.classList.remove('paused'); }
-        else { player.pause(); row.classList.add('paused'); }
-        return;
-      }
-      if (curRow === row) {
-        if (player.paused) { player.play(); row.classList.remove('paused'); }
-        else { player.pause(); row.classList.add('paused'); }
-        return;
-      }
-      if (curRow) { curRow.classList.remove('playing', 'paused'); curRow.style.removeProperty('--progress'); }
-      curRow = row;
-      row.classList.add('playing');
-      player.src = encodeURI(src);
-      player.play().catch(function() {
-        if (curRow) { curRow.classList.remove('playing', 'paused'); curRow.style.removeProperty('--progress'); curRow = null; }
-      });
-    });
+function _toggleMusicRow(row) {
+  if (player.paused) { player.play(); row.classList.remove('paused'); }
+  else { player.pause(); row.classList.add('paused'); }
+}
+
+function _playMusicRow(row) {
+  if (curRow) _resetMusicRow(curRow);
+  curRow = row;
+  row.classList.add('playing');
+  player.src = encodeURI(row.dataset.src);
+  player.play().catch(function() {
+    _resetMusicRow(curRow);
+    curRow = null;
   });
+}
 
+function _bindMusicRows(musicRows) {
+  musicRows.forEach(row => row.addEventListener('click', function(e) {
+    if (!row.dataset.src) return;
+    if (curRow === row && player.duration) {
+      var rect = row.getBoundingClientRect();
+      player.currentTime = (e.clientX - rect.left) / rect.width * player.duration;
+    }
+    if (curRow === row) _toggleMusicRow(row);
+    else _playMusicRow(row);
+  }));
+}
+
+function _bindMusicProgress() {
   musicTimeHandler = function() {
     if (curRow && player.duration) {
       var pct = (player.currentTime / player.duration * 100).toFixed(2);
@@ -123,15 +122,29 @@ function initMusicPlayer() {
       if (t) t.textContent = _fmtTime(player.currentTime) + ' / ' + _fmtTime(player.duration);
     }
   };
+}
+
+function _bindMusicEnded(musicRows) {
   musicEndHandler = function() {
-    if (curRow) { curRow.classList.remove('playing'); curRow.style.removeProperty('--progress');
-      var t = curRow.querySelector('.time'); if (t) t.textContent = ''; }
+    if (curRow) { _resetMusicRow(curRow); var t = curRow.querySelector('.time'); if (t) t.textContent = ''; }
     var idx = Array.prototype.indexOf.call(musicRows, curRow);
     curRow = null;
     if (idx >= 0 && idx + 1 < musicRows.length) {
       musicRows[idx + 1].click();
     }
   };
+}
+
+function initMusicPlayer() {
+  player = document.getElementById('player');
+  if (!player) return;
+  curRow = null;
+  if (musicTimeHandler) player.removeEventListener('timeupdate', musicTimeHandler);
+  if (musicEndHandler) player.removeEventListener('ended', musicEndHandler);
+  var musicRows = document.querySelectorAll('.music-row');
+  _bindMusicRows(musicRows);
+  _bindMusicProgress();
+  _bindMusicEnded(musicRows);
   player.addEventListener('timeupdate', musicTimeHandler);
   player.addEventListener('ended', musicEndHandler);
 }
@@ -176,4 +189,3 @@ function renderWork(data) {
       '</a>';
   }).join('');
 }
-

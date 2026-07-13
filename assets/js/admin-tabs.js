@@ -1,10 +1,13 @@
 // Admin tab orchestration. Domain modules provide the load functions.
-function switchTab(name) {
+function _activateTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   var tabBtn = document.querySelector('.tab-btn[data-tab="' + name + '"]');
   if (tabBtn) tabBtn.classList.add('active');
   document.getElementById('tab-' + name).classList.add('active');
+}
+
+function _loadTab(name) {
   if (name === 'dashboard') loadDashboard();
   if (name === 'work') loadWork();
   if (name === 'essays') window['essay' + 'Entry']();
@@ -18,4 +21,9 @@ function switchTab(name) {
   if (name === 'stack') loadStack();
   if (name === 'git') refreshGitStatus();
   if (name === 'readme') loadReadme();
+}
+
+function switchTab(name) {
+  _activateTab(name);
+  _loadTab(name);
 }

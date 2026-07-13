@@ -32,7 +32,7 @@ function _restartContentMotion(el) {
   el.classList.add('content-swap');
 }
 
-function buildEssayFilter() {
+function _essayFilterSets() {
   var tags = new Set(_allTags);
   var techTopicSet = new Set();
   var techTypeSet = new Set();
@@ -56,13 +56,18 @@ function buildEssayFilter() {
   tags.forEach(function(t) {
     if (primary.indexOf(t) < 0 && !techTopicSet.has(t) && !techTypeSet.has(t)) primary.push(t);
   });
+  return {primary: primary, topics: techTopicSet, types: techTypeSet};
+}
+
+function _renderEssayPrimaryFilter(primary) {
   var html = '<button type="button" class="ef-chip' + (!_essayPrimaryFilter ? ' active' : '') + '" onclick="filterEssayPrimary(\'\')">置顶</button>';
   primary.forEach(function(t) {
     html += '<button type="button" class="ef-chip' + (_essayPrimaryFilter === t ? ' active' : '') + '" data-tag="' + htmlEncode(t) + '" onclick="filterEssayPrimary(this.getAttribute(\'data-tag\'))">' + htmlEncode(t) + '</button>';
   });
-  var primaryEl = document.getElementById('essay-tag-filter');
-  primaryEl.innerHTML = html;
+  document.getElementById('essay-tag-filter').innerHTML = html;
+}
 
+function _renderEssayTechFilter(techTopicSet, techTypeSet) {
   var topicEl = document.getElementById('essay-topic-filter');
   var typeEl = document.getElementById('essay-type-filter');
   if (!topicEl || !typeEl) return;
@@ -101,6 +106,12 @@ function buildEssayFilter() {
     typeEl.style.display = 'none';
     typeEl.innerHTML = '';
   }
+}
+
+function buildEssayFilter() {
+  var sets = _essayFilterSets();
+  _renderEssayPrimaryFilter(sets.primary);
+  _renderEssayTechFilter(sets.topics, sets.types);
 }
 
 function filterEssayPrimary(tag) {
