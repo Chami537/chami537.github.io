@@ -412,5 +412,37 @@
     "tags": [
       "InMyFeelings"
     ]
+  },
+  {
+    "filename": "fb6ec8a7.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/50s",
+      "aperture": "f/2.6",
+      "iso": "3200",
+      "focal": "13mm",
+      "date": "2026-07-11 21:23",
+      "gps": {
+        "lat": 22.586625,
+        "lng": 113.965181
+      }
+    },
+    "date": "Jul 11, 2026"
+  },
+  {
+    "filename": "bdefc00a.jpg",
+    "size": "sm",
+    "exif": {
+      "shutter": "1/100s",
+      "aperture": "f/1.6",
+      "iso": "100",
+      "focal": "6mm",
+      "date": "2026-06-26 18:40",
+      "gps": {
+        "lat": 22.6251,
+        "lng": 114.019518
+      }
+    },
+    "date": "Jun 26, 2026"
   }
 ]
