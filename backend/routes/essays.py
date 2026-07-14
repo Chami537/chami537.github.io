@@ -48,29 +48,41 @@ def list_essays():
 def create_essay():
     essays = ESSAY_REPOSITORY.list()
     item = request.json
+    error, status = _validate_new_essay(item, essays)
+    if error:
+        return jsonify({"error": error}), status
+    slug = item['slug']
+    body_md = _prepare_new_essay(item, slug)
+    essays.append(item)
+    ESSAY_REPOSITORY.save(essays)
+    _sync_created_essay(item, body_md, essays)
+
+    return jsonify(item), 201
+
+
+def _validate_new_essay(item, essays):
     slug = item.get('slug', '')
     if not slug or not re.match(r'^[a-z0-9-]+$', slug):
-        return jsonify({"error": "slug 只能包含小写字母、数字和连字符"}), 400
-    if any(e['slug'] == slug for e in essays):
-        return jsonify({"error": "slug 已存在"}), 409
+        return "slug 只能包含小写字母、数字和连字符", 400
+    if any(essay['slug'] == slug for essay in essays):
+        return 'slug 已存在', 409
+    return None, None
 
-    # Extract password to local store, never persist in essays.json
+
+def _prepare_new_essay(item, slug):
     password = item.pop('password', '')
     if password:
         store_password(slug, password)
-
-    read_time = _calc_read_time(item.get('body', '') or item.get('content', ''))
-    item['readTime'] = read_time
-    essays.append(item)
-    ESSAY_REPOSITORY.save(essays)
-
     body_md = item.get('body', '')
+    item['readTime'] = _calc_read_time(body_md or item.get('content', ''))
+    return body_md
+
+
+def _sync_created_essay(item, body_md, essays):
     _sync_essay_html(item, raw_md_memory=body_md if body_md else None, essays=essays)
     if len(essays) > 1:
         _sync_essay_html(essays[-2], essays=essays)
     _generate_feeds()
-
-    return jsonify(item), 201
 
 @bp.route('/api/essays/<slug>', methods=['PUT'])
 @require_json
@@ -131,29 +143,40 @@ def delete_essay(slug):
     target = next((e for e in essays if e['slug'] == slug), None)
     if not target:
         return jsonify({"error": "Not found"}), 404
-    title_folder = target['title']
-    title_folder = title_folder.replace('/', '_').replace('\\', '_')
-    if '..' in title_folder.split(os.sep):
+    title_folder = _essay_title_folder(target['title'])
+    if title_folder is None:
         return jsonify({"error": "Invalid title"}), 400
     essays = [e for e in essays if e['slug'] != slug]
     ESSAY_REPOSITORY.save(essays)
-    html_file = os.path.join(ESSAYS_DIR, f"{slug}.html")
-    if os.path.exists(html_file):
-        os.remove(html_file)
-    md_file = os.path.join(MD_DIR, f"{slug}.md")
-    if os.path.exists(md_file):
-        os.remove(md_file)
+    _remove_essay_files(slug, title_folder)
+    _sync_after_essay_delete(target, essays)
+    return jsonify({"status": "deleted"})
+
+
+def _essay_title_folder(title):
+    title_folder = title.replace('/', '_').replace('\\', '_')
+    if '..' in title_folder.split(os.sep):
+        return None
+    return title_folder
+
+
+def _remove_essay_files(slug, title_folder):
+    for directory, suffix in ((ESSAYS_DIR, 'html'), (MD_DIR, 'md')):
+        path = os.path.join(directory, f'{slug}.{suffix}')
+        if os.path.exists(path):
+            os.remove(path)
     img_dir = os.path.join(IMAGES_DIR, 'essays', title_folder)
     essays_img_dir = os.path.realpath(os.path.join(IMAGES_DIR, 'essays'))
     if os.path.realpath(img_dir).startswith(essays_img_dir + os.sep) and os.path.exists(img_dir):
         shutil.rmtree(img_dir)
-    # Re-sync essays sharing tags with the deleted essay (or all siblings if tagless)
-    deleted_tags = _parse_tags(target.get('tag', ''), target)
-    for e in essays:
-        if not deleted_tags or deleted_tags & _parse_tags(e.get('tag', ''), e):
-            _sync_essay_html(e, essays=essays)
+
+
+def _sync_after_essay_delete(deleted, essays):
+    deleted_tags = _parse_tags(deleted.get('tag', ''), deleted)
+    for essay in essays:
+        if not deleted_tags or deleted_tags & _parse_tags(essay.get('tag', ''), essay):
+            _sync_essay_html(essay, essays=essays)
     _generate_feeds()
-    return jsonify({"status": "deleted"})
 
 @bp.route('/api/essays/<slug>/pin', methods=['POST'])
 def toggle_pin(slug):
