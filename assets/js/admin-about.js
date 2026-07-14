@@ -1,4 +1,50 @@
-// About tag library and editor.
+// About profile, avatar, tag library, and editor.
+
+async function loadAbout() {
+  try {
+    var data = await api('GET', '/api/about');
+    document.getElementById('about-content').value = data.content || '';
+    document.getElementById('about-avatar-preview').src = data.avatar || '';
+    document.getElementById('about-tags').value = (data.tags || []).join(', ');
+    renderAboutTagChips();
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function uploadAvatar() {
+  try {
+    var file = document.getElementById('about-avatar-file').files[0];
+    if (!file) return;
+    var form = new FormData();
+    form.append('file', file);
+    var result = await api('POST', '/api/about/upload-avatar', form);
+    document.getElementById('about-avatar-preview').src = result.url;
+    document.getElementById('about-avatar-preview').dataset.path = result.url;
+    toast('头像已上传');
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+async function saveAbout() {
+  try {
+    var selected = document.getElementById('about-tags').value
+      .split(/[,，]/).map(function(tag) { return tag.trim(); }).filter(Boolean);
+    await api('PUT', '/api/about', {
+      content: document.getElementById('about-content').value,
+      tags: getAboutTags().filter(function(tag) { return selected.indexOf(tag) >= 0; }),
+      avatar: document.getElementById('about-avatar-preview').dataset.path ||
+        document.getElementById('about-avatar-preview').src.split('/').slice(-2).join('/')
+    });
+    markClean();
+    toast('简介已保存');
+  } catch (error) {
+    toast(error.message, true);
+  }
+}
+
+window['about' + 'Entry'] = saveAbout;
 
 // ═══ About tag system ═══
 function getAboutTags() {
@@ -96,4 +142,3 @@ function addAboutCustomTag() {
   renderAboutTagChips();
   toggleAboutTag(tag);
 }
-

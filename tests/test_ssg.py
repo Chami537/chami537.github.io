@@ -180,7 +180,7 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
             'assets/css/admin-essay.css',
         ), (
             'assets/js/theme.js',
-            'assets/js/admin.js',
+            'assets/js/admin-editor-rendering.js',
             'assets/js/admin-work.js',
             'assets/js/admin-social.js',
             'assets/js/admin-music.js',
@@ -189,6 +189,8 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
             'assets/js/admin-essay-tags.js',
             'assets/js/admin-essay-security.js',
             'assets/js/admin-about.js',
+            'assets/js/admin-tracks.js',
+            'assets/js/admin-readme.js',
             'assets/js/admin-essay-editor.js',
             'assets/js/admin-photo-editor.js',
             'assets/js/admin-photo-stories.js',
@@ -429,7 +431,7 @@ def test_theme_sync_covers_system_tabs_and_giscus_initial_state():
 def test_admin_dashboard_stats_ui_is_registered():
     root = Path(__file__).resolve().parents[1]
     admin_html = (root / 'admin.html').read_text(encoding='utf-8')
-    admin_js = (root / 'assets' / 'js' / 'admin.js').read_text(encoding='utf-8')
+    admin_js = (root / 'assets' / 'js' / 'admin-tabs.js').read_text(encoding='utf-8')
     dashboard_js = (root / 'assets' / 'js' / 'admin-dashboard.js').read_text(encoding='utf-8')
 
     assert 'data-tab="dashboard"' in admin_html

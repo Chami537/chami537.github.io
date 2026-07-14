@@ -37,3 +37,10 @@ def test_health_route_and_admin_module_are_registered():
     assert 'data-tab="health"' in html
     assert 'assets/js/admin-health.js' in html
     assert "name === 'health'" in tabs
+
+
+def test_admin_domain_modules_are_loaded_explicitly():
+    html = (ROOT / 'admin.html').read_text(encoding='utf-8')
+    for module in ('admin-about.js', 'admin-tracks.js', 'admin-readme.js', 'admin-editor-rendering.js'):
+        assert f'assets/js/{module}' in html
+    assert 'assets/js/admin.js' not in html

@@ -118,3 +118,21 @@ def test_admin_tabs_keep_active_health_tab_aligned_on_narrow_viewport(live_serve
         assert tab['x'] + tab['width'] <= box['x'] + box['width']
     finally:
         page.close()
+
+
+def test_admin_about_tracks_and_readme_modules_load(live_server, browser):
+    page = browser.new_page()
+    try:
+        page.goto(live_server + '/', wait_until='networkidle')
+        for name in ('loadAbout', 'loadTracks', 'loadReadme'):
+            assert page.evaluate('typeof ' + name) == 'function'
+        assert page.evaluate('typeof window._renderAdminEditor') == 'function'
+
+        page.locator('.tab-btn[data-tab="about"]').click()
+        page.locator('#about-content').wait_for(state='visible')
+        page.locator('.tab-btn[data-tab="tracks"]').click()
+        page.locator('#tracks-list').wait_for(state='visible')
+        page.locator('.tab-btn[data-tab="readme"]').click()
+        page.locator('#readme-content').wait_for(state='visible')
+    finally:
+        page.close()
