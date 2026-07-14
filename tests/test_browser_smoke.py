@@ -91,3 +91,17 @@ def test_admin_dashboard_photo_story_and_music_tabs_render(live_server, browser)
         assert page.locator('#music-list .card').count() > 0
     finally:
         page.close()
+
+
+def test_admin_health_tab_renders_checks_and_filters(live_server, browser):
+    page = browser.new_page()
+    try:
+        page.goto(live_server + '/', wait_until='networkidle')
+        page.locator('.tab-btn[data-tab="health"]').click()
+        page.locator('#health-content').wait_for(state='visible')
+        assert page.locator('#health-checks .health-check').count() >= 8
+        page.locator('.health-filter button').nth(2).click()
+        assert page.locator('#health-checks .health-check:not([hidden])').count() == 0
+        assert page.locator('#health-history-list').count() == 1
+    finally:
+        page.close()

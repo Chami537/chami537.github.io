@@ -16,6 +16,38 @@ function _healthSummary(report) {
     ' · 错误 ' + _healthText(summary.errors);
 }
 
+function _healthHistory() {
+  try { return JSON.parse(localStorage.getItem('site-health-history') || '[]'); }
+  catch (_) { return []; }
+}
+
+function _saveHealthHistory(report) {
+  var history = _healthHistory();
+  history.unshift({
+    at: new Date().toISOString(), status: report.status,
+    passed: report.summary && report.summary.passed || 0,
+    warnings: report.summary && report.summary.warnings || 0,
+    errors: report.summary && report.summary.errors || 0
+  });
+  try { localStorage.setItem('site-health-history', JSON.stringify(history.slice(0, 6))); } catch (_) {}
+  _renderHealthHistory();
+}
+
+function _renderHealthHistory() {
+  var box = document.getElementById('health-history-list');
+  if (!box) return;
+  box.replaceChildren();
+  _healthHistory().forEach(function(item) {
+    var row = document.createElement('span');
+    row.className = 'health-history-item';
+    var date = new Date(item.at);
+    row.textContent = (isNaN(date) ? '' : date.toLocaleString()) + ' · ' +
+      item.passed + '/' + item.warnings + '/' + item.errors;
+    box.appendChild(row);
+  });
+  if (!box.children.length) box.textContent = '暂无历史记录';
+}
+
 function _renderHealthChecks(checks) {
   var box = document.getElementById('health-checks');
   box.replaceChildren();
@@ -53,8 +85,17 @@ async function loadHealth() {
     var report = await api('GET', '/api/site-health');
     _healthSummary(report);
     _renderHealthChecks(report.checks);
+    _saveHealthHistory(report);
     _healthState('ready');
   } catch (e) {
     _healthState('error', '健康检查失败：' + (e.message || '未知错误'));
   }
+}
+
+function filterHealthChecks(status, button) {
+  document.querySelectorAll('.health-filter button').forEach(function(item) { item.classList.remove('active'); });
+  button.classList.add('active');
+  document.querySelectorAll('#health-checks .health-check').forEach(function(item) {
+    item.hidden = status !== 'all' && !item.classList.contains('health-' + status);
+  });
 }

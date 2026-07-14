@@ -1,15 +1,24 @@
-.health-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.health-toolbar { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:20px; }
 .health-toolbar h2 { margin:0; font-size:18px; }
-.health-summary { color:var(--muted); font-size:12px; }
+.health-summary { margin-top:3px; color:var(--muted); font-size:12px; }
 .health-state { padding:32px 0; color:var(--muted); font-size:13px; }
 .health-error { color:var(--danger); }
-.health-checks { display:grid; gap:8px; }
-.health-check { padding:12px 14px; border:1px solid var(--border); border-left:3px solid var(--border); border-radius:8px; background:var(--card-bg); }
-.health-passed { border-left-color:#21a366; }
-.health-warning { border-left-color:#d08a00; }
-.health-error { border-left-color:var(--danger); }
+.health-filter { display:flex; gap:6px; margin-bottom:12px; }
+.health-filter .active { color:var(--accent); border-color:var(--accent); background:var(--card-bg); }
+.health-checks { display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:12px; }
+.health-check { padding:16px; border:1px solid var(--border); border-radius:8px; background:var(--card-bg); }
+.health-check:hover { border-color:var(--accent); }
+.health-status { padding:2px 7px; border:1px solid var(--border); border-radius:10px; }
+.health-passed .health-status { color:#16834b; border-color:#9bd6b7; }
+.health-warning .health-status { color:#9a6700; border-color:#e2c276; }
+.health-error .health-status { color:var(--danger); border-color:#e5a7ae; }
 .health-check-heading { display:flex; justify-content:space-between; gap:12px; align-items:center; }
 .health-check-heading strong { font-size:13px; }
 .health-status { font-size:11px; color:var(--muted); }
 .health-check p { margin:5px 0 0; color:var(--muted); font-size:12px; }
 .health-check ul { margin:8px 0 0; padding-left:18px; color:var(--muted); font-size:11px; line-height:1.7; }
+.health-history { margin-top:24px; padding-top:16px; border-top:1px solid var(--border); }
+.health-history h3 { margin:0 0 8px; font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; }
+.health-history-list { display:flex; flex-wrap:wrap; gap:6px; }
+.health-history-item { padding:5px 8px; border:1px solid var(--border); border-radius:6px; color:var(--muted); font-size:11px; }
+@media (max-width: 680px) { .health-checks { grid-template-columns:1fr; } }
