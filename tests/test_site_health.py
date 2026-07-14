@@ -106,6 +106,19 @@ def test_health_checks_encrypted_source_without_leaking_content(tmp_path):
     assert next(item for item in report['checks'] if item['id'] == 'essays.sources')['status'] == 'passed'
 
 
+def test_health_allows_encrypted_source_when_password_store_is_unavailable(tmp_path):
+    _make_minimal_site(tmp_path)
+    encoded = __import__('base64').b64encode(bytes([2]) + b'x' * 17 + b'private body').decode()
+    _write_json(tmp_path / 'data' / 'essays.json', json.dumps([{'slug': 'private-note'}]))
+    (tmp_path / 'md').mkdir()
+    (tmp_path / 'md' / 'private-note.md').write_text(encoded, encoding='utf-8')
+
+    report = run_site_health(str(tmp_path), lambda _slug: False)
+
+    check = next(item for item in report['checks'] if item['id'] == 'essays.sources')
+    assert check['status'] == 'passed'
+
+
 def test_health_checks_password_gate_and_giscus_csp(tmp_path):
     _make_minimal_site(tmp_path)
     _write_json(tmp_path / 'data' / 'essays.json', json.dumps([{'slug': 'private-note'}]))

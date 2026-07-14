@@ -107,7 +107,10 @@ def _check_essays(root, essays, has_password):
             continue
         protected = bool(has_password(slug))
         encrypted = _encrypted_source(source)
-        if protected != encrypted:
+        # CI does not have the gitignored password store, so an encrypted
+        # source is valid even when the local password lookup is unavailable.
+        # A known password still requires an encrypted source.
+        if protected and not encrypted:
             details.append(f'md/{slug}.md: 密码状态与密文状态不一致')
         html_path = essays_dir / f'{slug}.html'
         if essays_dir.is_dir() and not html_path.is_file():
