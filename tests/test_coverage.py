@@ -4,6 +4,7 @@ import os
 from types import SimpleNamespace
 from pathlib import Path
 
+import pytest
 from PIL import Image
 
 from backend.data import DATA_DIR
@@ -232,6 +233,36 @@ def test_photo_upload_preserves_exif(client, tmp_path, monkeypatch):
     assert 'model' not in response.json['exif']
     with Image.open(base_dir / 'raw_photos' / filename) as uploaded:
         assert uploaded.getexif().get(272) == 'OnePlus 13'
+
+
+def test_photo_upload_cleans_files_when_metadata_save_fails(client, tmp_path, monkeypatch):
+    import backend.routes.photos as photos_route
+
+    source = Image.new('RGB', (10, 10), color='blue')
+    source_bytes = io.BytesIO()
+    source.save(source_bytes, 'JPEG')
+    source_bytes.seek(0)
+
+    image_dir = tmp_path / 'images'
+    base_dir = tmp_path
+    monkeypatch.setattr(photos_route, 'IMAGES_DIR', str(image_dir))
+    monkeypatch.setattr(photos_route, 'BASE_DIR', str(base_dir))
+    monkeypatch.setattr(photos_route.uuid, 'uuid4', lambda: SimpleNamespace(hex='rollback12345678'))
+
+    def fail_save(_name, _data):
+        raise RuntimeError('metadata save failed')
+
+    monkeypatch.setattr(photos_route, 'atomic_write_json', fail_save)
+    with pytest.raises(RuntimeError, match='metadata save failed'):
+        client.post(
+            '/api/photos/upload',
+            data={'file': (source_bytes, 'rollback.jpg')},
+            content_type='multipart/form-data',
+        )
+
+    assert not [path for path in image_dir.rglob('*') if path.is_file()]
+    raw_dir = base_dir / 'raw_photos'
+    assert not [path for path in raw_dir.rglob('*') if path.is_file()]
 
 def test_essay_image_upload_no_file(client):
     r = client.post('/api/essays/upload-image')

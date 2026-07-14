@@ -31,6 +31,16 @@ def _photo_upload_payload(img):
     return exif_data, img.getexif().tobytes()
 
 
+def _photo_file_paths(filename):
+    return [
+        os.path.join(IMAGES_DIR, size_name, filename)
+        for size_name, _max_width in _PHOTO_SIZES
+    ] + [
+        os.path.join(IMAGES_DIR, filename),
+        os.path.join(BASE_DIR, 'raw_photos', filename),
+    ]
+
+
 def _save_photo_variants(img, filename, exif_bytes):
     for size_name, max_width in _PHOTO_SIZES:
         thumb = img.copy()
@@ -45,6 +55,13 @@ def _save_photo_variants(img, filename, exif_bytes):
     raw_dir = os.path.join(BASE_DIR, 'raw_photos')
     os.makedirs(raw_dir, exist_ok=True)
     img.save(os.path.join(raw_dir, filename), exif=exif_bytes)
+    return _photo_file_paths(filename)
+
+
+def _cleanup_photo_files(paths):
+    for path in paths:
+        if os.path.exists(path):
+            os.remove(path)
 
 
 def _photo_entry(filename, exif_data, size):
@@ -82,14 +99,19 @@ def upload_photo():
 
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
 
-    exif_data, exif_bytes = _photo_upload_payload(img)
-    _save_photo_variants(img, filename, exif_bytes)
+    created_files = _photo_file_paths(filename)
+    try:
+        exif_data, exif_bytes = _photo_upload_payload(img)
+        _save_photo_variants(img, filename, exif_bytes)
 
-    # Update JSON
-    photos = load_json('photos.json')
-    size = request.form.get('size', 'sm')
-    photos.append(_photo_entry(filename, exif_data, size))
-    atomic_write_json('photos.json', photos)
+        # Update JSON
+        photos = load_json('photos.json')
+        size = request.form.get('size', 'sm')
+        photos.append(_photo_entry(filename, exif_data, size))
+        atomic_write_json('photos.json', photos)
+    except Exception:
+        _cleanup_photo_files(created_files)
+        raise
 
     return jsonify({"status": "success", "filename": filename, "exif": exif_data}), 201
 
