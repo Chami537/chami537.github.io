@@ -4,6 +4,13 @@ import base64
 import json
 import re
 from pathlib import Path
+from backend.health_checks.report import (
+    aggregate as _aggregate,
+    check as _check,
+    problem_check as _problem_check,
+    unavailable as _unavailable,
+)
+from backend.health_checks.security import check_security
 
 
 _DATA_TYPES = {
@@ -33,36 +40,6 @@ _SLUG_RE = re.compile(r'^[a-z0-9-]+$')
 _IGNORED_MEDIA_SUFFIXES = ('.tmp', '.uploading', '.deleting')
 
 
-def _check(check_id, label, status, message, details=None):
-    return {
-        'id': check_id,
-        'label': label,
-        'status': status,
-        'severity': 'error' if status == 'error' else 'warning' if status == 'warning' else 'info',
-        'message': message,
-        'details': list(details or []),
-    }
-
-
-def _aggregate(checks):
-    counts = {
-        'passed': sum(item['status'] == 'passed' for item in checks),
-        'warnings': sum(item['status'] == 'warning' for item in checks),
-        'errors': sum(item['status'] == 'error' for item in checks),
-    }
-    status = 'error' if counts['errors'] else 'warning' if counts['warnings'] else 'healthy'
-    order = {'error': 0, 'warning': 1, 'passed': 2}
-    return {
-        'status': status,
-        'summary': counts,
-        'checks': sorted(checks, key=lambda item: order[item['status']]),
-    }
-
-
-def _problem_check(check_id, label, details, message, severity='error'):
-    return _check(check_id, label, 'warning' if severity == 'warning' else 'error', message, details)
-
-
 def _load_data(root):
     loaded = {}
     details = []
@@ -87,10 +64,6 @@ def _load_data(root):
         'data.json', 'JSON 数据', 'error' if details else 'passed',
         '数据文件存在问题' if details else '数据文件正常', details,
     )
-
-
-def _unavailable(check_id, label):
-    return _check(check_id, label, 'warning', '数据不可用，已跳过', [])
 
 
 def _safe_relative(root, path):
@@ -267,5 +240,6 @@ def run_site_health(base_dir, has_password):
         _check_orphans(root, data.get('photos.json'), data.get('music.json'), data.get('tracks.json')),
         _check_links(data),
         _check_build_files(root),
+        check_security(root, data.get('essays.json'), has_password, _SLUG_RE),
     ]
     return _aggregate(checks)

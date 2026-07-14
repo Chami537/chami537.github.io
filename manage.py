@@ -6,12 +6,20 @@ import sys
 if __name__ == '__main__':
     import os
     from backend.app import app
-    from backend.data import load_json, ESSAYS_DIR, MD_DIR, DATA_DIR, BASE_DIR
+    from backend.data import load_json, has_essay_password, ESSAYS_DIR, MD_DIR, DATA_DIR, BASE_DIR
 
     if len(sys.argv) > 1:
         if sys.argv[1] == 'build':
             from backend.ssg import _sync_essay_html, _generate_feeds, _cache_bust_assets
+            from backend.site_health import run_site_health
             force = '--force' in sys.argv
+            health = run_site_health(BASE_DIR, has_essay_password)
+            if health['status'] == 'error':
+                print('ERROR: site health check failed; build aborted.')
+                for check in health['checks']:
+                    if check['status'] == 'error':
+                        print(f"  - {check['label']}: {check['message']}")
+                sys.exit(1)
             print("Building static site..." + (" (incremental)" if not force else " (full)"))
 
             essays = load_json('essays.json')

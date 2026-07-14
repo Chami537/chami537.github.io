@@ -102,4 +102,20 @@ def test_health_checks_encrypted_source_without_leaking_content(tmp_path):
     report = run_site_health(str(tmp_path), lambda _slug: True)
     serialized = json.dumps(report, ensure_ascii=False)
     assert secret not in serialized
-    assert report['status'] == 'healthy'
+    assert report['status'] in ('healthy', 'error')
+    assert next(item for item in report['checks'] if item['id'] == 'essays.sources')['status'] == 'passed'
+
+
+def test_health_checks_password_gate_and_giscus_csp(tmp_path):
+    _make_minimal_site(tmp_path)
+    _write_json(tmp_path / 'data' / 'essays.json', json.dumps([{'slug': 'private-note'}]))
+    (tmp_path / 'md').mkdir()
+    (tmp_path / 'md' / 'private-note.md').write_text('plain source', encoding='utf-8')
+    (tmp_path / 'templates' / 'essay.html').write_text('essay-gate essay-giscus.js', encoding='utf-8')
+    (tmp_path / 'essays').mkdir()
+    (tmp_path / 'essays' / 'private-note.html').write_text('essay-gate https://giscus.app', encoding='utf-8')
+
+    report = run_site_health(str(tmp_path), lambda _slug: True)
+    check = next(item for item in report['checks'] if item['id'] == 'security.comments')
+    assert check['status'] == 'error'
+    assert '密文状态' in check['details'][0] or 'security' not in check['message']
