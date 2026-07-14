@@ -105,3 +105,16 @@ def test_admin_health_tab_renders_checks_and_filters(live_server, browser):
         assert page.locator('#health-history-list').count() == 1
     finally:
         page.close()
+
+
+def test_admin_tabs_keep_active_health_tab_aligned_on_narrow_viewport(live_server, browser):
+    page = browser.new_page(viewport={'width': 634, 'height': 400})
+    try:
+        page.goto(live_server + '/', wait_until='networkidle')
+        page.locator('.tab-btn[data-tab="health"]').click()
+        box = page.locator('.tabs').bounding_box()
+        tab = page.locator('.tab-btn[data-tab="health"]').bounding_box()
+        assert box['x'] <= tab['x']
+        assert tab['x'] + tab['width'] <= box['x'] + box['width']
+    finally:
+        page.close()

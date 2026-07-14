@@ -46,12 +46,17 @@ input, button, select, textarea, optgroup, option { color: inherit; }
   background: var(--card-bg);
   border-bottom: 1px solid var(--border);
   padding: 0 24px;
+  overflow-x: auto; overflow-y: hidden;
+  white-space: nowrap;
+  scrollbar-width: none;
 }
+.tabs::-webkit-scrollbar { display: none; }
 .tab-btn {
   padding: 12px 20px; border: none; background: none;
   font-size: 13px; font-weight: 600; color: var(--muted);
   cursor: pointer; border-bottom: 2px solid transparent;
   transition: color .2s, border-color .2s;
+  flex: 0 0 auto;
 }
 .tab-btn:hover { color: var(--fg); }
 .tab-btn.active { color: var(--fg); border-bottom-color: var(--accent); }

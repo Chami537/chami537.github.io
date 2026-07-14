@@ -3,7 +3,10 @@ function _activateTab(name) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
   var tabBtn = document.querySelector('.tab-btn[data-tab="' + name + '"]');
-  if (tabBtn) tabBtn.classList.add('active');
+  if (tabBtn) {
+    tabBtn.classList.add('active');
+    tabBtn.scrollIntoView({behavior: 'smooth', block: 'nearest', inline: 'center'});
+  }
   document.getElementById('tab-' + name).classList.add('active');
 }
 
