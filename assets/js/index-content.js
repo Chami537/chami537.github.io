@@ -3,8 +3,8 @@
 function renderFriends(data) {
   var html = '<div class="friends-label">FRIEND</div>';
   data.forEach((f, i) => {
-    var href = htmlEncode(f.url);
-    if (/^https?:\/\//i.test(f.url)) { html += '<a href="' + href + '">' + htmlEncode(f.name) + '</a>'; }
+    var href = safeExternalUrl(f.url);
+    if (href) { html += '<a href="' + htmlEncode(href) + '">' + htmlEncode(f.name) + '</a>'; }
     else { html += '<span>' + htmlEncode(f.name) + '</span>'; }
   });
   return html;
@@ -33,8 +33,9 @@ function renderMusic(data) {
 function renderContact(data) {
   return data.map(c => {
     var inner = '<span class="value">' + htmlEncode(c.label) + ' <span style="color:#999;font-weight:400;">' + htmlEncode(c.handle) + '</span></span>';
-    if (c.url) {
-      return '<a href="' + htmlEncode(c.url) + '" target="_blank" rel="noopener noreferrer" class="contact-row">' + inner + '<span class="arr">→</span></a>';
+    var url = safeExternalUrl(c.url);
+    if (url) {
+      return '<a href="' + htmlEncode(url) + '" target="_blank" rel="noopener noreferrer" class="contact-row">' + inner + '<span class="arr">→</span></a>';
     }
     return '<div class="contact-row">' + inner + '</div>';
   }).join('');
@@ -46,4 +47,3 @@ function renderStack(data) {
     return '<span class="stack-chip" style="--chip-color:' + colors[i % 6] + '">' + htmlEncode(c) + '</span>';
   }).join('');
 }
-

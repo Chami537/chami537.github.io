@@ -51,6 +51,9 @@ def test_public_homepage_shell_loads_essay_surface(live_server, browser):
         page.goto(live_server + '/index.html', wait_until='domcontentloaded')
         assert page.locator('#essays-list').count() == 1
         assert page.locator('script[src*="index-essays.js"]').count() == 1
+        assert page.evaluate("safeExternalUrl('javascript:alert(1)')") == ''
+        assert 'href=' not in page.evaluate("renderContact([{label:'X',handle:'Y',url:'javascript:alert(1)'}])")
+        assert page.evaluate("renderWork([{id:1,title:'X',description:'Y',url:'data:text/html,x',tags:[]}])").startswith('<div')
     finally:
         page.close()
 

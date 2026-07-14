@@ -158,6 +158,11 @@ function htmlEncode(str) {
   return d.innerHTML.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
 }
 
+function safeExternalUrl(url) {
+  var value = String(url || '').trim();
+  return /^https?:\/\//i.test(value) ? value : '';
+}
+
 function _exifStr(ex, html) {
   var parts = [];
   if (ex.focal) parts.push(String(ex.focal));
@@ -181,11 +186,14 @@ const TS = Date.now(); // cache busting timestamp, fixed per page load
 function renderWork(data) {
   return data.map((w, i) => {
     const num = String(w.id || i + 1).padStart(2, '0');
-    return '<a class="work-card" data-repo="' + htmlEncode(w.repo||'') + '" href="' + htmlEncode(w.url) + '" target="_blank" rel="noopener noreferrer">' +
+    var url = safeExternalUrl(w.url);
+    var tag = url ? 'a' : 'div';
+    var linkAttrs = url ? ' href="' + htmlEncode(url) + '" target="_blank" rel="noopener noreferrer"' : '';
+    return '<' + tag + ' class="work-card" data-repo="' + htmlEncode(w.repo||'') + '"' + linkAttrs + '>' +
       '<div class="num">' + num + '</div>' +
       '<h3>' + htmlEncode(w.title) + '</h3>' +
       '<p>' + htmlEncode(w.description) + '</p>' +
       '<div class="line-tag">' + htmlEncode((w.tags||[]).join(' · ')) + ' <span class="stars">' + ((w.stars != null) ? w.stars + ' stars' : '') + '</span></div>' +
-      '</a>';
+      '</' + tag + '>';
   }).join('');
 }
