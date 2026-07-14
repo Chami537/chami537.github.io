@@ -224,28 +224,28 @@ def set_essay_password(slug):
         return jsonify({"error": "Not found"}), 404
 
     new_password = request.json.get('password', '')
-    old_password = get_essay_password(slug)
-    md_file = os.path.join(MD_DIR, f"{slug}.md")
-
-    if new_password:
-        error = _rewrite_encrypted_essay(md_file, old_password, new_password)
-        if error:
-            return jsonify({"error": error}), 400
-        store_password(slug, new_password)
-    else:
-        error = _decrypt_essay_file(md_file, old_password)
-        if error:
-            return jsonify({"error": error}), 400
-        store_password(slug, '')
-
-    _strip_essay_passwords(essays)
-    ESSAY_REPOSITORY.save(essays)
-
-    # Regenerate HTML (password gate or normal)
+    error = _change_essay_password(slug, new_password)
+    if error:
+        return jsonify({"error": error}), 400
+    _persist_password_state(slug, new_password, essays)
     _sync_essay_html(target, essays=essays)
     _generate_feeds()
 
     return jsonify({"password_set": bool(new_password)})
+
+
+def _change_essay_password(slug, new_password):
+    old_password = get_essay_password(slug)
+    md_file = os.path.join(MD_DIR, f'{slug}.md')
+    if new_password:
+        return _rewrite_encrypted_essay(md_file, old_password, new_password)
+    return _decrypt_essay_file(md_file, old_password)
+
+
+def _persist_password_state(slug, password, essays):
+    store_password(slug, password)
+    _strip_essay_passwords(essays)
+    ESSAY_REPOSITORY.save(essays)
 
 
 @bp.route('/api/essays/<slug>/content', methods=['GET'])

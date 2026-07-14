@@ -13,6 +13,32 @@ async function loadStories() {
   renderStoryEditor();
 }
 
+function _storyPhotoPickerHtml(story, storyIndex, allPhotos) {
+  var cover = story.cover || (story.photos && story.photos[0]) || '';
+  var photos = story.photos || [];
+  return allPhotos.map(function(p) {
+    var fn = p.filename;
+    var inStory = photos.indexOf(fn) >= 0;
+    var itemClass = 'story-photo-pick' + (fn === cover ? ' is-cover' : '') + (inStory ? ' in-story' : '');
+    return '<div class="' + itemClass + '" title="' + esc(fn) + '">' +
+      '<img src="/images/sm/' + encodeURIComponent(fn) + '" data-fn="' + esc(fn) + '" onclick="pickStoryCover(' + storyIndex + ', this)" class="story-photo-thumb">' +
+      '<span class="story-photo-toggle" onclick="toggleStoryPhoto(' + storyIndex + ', \'' + esc(fn) + '\', this)">' + (inStory ? '✓' : '+') + '</span></div>';
+  }).join('');
+}
+
+function _storyCardHtml(story, storyIndex, allPhotos) {
+  var photos = story.photos || [];
+  return '<div class="story-edit-card"><div class="story-edit-head">' +
+    '<input class="story-id-input" value="' + esc(story.id) + '" onchange="_storyData[' + storyIndex + '].id=this.value" placeholder="故事ID">' +
+    '<span class="story-edit-count">' + photos.length + ' photos</span>' +
+    '<button class="btn btn-sm btn-danger" onclick="deleteStory(' + storyIndex + ')">删除</button></div>' +
+    '<div class="story-edit-fields"><input value="' + esc(story.name || '') + '" onchange="_storyData[' + storyIndex + '].name=this.value" placeholder="故事名称">' +
+    '<input value="' + esc(story.date || '') + '" onchange="_storyData[' + storyIndex + '].date=this.value" placeholder="日期标签"></div>' +
+    '<div class="story-edit-help">封面 / 照片：点击图片选封面，点右上角添加或移除。</div>' +
+    '<div class="story-cover-picker">' + _storyPhotoPickerHtml(story, storyIndex, allPhotos) + '</div>' +
+    '<textarea class="story-caption-input" onchange="_storyData[' + storyIndex + '].caption=this.value" rows="2" placeholder="简介（留空不显示）">' + esc(story.caption || '') + '</textarea></div>';
+}
+
 function renderStoryEditor() {
   var el = document.getElementById('story-editor-list');
   if (!_storyData.length) {
@@ -20,38 +46,7 @@ function renderStoryEditor() {
     return;
   }
   var allPhotos = _photoData || [];
-  var html = '';
-  _storyData.forEach(function(s, si) {
-    var cover = s.cover || (s.photos && s.photos[0]) || '';
-    var caption = s.caption || '';
-    var photos = s.photos || [];
-    html += '<div class="story-edit-card">' +
-      '<div class="story-edit-head">' +
-      '<input class="story-id-input" value="' + esc(s.id) + '" onchange="_storyData[' + si + '].id=this.value" placeholder="故事ID">' +
-      '<span class="story-edit-count">' + photos.length + ' photos</span>' +
-      '<button class="btn btn-sm btn-danger" onclick="deleteStory(' + si + ')">删除</button>' +
-      '</div>' +
-      '<div class="story-edit-fields">' +
-      '<input value="' + esc(s.name || '') + '" onchange="_storyData[' + si + '].name=this.value" placeholder="故事名称">' +
-      '<input value="' + esc(s.date || '') + '" onchange="_storyData[' + si + '].date=this.value" placeholder="日期标签">' +
-      '</div>' +
-      '<div class="story-edit-help">封面 / 照片：点击图片选封面，点右上角添加或移除。</div>' +
-      '<div class="story-cover-picker">';
-    allPhotos.forEach(function(p) {
-      var fn = p.filename;
-      var inStory = photos.indexOf(fn) >= 0;
-      var itemClass = 'story-photo-pick' + (fn === cover ? ' is-cover' : '') + (inStory ? ' in-story' : '');
-      html += '<div class="' + itemClass + '" title="' + esc(fn) + '">' +
-        '<img src="/images/sm/' + encodeURIComponent(fn) + '" data-fn="' + esc(fn) + '" ' +
-        'onclick="pickStoryCover(' + si + ', this)" ' +
-        'class="story-photo-thumb">' +
-        '<span class="story-photo-toggle" onclick="toggleStoryPhoto(' + si + ', \'' + esc(fn) + '\', this)">' + (inStory ? '✓' : '+') + '</span>' +
-        '</div>';
-    });
-    html += '</div>' +
-      '<textarea class="story-caption-input" onchange="_storyData[' + si + '].caption=this.value" rows="2" placeholder="简介（留空不显示）">' + esc(caption) + '</textarea>' +
-      '</div>';
-  });
+  var html = _storyData.map(function(story, index) { return _storyCardHtml(story, index, allPhotos); }).join('');
   html += '<button class="btn btn-sm story-add-btn" onclick="addStory()">+ 新建故事</button>';
   el.innerHTML = html;
 }
@@ -116,4 +111,3 @@ async function saveStoryOverrides() {
     toast('故事线已保存');
   } catch(e) { toast(e.message, true); }
 }
-

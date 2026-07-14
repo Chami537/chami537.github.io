@@ -53,3 +53,20 @@ def test_public_homepage_shell_loads_essay_surface(live_server, browser):
         assert page.locator('script[src*="index-essays.js"]').count() == 1
     finally:
         page.close()
+
+
+def test_admin_api_error_and_password_dialog(live_server, browser):
+    page = browser.new_page()
+    try:
+        page.goto(live_server + '/', wait_until='networkidle')
+        status = page.evaluate("fetch('/api/essays/__browser_missing__/content').then(function(r) { return r.status; })")
+        assert status == 404
+        page.locator('.tab-btn[data-tab="essays"]').click()
+        page.wait_for_timeout(150)
+        password_button = page.locator('.password-btn').first
+        assert password_button.count() == 1
+        password_button.click()
+        assert page.locator('#password-dialog[open]').count() == 1
+        page.keyboard.press('Escape')
+    finally:
+        page.close()
