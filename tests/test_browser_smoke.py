@@ -91,6 +91,11 @@ def test_admin_dashboard_photo_story_and_music_tabs_render(live_server, browser)
         page.locator('.tab-btn[data-tab="photos"]').click()
         page.locator('#photo-grid .photo-card').first.wait_for(state='visible')
         assert page.locator('#story-editor-list .story-edit-card').count() > 0
+        for name in ('loadPhotos', 'openPhotoTagModal', 'showPhotoEditor', 'handlePhotoFiles'):
+            assert page.evaluate('typeof ' + name) == 'function'
+        page.locator('#photo-grid .photo-card').first.click()
+        page.locator('#photo-editor').wait_for(state='visible')
+        page.evaluate('clearPhotoEditor()')
 
         page.locator('.tab-btn[data-tab="music"]').click()
         page.locator('#music-list .card').first.wait_for(state='visible')

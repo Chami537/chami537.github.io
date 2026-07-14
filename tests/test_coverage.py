@@ -23,22 +23,22 @@ def test_photo_cards_fall_back_to_exif_date():
 
 
 def test_admin_photo_cards_format_exif_date_without_camera_model():
-    source = Path('assets/js/admin-photo-editor.js').read_text(encoding='utf-8')
-    assert "var displayDate = p.date || (p.exif && p.exif.date) || '';" in source
-    assert "var dateMatch = displayDate.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);" in source
-    assert "MONTHS_ARR[+dateMatch[2] - 1]" in source
-    assert "p.exif.camera" not in source
+    source = Path('assets/js/admin-photo-list.js').read_text(encoding='utf-8')
+    assert "var displayDate = photo.date || (photo.exif && photo.exif.date) || '';" in source
+    assert "var match = displayDate.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);" in source
+    assert "MONTHS_ARR[+match[2] - 1]" in source
+    assert "photo.exif.camera" not in source
 
 
 def test_admin_photo_editor_uses_exif_date_and_clears_stale_marker():
-    source = Path('assets/js/admin-photo-editor.js').read_text(encoding='utf-8')
-    assert "var curDate = p.date || (p.exif && p.exif.date) || '';" in source
+    source = Path('assets/js/admin-photo-metadata.js').read_text(encoding='utf-8')
+    assert "var currentDate = photo.date || (photo.exif && photo.exif.date) || '';" in source
     assert "_editorMap.removeLayer(_editorMarker);" in source
     assert "_editorMarker = null;" in source
 
 
 def test_photo_maps_use_reliable_tiles_and_marker_assets():
-    admin_source = Path('assets/js/admin-photo-editor.js').read_text(encoding='utf-8')
+    admin_source = Path('assets/js/admin-photo-metadata.js').read_text(encoding='utf-8')
     story_source = Path('assets/js/admin-photo-stories.js').read_text(encoding='utf-8')
     index_source = Path('assets/js/index-photo-map.js').read_text(encoding='utf-8')
     template_source = Path('templates/map.html').read_text(encoding='utf-8')
@@ -69,7 +69,7 @@ def test_photo_gps_link_scrolls_map_into_view():
 
 def test_photo_maps_hide_leaflet_attribution_control():
     index_source = Path('assets/js/index-photo-map.js').read_text(encoding='utf-8')
-    admin_source = Path('assets/js/admin-photo-editor.js').read_text(encoding='utf-8')
+    admin_source = Path('assets/js/admin-photo-metadata.js').read_text(encoding='utf-8')
     template_source = Path('templates/map.html').read_text(encoding='utf-8')
     for source in (index_source, admin_source, template_source):
         assert 'attributionControl: false' in source

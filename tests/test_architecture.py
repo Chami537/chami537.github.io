@@ -51,3 +51,10 @@ def test_essay_editor_is_split_by_responsibility():
     for module in ('admin-essay-meta.js', 'admin-essay-content.js', 'admin-essay-formatting.js', 'admin-essay-media.js'):
         assert f'assets/js/{module}' in html
     assert 'assets/js/admin-essay-editor.js' not in html
+
+
+def test_photo_editor_is_split_by_responsibility():
+    html = (ROOT / 'admin.html').read_text(encoding='utf-8')
+    for module in ('admin-photo-list.js', 'admin-photo-tags.js', 'admin-photo-metadata.js', 'admin-photo-files.js'):
+        assert f'assets/js/{module}' in html
+    assert 'assets/js/admin-photo-editor.js' not in html
