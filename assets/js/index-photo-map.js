@@ -120,44 +120,57 @@ function _fmtDist(m) {
 
 function loadGpxTracks() {
   var trackColors = ['#0066ff', '#ff4d4d', '#00c853', '#ffb800', '#9c27b0'];
-  var colorIdx = 0;
   fetch('/data/tracks.json?v=' + TS).then(function(r) {
     if (!r.ok) return;
     return r.json();
   }).then(function(tracks) {
     if (!tracks || !tracks.length) return;
-    tracks.forEach(function(t) {
-      fetch('/tracks/' + t.file).then(function(r) { return r.text(); }).then(function(xml) {
-        var parser = new DOMParser();
-        var doc = parser.parseFromString(xml, 'text/xml');
-        var points = [];
-        var dist = 0, gain = 0, prevEle = null;
-        doc.querySelectorAll('trkpt').forEach(function(pt) {
-          var lat = parseFloat(pt.getAttribute('lat'));
-          var lon = parseFloat(pt.getAttribute('lon'));
-          var eleEl = pt.querySelector('ele');
-          var ele = eleEl ? parseFloat(eleEl.textContent) : null;
-          if (points.length > 0) {
-            var prev = points[points.length - 1];
-            dist += _haversine(prev[0], prev[1], lat, lon);
-            if (ele !== null && prevEle !== null && ele > prevEle) gain += ele - prevEle;
-          }
-          points.push([lat, lon]);
-          prevEle = ele;
-        });
-        if (points.length > 1) {
-          var color = trackColors[colorIdx % trackColors.length];
-          var name = t.name || t.file.replace('.gpx', '');
-          var stats = [name];
-          stats.push(_fmtDist(dist));
-          if (gain > 0) stats.push('↑' + Math.round(gain) + ' m');
-          var line = L.polyline(points, {color: color, weight: 3, opacity: 0.7, smoothFactor: 1}).addTo(_photoMap);
-          line.bindPopup('<b>' + stats.join('</b> · <b>') + '</b>');
-          colorIdx++;
-        }
-      }).catch(function() {});
+    tracks.forEach(function(track, index) {
+      _loadGpxTrack(track, trackColors[index % trackColors.length]);
     });
   }).catch(function() {});
+}
+
+function _loadGpxTrack(track, color) {
+  fetch('/tracks/' + track.file).then(function(r) {
+    return r.text();
+  }).then(function(xml) {
+    var summary = _parseGpxTrack(xml);
+    if (summary) _drawGpxTrack(track, color, summary);
+  }).catch(function() {});
+}
+
+function _parseGpxTrack(xml) {
+  var parser = new DOMParser();
+  var doc = parser.parseFromString(xml, 'text/xml');
+  var points = [];
+  var distance = 0;
+  var gain = 0;
+  var previousElevation = null;
+  doc.querySelectorAll('trkpt').forEach(function(pt) {
+    var lat = parseFloat(pt.getAttribute('lat'));
+    var lon = parseFloat(pt.getAttribute('lon'));
+    var eleEl = pt.querySelector('ele');
+    var elevation = eleEl ? parseFloat(eleEl.textContent) : null;
+    if (points.length > 0) {
+      var previous = points[points.length - 1];
+      distance += _haversine(previous[0], previous[1], lat, lon);
+      if (elevation !== null && previousElevation !== null && elevation > previousElevation) {
+        gain += elevation - previousElevation;
+      }
+    }
+    points.push([lat, lon]);
+    previousElevation = elevation;
+  });
+  return points.length > 1 ? {points: points, distance: distance, gain: gain} : null;
+}
+
+function _drawGpxTrack(track, color, summary) {
+  var name = track.name || track.file.replace('.gpx', '');
+  var stats = [name, _fmtDist(summary.distance)];
+  if (summary.gain > 0) stats.push('↑' + Math.round(summary.gain) + ' m');
+  var line = L.polyline(summary.points, {color: color, weight: 3, opacity: 0.7, smoothFactor: 1}).addTo(_photoMap);
+  line.bindPopup('<b>' + stats.join('</b> · <b>') + '</b>');
 }
 
 function switchView(view, cb) {
@@ -257,4 +270,3 @@ function flyToPhoto(filename, lat, lng) {
     }
   });
 }
-
