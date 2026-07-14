@@ -1,7 +1,49 @@
 """Smoke tests for all API routes."""
 import json
 import os
+from io import BytesIO
 from backend.data import DATA_DIR
+
+
+def test_tracks_upload_list_and_delete(client, monkeypatch, tmp_path):
+    import backend.routes.tracks as tracks
+
+    class MemoryRepository:
+        def __init__(self):
+            self.items = []
+
+        def list(self):
+            return [dict(item) for item in self.items]
+
+        def save(self, items):
+            self.items = [dict(item) for item in items]
+
+    repository = MemoryRepository()
+    monkeypatch.setattr(tracks, 'BASE_DIR', str(tmp_path))
+    monkeypatch.setattr(tracks, 'repository_for', lambda _name: repository)
+    gpx = b'<?xml version="1.0"?><gpx version="1.1"><trk><name>Walk</name></trk></gpx>'
+
+    uploaded = client.post('/api/tracks/upload', data={
+        'file': (BytesIO(gpx), 'walk.gpx'),
+    }, content_type='multipart/form-data')
+    assert uploaded.status_code == 201
+    filename = uploaded.get_json()['file']
+    assert (tmp_path / 'tracks' / filename).is_file()
+    assert client.get('/api/tracks').get_json()[0]['name'] == 'walk'
+
+    deleted = client.delete('/api/tracks/0')
+    assert deleted.status_code == 200
+    assert not (tmp_path / 'tracks' / filename).exists()
+
+
+def test_tracks_upload_rejects_non_gpx(client, monkeypatch):
+    import backend.routes.tracks as tracks
+
+    monkeypatch.setattr(tracks, 'repository_for', lambda _name: None)
+    response = client.post('/api/tracks/upload', data={
+        'file': (BytesIO(b'not xml'), 'track.txt'),
+    }, content_type='multipart/form-data')
+    assert response.status_code == 400
 
 
 def test_dashboard_stats_requires_auth(client_no_auth):

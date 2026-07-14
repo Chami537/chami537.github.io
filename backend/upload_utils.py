@@ -2,11 +2,13 @@
 
 from PIL import Image
 from flask import jsonify
+from xml.etree import ElementTree
 
 from backend.data import get_image_ext
 
 MAX_IMAGE_UPLOAD_BYTES = 12 * 1024 * 1024
 MAX_MUSIC_UPLOAD_BYTES = 25 * 1024 * 1024
+MAX_GPX_UPLOAD_BYTES = 5 * 1024 * 1024
 
 
 class UploadValidationError(ValueError):
@@ -74,3 +76,22 @@ def validate_music_upload(file_storage):
     if not (has_id3 or has_frame_sync):
         raise UploadValidationError("Invalid MP3 file")
     return 'mp3'
+
+
+def validate_gpx_upload(file_storage):
+    """Validate a small GPX XML upload without resolving external resources."""
+    _require_file(file_storage)
+    if not file_storage.filename.lower().endswith('.gpx'):
+        raise UploadValidationError("Only .gpx files")
+    if _file_size(file_storage) > MAX_GPX_UPLOAD_BYTES:
+        raise UploadValidationError("File too large", 413)
+    try:
+        root = ElementTree.parse(file_storage.stream).getroot()
+    except (ElementTree.ParseError, OSError, ValueError) as exc:
+        file_storage.stream.seek(0)
+        raise UploadValidationError("Invalid GPX file") from exc
+    finally:
+        file_storage.stream.seek(0)
+    if root.tag.rsplit('}', 1)[-1].lower() != 'gpx':
+        raise UploadValidationError("Invalid GPX file")
+    return 'gpx'
