@@ -76,36 +76,54 @@ def create_essay():
 @require_json
 def update_essay_meta(slug):
     essays = ESSAY_REPOSITORY.list()
-    for i, e in enumerate(essays):
-        if e['slug'] == slug:
-            new_slug = request.json.get('slug', slug)
-            if not new_slug or not re.match(r'^[a-z0-9-]+$', new_slug):
-                return jsonify({"error": "slug 只能包含小写字母、数字和连字符"}), 400
-            if new_slug != slug and any(e2['slug'] == new_slug for e2 in essays):
-                return jsonify({"error": "slug 已存在"}), 409
-            essays[i].update(request.json)
-            essays[i].pop('password', None)  # password never stored in essays.json
-            essays[i]['slug'] = new_slug
-            ESSAY_REPOSITORY.save(essays)
-            # Rename HTML + MD files if slug changed
-            if new_slug != slug:
-                old_html = os.path.join(ESSAYS_DIR, f"{slug}.html")
-                new_html = os.path.join(ESSAYS_DIR, f"{new_slug}.html")
-                old_md = os.path.join(MD_DIR, f"{slug}.md")
-                new_md = os.path.join(MD_DIR, f"{new_slug}.md")
-                if os.path.exists(old_html):
-                    os.replace(old_html, new_html)
-                if os.path.exists(old_md):
-                    os.replace(old_md, new_md)
-            # Re-sync updated essay + essays sharing tags (nav links may have changed)
-            _sync_essay_html(essays[i], essays=essays)
-            new_tags = _parse_tags(essays[i].get('tag', ''), essays[i])
-            for e2 in essays:
-                if e2['slug'] != slug and (not new_tags or new_tags & _parse_tags(e2.get('tag', ''), e2)):
-                    _sync_essay_html(e2, essays=essays)
-            _generate_feeds()
-            return jsonify(essays[i])
-    return jsonify({"error": "Not found"}), 404
+    target = next((essay for essay in essays if essay['slug'] == slug), None)
+    if not target:
+        return jsonify({"error": "Not found"}), 404
+
+    new_slug = request.json.get('slug', slug)
+    error = _validate_meta_slug(slug, new_slug, essays)
+    if error:
+        return jsonify({"error": error}), 409 if error == 'slug 已存在' else 400
+
+    _apply_meta_updates(target, request.json, new_slug)
+    ESSAY_REPOSITORY.save(essays)
+    _rename_essay_sources(slug, new_slug)
+    _sync_related_essays(target, slug, essays)
+    _generate_feeds()
+    return jsonify(target)
+
+
+def _validate_meta_slug(old_slug, new_slug, essays):
+    if not new_slug or not re.match(r'^[a-z0-9-]+$', new_slug):
+        return 'slug 只能包含小写字母、数字和连字符'
+    if new_slug != old_slug and any(essay['slug'] == new_slug for essay in essays):
+        return 'slug 已存在'
+    return None
+
+
+def _apply_meta_updates(essay, updates, new_slug):
+    essay.update(updates)
+    essay.pop('password', None)
+    essay['slug'] = new_slug
+
+
+def _rename_essay_sources(old_slug, new_slug):
+    if new_slug == old_slug:
+        return
+    for directory in (ESSAYS_DIR, MD_DIR):
+        old_path = os.path.join(directory, f'{old_slug}.{"html" if directory == ESSAYS_DIR else "md"}')
+        new_path = os.path.join(directory, f'{new_slug}.{"html" if directory == ESSAYS_DIR else "md"}')
+        if os.path.exists(old_path):
+            os.replace(old_path, new_path)
+
+
+def _sync_related_essays(updated, old_slug, essays):
+    _sync_essay_html(updated, essays=essays)
+    tags = _parse_tags(updated.get('tag', ''), updated)
+    for essay in essays:
+        if essay['slug'] != old_slug and (not tags or tags & _parse_tags(essay.get('tag', ''), essay)):
+            _sync_essay_html(essay, essays=essays)
+
 
 @bp.route('/api/essays/<slug>', methods=['DELETE'])
 def delete_essay(slug):

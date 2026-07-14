@@ -1,4 +1,5 @@
 from backend.essay_service import EssayService
+from backend.routes.essays import _apply_meta_updates, _validate_meta_slug
 
 
 class MemoryEssayRepository:
@@ -31,3 +32,14 @@ def test_essay_service_admin_listing_adds_status_without_password_value():
     assert result[0]['date_display'] == 'formatted'
     assert result[0]['password_set'] is True
     assert 'password' not in result[0]
+
+
+def test_meta_slug_helpers_validate_conflicts_and_strip_password():
+    essays = [{'slug': 'first'}, {'slug': 'second'}]
+    assert _validate_meta_slug('first', 'bad slug', essays)
+    assert _validate_meta_slug('first', 'second', essays) == 'slug 已存在'
+    assert _validate_meta_slug('first', 'renamed', essays) is None
+
+    essay = {'slug': 'first', 'title': 'Old'}
+    _apply_meta_updates(essay, {'slug': 'renamed', 'password': 'secret', 'title': 'New'}, 'renamed')
+    assert essay == {'slug': 'renamed', 'title': 'New'}
