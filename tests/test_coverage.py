@@ -1,6 +1,8 @@
 """Additional test coverage."""
 import io
 import os
+import time
+from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from pathlib import Path
 
@@ -264,6 +266,28 @@ def test_photo_upload_cleans_files_when_metadata_save_fails(client, tmp_path, mo
     raw_dir = base_dir / 'raw_photos'
     assert not [path for path in raw_dir.rglob('*') if path.is_file()]
 
+
+def test_parallel_photo_metadata_appends_are_serialized(monkeypatch):
+    import backend.routes.photos as photos_route
+
+    state = []
+
+    def read_photos(_name):
+        snapshot = state.copy()
+        time.sleep(0.01)
+        return snapshot
+
+    def write_photos(_name, data):
+        state[:] = data
+
+    monkeypatch.setattr(photos_route, 'load_json', read_photos)
+    monkeypatch.setattr(photos_route, 'atomic_write_json', write_photos)
+    entries = [{'filename': f'{index}.jpg'} for index in range(6)]
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        list(pool.map(photos_route._append_photo_entry, entries))
+
+    assert sorted(item['filename'] for item in state) == [f'{index}.jpg' for index in range(6)]
+
 def test_essay_image_upload_no_file(client):
     r = client.post('/api/essays/upload-image')
     assert r.status_code == 400
@@ -345,6 +369,56 @@ def test_music_upload_accepts_basic_mp3(client, monkeypatch):
     finally:
         if os.path.exists(path):
             os.remove(path)
+
+
+def test_music_delete_restores_file_when_metadata_save_fails(client, tmp_path, monkeypatch):
+    import backend.routes.music as music_route
+
+    music_dir = tmp_path / 'music'
+    music_dir.mkdir()
+    mp3_path = music_dir / 'song.mp3'
+    mp3_path.write_bytes(b'ID3test')
+
+    class FailingRepository:
+        def list(self):
+            return [{'id': 1, 'title': 'Song', 'filename': 'song.mp3'}]
+
+        def save(self, _data):
+            raise RuntimeError('metadata save failed')
+
+    monkeypatch.setattr(music_route, 'BASE_DIR', str(tmp_path))
+    monkeypatch.setattr(music_route, 'repository_for', lambda _name: FailingRepository())
+    with pytest.raises(RuntimeError, match='metadata save failed'):
+        client.delete('/api/music/1')
+
+    assert mp3_path.exists()
+    assert not (music_dir / 'song.mp3.deleting').exists()
+
+
+def test_avatar_replace_failure_keeps_old_avatar(client, tmp_path, monkeypatch):
+    import backend.routes.about as about_route
+
+    images_dir = tmp_path / 'images'
+    images_dir.mkdir()
+    old_avatar = images_dir / 'avatar.png'
+    old_avatar.write_bytes(b'old avatar')
+    source = Image.new('RGB', (10, 10), color='green')
+    source_bytes = io.BytesIO()
+    source.save(source_bytes, 'JPEG')
+    source_bytes.seek(0)
+
+    monkeypatch.setattr(about_route, 'BASE_DIR', str(tmp_path))
+    monkeypatch.setattr(about_route.os, 'replace', lambda _src, _dst: (_ for _ in ()).throw(OSError('replace failed')))
+    with pytest.raises(OSError, match='replace failed'):
+        client.post(
+            '/api/about/upload-avatar',
+            data={'file': (source_bytes, 'avatar.jpg')},
+            content_type='multipart/form-data',
+        )
+
+    assert old_avatar.read_bytes() == b'old avatar'
+    assert not (images_dir / 'avatar.jpg').exists()
+    assert not (images_dir / 'avatar.jpg.uploading').exists()
 
 
 def test_git_revert_requires_confirmation(client):

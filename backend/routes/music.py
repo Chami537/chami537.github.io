@@ -6,7 +6,7 @@ from flask import Blueprint, request, jsonify
 bp = Blueprint('music', __name__)
 from backend.data import BASE_DIR
 from backend.storage import repository_for
-from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id, require_json
+from backend.crud import list_all, create_item, update_item_by_id, require_json
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_music_upload
 
 
@@ -44,13 +44,24 @@ def upload_music():
 
 @bp.route('/api/music/<int:id>', methods=['DELETE'])
 def delete_music(id):
-    # Clean up MP3 file before deleting JSON entry
-    music = repository_for('music.json').list()
-    for m in music:
-        if m['id'] == id:
-            fn = m.get('filename', '')
-            if fn:
-                mp3_path = os.path.join(BASE_DIR, 'music', os.path.basename(fn))
-                if os.path.exists(mp3_path):
-                    os.remove(mp3_path)
-    return delete_item_by_id('music.json', id)
+    repository = repository_for('music.json')
+    music = repository.list()
+    target = next((item for item in music if item.get('id') == id), None)
+    if not target:
+        return jsonify({"error": "Not found"}), 404
+
+    filename = os.path.basename(target.get('filename', ''))
+    shared = any(item.get('id') != id and os.path.basename(item.get('filename', '')) == filename for item in music)
+    mp3_path = os.path.join(BASE_DIR, 'music', filename) if filename and not shared else ''
+    staged_path = mp3_path + '.deleting' if mp3_path and os.path.exists(mp3_path) else ''
+    if staged_path:
+        os.replace(mp3_path, staged_path)
+    try:
+        repository.save([item for item in music if item.get('id') != id])
+    except Exception:
+        if staged_path and os.path.exists(staged_path):
+            os.replace(staged_path, mp3_path)
+        raise
+    if staged_path and os.path.exists(staged_path):
+        os.remove(staged_path)
+    return jsonify({"status": "deleted"})

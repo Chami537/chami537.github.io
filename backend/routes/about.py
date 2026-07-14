@@ -20,16 +20,23 @@ def upload_avatar():
         ext, _img = validate_image_upload(file)
     except UploadValidationError as exc:
         return upload_error_response(exc)
-    # Clean up old avatar files with different extensions
+    filename = 'avatar.' + ext
+    filepath = os.path.join(BASE_DIR, 'images', filename)
+    os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    temp_path = filepath + '.uploading'
+    try:
+        file.save(temp_path)
+        os.replace(temp_path, filepath)
+    except Exception:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
+    # The replacement is durable; obsolete variants can now be removed safely.
     for old_ext in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
         if old_ext != ext:
             old_path = os.path.join(BASE_DIR, 'images', 'avatar.' + old_ext)
             if os.path.exists(old_path):
                 os.remove(old_path)
-    filename = 'avatar.' + ext
-    filepath = os.path.join(BASE_DIR, 'images', filename)
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    file.save(filepath)
     return jsonify({"url": "images/" + filename}), 201
 
 @bp.route('/api/about', methods=['PUT'])

@@ -1,5 +1,6 @@
 import os
 import re
+import threading
 import uuid
 
 from flask import Blueprint, request, jsonify
@@ -15,6 +16,7 @@ from backend.upload_utils import UploadValidationError, upload_error_response, v
 
 PHOTO_STORIES_REPOSITORY = repository_for('photo_stories.json')
 _PHOTO_SIZES = [('lg', 1920), ('md', 800), ('sm', 400)]
+_PHOTO_METADATA_LOCK = threading.Lock()
 
 # Compatibility seams for existing tests and extensions; default behavior still
 # goes through the repository rather than backend.data's file implementation.
@@ -70,6 +72,14 @@ def _photo_entry(filename, exif_data, size):
         entry['date'] = _parse_date(exif_data['date'])
     return entry
 
+
+def _append_photo_entry(entry):
+    """Serialize the read-modify-write used by parallel browser uploads."""
+    with _PHOTO_METADATA_LOCK:
+        photos = load_json('photos.json')
+        photos.append(entry)
+        atomic_write_json('photos.json', photos)
+
 @bp.route('/api/photos', methods=['GET'])
 def list_photos():
     return jsonify(load_json('photos.json'))
@@ -105,10 +115,8 @@ def upload_photo():
         _save_photo_variants(img, filename, exif_bytes)
 
         # Update JSON
-        photos = load_json('photos.json')
         size = request.form.get('size', 'sm')
-        photos.append(_photo_entry(filename, exif_data, size))
-        atomic_write_json('photos.json', photos)
+        _append_photo_entry(_photo_entry(filename, exif_data, size))
     except Exception:
         _cleanup_photo_files(created_files)
         raise
