@@ -70,3 +70,21 @@ def test_admin_api_error_and_password_dialog(live_server, browser):
         page.keyboard.press('Escape')
     finally:
         page.close()
+
+
+def test_admin_dashboard_photo_story_and_music_tabs_render(live_server, browser):
+    page = browser.new_page()
+    try:
+        page.goto(live_server + '/', wait_until='networkidle')
+        page.locator('#dashboard-content').wait_for(state='visible')
+        assert page.locator('#dashboard-counts .dashboard-count-item').count() > 0
+
+        page.locator('.tab-btn[data-tab="photos"]').click()
+        page.locator('#photo-grid .photo-card').first.wait_for(state='visible')
+        assert page.locator('#story-editor-list .story-edit-card').count() > 0
+
+        page.locator('.tab-btn[data-tab="music"]').click()
+        page.locator('#music-list .card').first.wait_for(state='visible')
+        assert page.locator('#music-list .card').count() > 0
+    finally:
+        page.close()
