@@ -128,12 +128,26 @@ def test_admin_dashboard_photo_story_and_music_tabs_render(live_server, browser)
 def test_admin_health_tab_renders_checks_and_filters(live_server, browser):
     page = browser.new_page()
     try:
+        checks = [
+            {'id': f'passed-{index}', 'label': f'Passed {index}', 'status': 'passed', 'message': 'ok', 'details': []}
+            for index in range(8)
+        ] + [
+            {'id': 'error-1', 'label': 'Error', 'status': 'error', 'message': 'broken', 'details': []}
+        ]
+        page.route('**/api/site-health', lambda route: route.fulfill(json={
+            'status': 'error',
+            'summary': {'passed': 8, 'warnings': 0, 'errors': 1},
+            'checks': checks,
+        }))
         page.goto(live_server + '/', wait_until='networkidle')
         page.locator('.tab-btn[data-tab="health"]').click()
         page.locator('#health-content').wait_for(state='visible')
         assert page.locator('#health-checks .health-check').count() >= 8
         page.locator('.health-filter button').nth(2).click()
-        assert page.locator('#health-checks .health-check:not([hidden])').count() == 0
+        visible = page.locator('#health-checks .health-check:not([hidden])')
+        assert visible.count() == 1
+        assert 'health-error' in visible.first.get_attribute('class').split()
+        assert page.locator('#health-checks .health-passed:not([hidden])').count() == 0
         assert page.locator('#health-history-list').count() == 1
     finally:
         page.close()
