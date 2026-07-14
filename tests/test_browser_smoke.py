@@ -1,5 +1,6 @@
 """Minimal real-browser checks for the static admin and homepage shells."""
 
+import os
 import threading
 
 import pytest
@@ -21,13 +22,27 @@ def live_server():
 
 @pytest.fixture(scope='module')
 def browser():
-    playwright = pytest.importorskip('playwright.sync_api')
+    required = os.environ.get('BROWSER_SMOKE_REQUIRED') == '1'
+    try:
+        import playwright.sync_api as playwright
+    except ImportError:
+        if required:
+            raise
+        pytest.skip('Playwright is unavailable')
+
     driver = playwright.sync_playwright().start()
     try:
-        yield driver.chromium.launch(headless=True)
+        browser_instance = driver.chromium.launch(headless=True)
     except Exception as exc:
+        driver.stop()
+        if required:
+            raise
         pytest.skip(f'Chromium is unavailable: {exc}')
+
+    try:
+        yield browser_instance
     finally:
+        browser_instance.close()
         driver.stop()
 
 
