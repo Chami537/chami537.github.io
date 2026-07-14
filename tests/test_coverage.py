@@ -296,9 +296,9 @@ def test_essay_image_upload_no_file(client):
 def test_essay_image_upload_rejects_fake_image(client, monkeypatch):
     """Essay image uploads must validate file contents, not just the extension."""
     from backend.data import IMAGES_DIR
-    import backend.routes.essays as essays_route
+    import backend.routes.essay_media as essay_media_route
 
-    monkeypatch.setattr(essays_route.uuid, 'uuid4', lambda: SimpleNamespace(hex='badimagebadimage'))
+    monkeypatch.setattr(essay_media_route.uuid, 'uuid4', lambda: SimpleNamespace(hex='badimagebadimage'))
     path = os.path.join(IMAGES_DIR, 'essays', 'badimage.jpg')
     try:
         r = client.post(

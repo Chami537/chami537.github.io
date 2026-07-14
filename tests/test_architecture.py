@@ -12,10 +12,31 @@ def test_routes_do_not_import_app_module():
 
 
 def test_essay_routes_use_repository_boundary():
-    source = (ROOT / 'backend' / 'routes' / 'essays.py').read_text(encoding='utf-8')
-    assert "load_json('essays.json')" not in source
-    assert "atomic_write_json('essays.json'" not in source
-    assert 'ESSAY_REPOSITORY' in source
+    route_dir = ROOT / 'backend' / 'routes'
+    context = (route_dir / 'essay_context.py').read_text(encoding='utf-8')
+    sources = ''.join(path.read_text(encoding='utf-8') for path in route_dir.glob('essay_*.py'))
+    assert "load_json('essays.json')" not in sources
+    assert "atomic_write_json('essays.json'" not in sources
+    assert 'ESSAY_REPOSITORY = EssayRepository()' in context
+
+
+def test_essay_routes_are_split_by_responsibility():
+    route_dir = ROOT / 'backend' / 'routes'
+    aggregator = (route_dir / 'essays.py').read_text(encoding='utf-8')
+    modules = (
+        'essay_catalog.py',
+        'essay_metadata.py',
+        'essay_content.py',
+        'essay_media.py',
+    )
+    assert '@bp.route' not in aggregator
+    assert 'from backend.routes.essay_context import bp' in aggregator
+    assert 'ESSAY_REPOSITORY' not in aggregator
+    for module in modules:
+        source = (route_dir / module).read_text(encoding='utf-8')
+        assert 'from backend.routes import essay_context' in source
+        assert 'from backend.routes.essay_context import ESSAY_REPOSITORY' not in source
+        assert len(source.splitlines()) <= 160
 
 
 def test_admin_shared_modules_load_before_domain_modules():
