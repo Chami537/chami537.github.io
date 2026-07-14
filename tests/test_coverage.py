@@ -12,10 +12,11 @@ from backend.data import load_json
 
 def test_photo_cards_fall_back_to_exif_date():
     source = Path('assets/js/index-photo-gallery.js').read_text(encoding='utf-8')
-    assert "var photoDate = p.date || ex.date || '';" in source
-    assert "var dateMatch = photoDate.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);" in source
-    assert "dateMonths[+dateMatch[2] - 1]" in source
-    assert "var dateHtml = photoDate ?" in source
+    assert 'function _photoDate(photo, exif)' in source
+    assert "var date = photo.date || exif.date || '';" in source
+    assert "var match = date.match(/^(\\d{4})-(\\d{1,2})-(\\d{1,2})/);" in source
+    assert "months[+match[2] - 1]" in source
+    assert "var dateHtml = meta.date ?" in source
 
 
 def test_admin_photo_cards_format_exif_date_without_camera_model():

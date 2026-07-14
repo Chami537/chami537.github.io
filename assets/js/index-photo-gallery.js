@@ -4,34 +4,40 @@ function renderPhotos(data) {
   if (!data || !data.length) {
     return '<div class="photo-empty">这一组暂时没有匹配的照片。</div>';
   }
-  return data.map(function(p) {
-    var fn = encodeURIComponent(p.filename);
-    var srcset = 'images/sm/' + fn + ' 400w, images/md/' + fn + ' 800w, images/lg/' + fn + ' 1920w';
-    var ex = p.exif || {};
-    var exifStr = (_exifCamera(ex) + ' ' + _exifStr(ex)).trim();
-    var gpsText2 = '', gpsText4 = '';
-    if (ex.gps) {
-      gpsText2 = _gpsStr(ex.gps.lat, ex.gps.lng, 2);
-      gpsText4 = _gpsStr(ex.gps.lat, ex.gps.lng, 4);
-    }
-    var gpsHtml = gpsText2 ? ' · <span style="cursor:pointer;text-decoration:underline" class="gps-link" onclick="event.stopPropagation();flyToPhoto(\'' + encodeURIComponent(p.filename) + '\',' + ex.gps.lat + ',' + ex.gps.lng + ')">' + gpsText2 + '</span>' : '';
-    var photoDate = p.date || ex.date || '';
-    if (!p.date && photoDate) {
-      var dateMatch = photoDate.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
-      if (dateMatch) {
-        var dateMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        photoDate = dateMonths[+dateMatch[2] - 1] + ' ' + (+dateMatch[3]) + ', ' + dateMatch[1];
-      }
-    }
-    var dateHtml = photoDate ? '<span class="photo-date">' + photoDate + '</span>' : '';
-    var infoHtml = (exifStr || gpsHtml) ? '<div class="photo-info">' + exifStr + gpsHtml + '</div>' : '';
-    var tagStr = (p.tags || []).join(',');
-    return '<div class="photo-item" data-tags="' + htmlEncode(tagStr) + '">' +
-      '<img src="images/sm/' + fn + '" srcset="' + srcset + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo" loading="lazy" data-exif="' + htmlEncode(exifStr + (gpsText4 ? ' · ' + gpsText4 : '') + (photoDate ? ' · ' + photoDate : '')) + '">' +
-      dateHtml +
-      infoHtml +
-      '</div>';
-  }).join('');
+  return data.map(_photoItemHtml).join('');
+}
+
+function _photoItemHtml(photo) {
+  var filename = encodeURIComponent(photo.filename);
+  var exif = photo.exif || {};
+  var meta = _photoMeta(photo, exif);
+  var dateHtml = meta.date ? '<span class="photo-date">' + meta.date + '</span>' : '';
+  var infoHtml = (meta.exifText || meta.gpsHtml) ? '<div class="photo-info">' + meta.exifText + meta.gpsHtml + '</div>' : '';
+  var tagStr = (photo.tags || []).join(',');
+  return '<div class="photo-item" data-tags="' + htmlEncode(tagStr) + '">' +
+    '<img src="images/sm/' + filename + '" srcset="' + _photoSrcset(filename) + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo" loading="lazy" data-exif="' + htmlEncode(meta.exifText + (meta.gpsText ? ' · ' + meta.gpsText : '') + (meta.date ? ' · ' + meta.date : '')) + '">' +
+    dateHtml + infoHtml + '</div>';
+}
+
+function _photoSrcset(filename) {
+  return 'images/sm/' + filename + ' 400w, images/md/' + filename + ' 800w, images/lg/' + filename + ' 1920w';
+}
+
+function _photoMeta(photo, exif) {
+  var exifText = (_exifCamera(exif) + ' ' + _exifStr(exif)).trim();
+  var gpsText = exif.gps ? _gpsStr(exif.gps.lat, exif.gps.lng, 4) : '';
+  var gpsShort = exif.gps ? _gpsStr(exif.gps.lat, exif.gps.lng, 2) : '';
+  var gpsHtml = gpsShort ? ' · <span style="cursor:pointer;text-decoration:underline" class="gps-link" onclick="event.stopPropagation();flyToPhoto(\'' + encodeURIComponent(photo.filename) + '\',' + exif.gps.lat + ',' + exif.gps.lng + ')">' + gpsShort + '</span>' : '';
+  return {exifText: exifText, gpsText: gpsText, gpsHtml: gpsHtml, date: _photoDate(photo, exif)};
+}
+
+function _photoDate(photo, exif) {
+  var date = photo.date || exif.date || '';
+  if (photo.date || !date) return date;
+  var match = date.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (!match) return date;
+  var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return months[+match[2] - 1] + ' ' + (+match[3]) + ', ' + match[1];
 }
 
 var _photoMap = null;
@@ -105,4 +111,3 @@ function buildPhotoTagFilter() {
   });
   el.innerHTML = html;
 }
-

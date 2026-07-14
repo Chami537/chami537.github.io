@@ -72,40 +72,36 @@ function _renderEssayTechFilter(techTopicSet, techTypeSet) {
   var typeEl = document.getElementById('essay-type-filter');
   if (!topicEl || !typeEl) return;
   if (_essayPrimaryFilter !== '技术') {
-    _essayTopicFilter = '';
-    _essayTypeFilter = '';
-    topicEl.style.display = 'none';
-    topicEl.innerHTML = '';
-    typeEl.style.display = 'none';
-    typeEl.innerHTML = '';
+    _clearEssayTechFilters(topicEl, typeEl);
     return;
   }
   var techTopics = _orderedEssayTags(Array.from(techTopicSet), _essayTechTopics);
   var techTypes = _orderedEssayTags(Array.from(techTypeSet), _essayTechTypes);
-  if (techTopics.length) {
-    var topicHtml = '<span class="ef-label">主题</span><span class="ef-options"><button type="button" class="ef-chip' + (!_essayTopicFilter ? ' active' : '') + '" onclick="filterEssayTopic(\'\')">全部</button>';
-    techTopics.forEach(function(t) {
-      topicHtml += '<button type="button" class="ef-chip' + (_essayTopicFilter === t ? ' active' : '') + '" data-tag="' + htmlEncode(t) + '" onclick="filterEssayTopic(this.getAttribute(\'data-tag\'))">' + htmlEncode(t) + '</button>';
-    });
-    topicHtml += '</span>';
-    topicEl.innerHTML = topicHtml;
-    topicEl.style.display = 'flex';
-  } else {
-    topicEl.style.display = 'none';
-    topicEl.innerHTML = '';
+  _renderEssayFilterGroup(topicEl, techTopics, '主题', _essayTopicFilter, 'filterEssayTopic');
+  _renderEssayFilterGroup(typeEl, techTypes, '类型', _essayTypeFilter, 'filterEssayType');
+}
+
+function _clearEssayTechFilters(topicEl, typeEl) {
+  _essayTopicFilter = '';
+  _essayTypeFilter = '';
+  [topicEl, typeEl].forEach(function(el) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+  });
+}
+
+function _renderEssayFilterGroup(el, tags, label, selected, handler) {
+  if (!tags.length) {
+    el.style.display = 'none';
+    el.innerHTML = '';
+    return;
   }
-  if (techTypes.length) {
-    var typeHtml = '<span class="ef-label">类型</span><span class="ef-options"><button type="button" class="ef-chip' + (!_essayTypeFilter ? ' active' : '') + '" onclick="filterEssayType(\'\')">全部</button>';
-    techTypes.forEach(function(t) {
-      typeHtml += '<button type="button" class="ef-chip' + (_essayTypeFilter === t ? ' active' : '') + '" data-tag="' + htmlEncode(t) + '" onclick="filterEssayType(this.getAttribute(\'data-tag\'))">' + htmlEncode(t) + '</button>';
-    });
-    typeHtml += '</span>';
-    typeEl.innerHTML = typeHtml;
-    typeEl.style.display = 'flex';
-  } else {
-    typeEl.style.display = 'none';
-    typeEl.innerHTML = '';
-  }
+  var html = '<span class="ef-label">' + label + '</span><span class="ef-options"><button type="button" class="ef-chip' + (!selected ? ' active' : '') + '" onclick="' + handler + '(\'\')">全部</button>';
+  tags.forEach(function(t) {
+    html += '<button type="button" class="ef-chip' + (selected === t ? ' active' : '') + '" data-tag="' + htmlEncode(t) + '" onclick="' + handler + '(this.getAttribute(\'data-tag\'))">' + htmlEncode(t) + '</button>';
+  });
+  el.innerHTML = html + '</span>';
+  el.style.display = 'flex';
 }
 
 function buildEssayFilter() {
