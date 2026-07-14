@@ -60,27 +60,44 @@ async function editMusic(id) {  var form = document.getElementById('music-form')
 
 async function saveMusic() {
   try {
-  var fileInput = document.getElementById('music-file');
-  var file = fileInput.files[0];
-  // Upload file if present
-  if (file) {
-    var fd = new FormData();
-    fd.append('file', file);
-    try { var uploadResult = await api('POST', '/api/music/upload', fd); }
-    catch(e) { toast('上传失败: ' + e.message, true); return; }
-  }
-  var id = document.getElementById('music-edit-id').value;
-  var item = {
-    title: document.getElementById('music-title').value,
-    artist: document.getElementById('music-artist').value,
-    filename: uploadResult ? uploadResult.filename : document.getElementById('music-filename').value,
-  };    if (id) { await api('PUT', '/api/music/' + id, item); }
-    else { await api('POST', '/api/music', item); }
+    var file = document.getElementById('music-file').files[0];
+    var uploadResult = await _uploadMusicFile(file);
+    if (file && !uploadResult) return;
+    var id = document.getElementById('music-edit-id').value;
+    await _saveMusicItem(id, _musicFormItem(uploadResult));
     markClean();
     hidePanel('music-form');
     loadMusic();
     toast(id ? '曲目已更新' : '曲目已添加');
   } catch(e) { toast(e.message, true); }
+}
+
+async function _uploadMusicFile(file) {
+  if (!file) return null;
+  var fd = new FormData();
+  fd.append('file', file);
+  try {
+    return await api('POST', '/api/music/upload', fd);
+  } catch(e) {
+    toast('上传失败: ' + e.message, true);
+    return null;
+  }
+}
+
+function _musicFormItem(uploadResult) {
+  return {
+    title: document.getElementById('music-title').value,
+    artist: document.getElementById('music-artist').value,
+    filename: uploadResult ? uploadResult.filename : document.getElementById('music-filename').value,
+  };
+}
+
+async function _saveMusicItem(id, item) {
+  if (id) {
+    await api('PUT', '/api/music/' + id, item);
+  } else {
+    await api('POST', '/api/music', item);
+  }
 }
 
 async function deleteMusic(id) {  const confirmed = await confirmDialog('确定删除这个曲目？');
@@ -95,4 +112,3 @@ async function deleteMusic(id) {  const confirmed = await confirmDialog('确定�
 // Git
 // ═══════════════════════════════════
 // ═══════════════════════════════════
-
