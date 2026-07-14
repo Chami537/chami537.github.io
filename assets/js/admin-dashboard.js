@@ -100,11 +100,23 @@ function _renderDashboard(data) {
   _renderDashboardRecent(data.recent);
 }
 
+function _renderDashboardHealth(report) {
+  var box = document.getElementById('dashboard-health');
+  box.replaceChildren();
+  var summary = report.summary || {};
+  var status = report.status === 'healthy' ? '正常' : report.status === 'warning' ? '有警告' : '有错误';
+  box.appendChild(_dashboardRow('总体状态', status));
+  box.appendChild(_dashboardRow('通过 / 警告 / 错误',
+    (summary.passed || 0) + ' / ' + (summary.warnings || 0) + ' / ' + (summary.errors || 0)));
+}
+
 async function loadDashboard() {
   _dashboardSetState('loading');
   try {
     var data = await api('GET', '/api/dashboard-stats');
     _renderDashboard(data);
+    try { _renderDashboardHealth(await api('GET', '/api/site-health')); }
+    catch (healthError) { _renderDashboardHealth({status: 'warning', summary: {warnings: '不可用'}}); }
     _dashboardSetState('ready');
   } catch (e) {
     _dashboardSetState('error', '统计加载失败：' + (e.message || '未知错误'));

@@ -25,3 +25,15 @@ def test_admin_shared_modules_load_before_domain_modules():
     domain_pos = html.index('assets/js/admin-dashboard.js')
     assert api_pos < domain_pos
     assert ui_pos < domain_pos
+
+
+def test_health_route_and_admin_module_are_registered():
+    route_source = (ROOT / 'backend' / 'routes' / 'health.py').read_text(encoding='utf-8')
+    init_source = (ROOT / 'backend' / 'routes' / '__init__.py').read_text(encoding='utf-8')
+    html = (ROOT / 'admin.html').read_text(encoding='utf-8')
+    tabs = (ROOT / 'assets' / 'js' / 'admin-tabs.js').read_text(encoding='utf-8')
+    assert "'/api/site-health'" in route_source
+    assert 'health.bp' in init_source
+    assert 'data-tab="health"' in html
+    assert 'assets/js/admin-health.js' in html
+    assert "name === 'health'" in tabs

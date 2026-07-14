@@ -1,0 +1,15 @@
+.health-toolbar { display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; }
+.health-toolbar h2 { margin:0; font-size:18px; }
+.health-summary { color:var(--muted); font-size:12px; }
+.health-state { padding:32px 0; color:var(--muted); font-size:13px; }
+.health-error { color:var(--danger); }
+.health-checks { display:grid; gap:8px; }
+.health-check { padding:12px 14px; border:1px solid var(--border); border-left:3px solid var(--border); border-radius:8px; background:var(--card-bg); }
+.health-passed { border-left-color:#21a366; }
+.health-warning { border-left-color:#d08a00; }
+.health-error { border-left-color:var(--danger); }
+.health-check-heading { display:flex; justify-content:space-between; gap:12px; align-items:center; }
+.health-check-heading strong { font-size:13px; }
+.health-status { font-size:11px; color:var(--muted); }
+.health-check p { margin:5px 0 0; color:var(--muted); font-size:12px; }
+.health-check ul { margin:8px 0 0; padding-left:18px; color:var(--muted); font-size:11px; line-height:1.7; }

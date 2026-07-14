@@ -28,10 +28,12 @@ def cache_bust_assets(base_dir):
             'assets/css/admin-photo.css',
             'assets/css/admin-git.css',
             'assets/css/admin-essay.css',
+            'assets/css/admin-health.css',
         ), (
             'assets/js/theme.js',
             'assets/js/admin-core.js',
             'assets/js/admin-dashboard.js',
+            'assets/js/admin-health.js',
             'assets/js/admin.js',
             'assets/js/admin-work.js',
             'assets/js/admin-social.js',

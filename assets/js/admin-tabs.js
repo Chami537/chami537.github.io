@@ -21,6 +21,7 @@ function _loadTab(name) {
   if (name === 'stack') loadStack();
   if (name === 'git') refreshGitStatus();
   if (name === 'readme') loadReadme();
+  if (name === 'health') loadHealth();
 }
 
 function switchTab(name) {

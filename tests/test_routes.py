@@ -9,6 +9,24 @@ def test_dashboard_stats_requires_auth(client_no_auth):
     assert response.status_code == 401
 
 
+def test_site_health_requires_auth(client_no_auth):
+    response = client_no_auth.get('/api/site-health')
+    assert response.status_code == 401
+
+
+def test_site_health_returns_read_only_report(client, monkeypatch):
+    import backend.routes.health as health
+
+    monkeypatch.setattr(health, 'run_site_health', lambda base_dir, has_password: {
+        'status': 'warning',
+        'summary': {'passed': 1, 'warnings': 1, 'errors': 0},
+        'checks': [],
+    })
+    response = client.get('/api/site-health')
+    assert response.status_code == 200
+    assert response.get_json()['status'] == 'warning'
+
+
 def test_dashboard_stats_aggregates_content(client, monkeypatch):
     import backend.routes.dashboard as dashboard
 

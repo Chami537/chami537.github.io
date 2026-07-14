@@ -1,8 +1,8 @@
-from backend.routes import about, contact, dashboard, essays, friends, git_api, music, photos, readme, stack, work
+from backend.routes import about, contact, dashboard, essays, friends, git_api, health, music, photos, readme, stack, work
 
 _BLUEPRINTS = (
     about.bp, contact.bp, dashboard.bp, essays.bp, friends.bp,
-    git_api.bp, music.bp, photos.bp, readme.bp, stack.bp, work.bp,
+    git_api.bp, health.bp, music.bp, photos.bp, readme.bp, stack.bp, work.bp,
 )
 
 
