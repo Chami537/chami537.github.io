@@ -44,3 +44,10 @@ def test_admin_domain_modules_are_loaded_explicitly():
     for module in ('admin-about.js', 'admin-tracks.js', 'admin-readme.js', 'admin-editor-rendering.js'):
         assert f'assets/js/{module}' in html
     assert 'assets/js/admin.js' not in html
+
+
+def test_essay_editor_is_split_by_responsibility():
+    html = (ROOT / 'admin.html').read_text(encoding='utf-8')
+    for module in ('admin-essay-meta.js', 'admin-essay-content.js', 'admin-essay-formatting.js', 'admin-essay-media.js'):
+        assert f'assets/js/{module}' in html
+    assert 'assets/js/admin-essay-editor.js' not in html

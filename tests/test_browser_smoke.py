@@ -41,6 +41,12 @@ def test_admin_shell_loads_shared_modules_and_switches_tabs(live_server, browser
         page.locator('.tab-btn[data-tab="essays"]').click()
         page.wait_for_timeout(150)
         assert page.locator('#essay-list').count() == 1
+        for name in ('saveEssay', 'editEssayContent', '_wrapSelection', 'previewEssayContent'):
+            assert page.evaluate('typeof ' + name) == 'function'
+        page.locator('#essay-list button', has_text='元数据').first.click()
+        page.locator('#essay-form').wait_for(state='visible')
+        page.locator('#essay-list button', has_text='编辑正文').first.click()
+        page.locator('#essay-content-editor').wait_for(state='visible')
     finally:
         page.close()
 
