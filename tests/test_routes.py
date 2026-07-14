@@ -638,9 +638,17 @@ def test_password_store_is_not_served_as_public_data(client_no_auth, tmp_path, m
     password_store.write_text('{"secret-slug": "secret"}', encoding='utf-8')
     monkeypatch.setattr('backend.app.DATA_DIR', str(tmp_path))
 
-    response = client_no_auth.get('/data/essay_passwords.json')
+    for path in (
+        '/data/essay_passwords.json',
+        '/data/ESSAY_PASSWORDS.JSON',
+        '/data/essay_passwords.json.tmp',
+    ):
+        assert client_no_auth.get(path).status_code == 404
 
-    assert response.status_code == 404
+
+def test_private_admin_data_is_not_served(client_no_auth):
+    assert client_no_auth.get('/data/essays.json').status_code == 404
+    assert client_no_auth.get('/data/tags_order.json').status_code == 404
 
 
 def test_session_cookie_is_usable_over_local_http():

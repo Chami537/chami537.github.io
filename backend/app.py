@@ -23,6 +23,12 @@ app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 _secure_cookie = os.environ.get('SESSION_COOKIE_SECURE', '').strip().lower()
 app.config['SESSION_COOKIE_SECURE'] = _secure_cookie in ('1', 'true', 'yes', 'on')
 
+_PUBLIC_DATA_FILES = frozenset({
+    'about.json', 'contact.json', 'essays_public.json', 'friends.json',
+    'music.json', 'photos.json', 'photo_stories.json', 'stack.json',
+    'tracks.json', 'work.json', 'giscus.css', 'giscus-dark.css',
+})
+
 
 # ── Auth guard: all /api/* requires login except /api/login (skipped in test mode) ──
 @app.before_request
@@ -60,7 +66,7 @@ def serve_assets(filename):
 
 @app.route('/data/<path:filename>')
 def serve_data(filename):
-    if os.path.basename(filename) == 'essay_passwords.json':
+    if filename not in _PUBLIC_DATA_FILES:
         abort(404)
     return send_from_directory(DATA_DIR, filename)
 
