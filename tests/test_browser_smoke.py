@@ -41,10 +41,16 @@ def test_admin_shell_loads_shared_modules_and_switches_tabs(live_server, browser
         page.locator('.tab-btn[data-tab="essays"]').click()
         page.wait_for_timeout(150)
         assert page.locator('#essay-list').count() == 1
-        for name in ('saveEssay', 'editEssayContent', '_wrapSelection', 'previewEssayContent'):
+        for name in (
+            'saveEssay', 'editEssayContent', '_wrapSelection', 'previewEssayContent',
+            '_essayTagParts', 'renderEssayTaxonomy', 'saveTagOrder', 'switchEssayTag',
+        ):
             assert page.evaluate('typeof ' + name) == 'function'
         page.locator('#essay-list button', has_text='元数据').first.click()
         page.locator('#essay-form').wait_for(state='visible')
+        page.evaluate("renderEssayTaxonomy('技术, Python, 教程, 复盘')")
+        assert page.locator('#essay-tag').input_value() == '技术, Python, 教程, 复盘'
+        assert page.locator('#essay-form .taxonomy-grid.is-tech').count() == 1
         page.locator('#essay-list button', has_text='编辑正文').first.click()
         page.locator('#essay-content-editor').wait_for(state='visible')
     finally:

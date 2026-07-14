@@ -53,6 +53,19 @@ def test_essay_editor_is_split_by_responsibility():
     assert 'assets/js/admin-essay-editor.js' not in html
 
 
+def test_essay_tags_are_split_by_responsibility():
+    html = (ROOT / 'admin.html').read_text(encoding='utf-8')
+    modules = (
+        'admin-essay-tag-state.js',
+        'admin-essay-taxonomy.js',
+        'admin-essay-tag-order.js',
+        'admin-essay-tag-actions.js',
+    )
+    positions = [html.index(f'assets/js/{module}') for module in modules]
+    assert positions == sorted(positions)
+    assert 'assets/js/admin-essay-tags.js' not in html
+
+
 def test_photo_editor_is_split_by_responsibility():
     html = (ROOT / 'admin.html').read_text(encoding='utf-8')
     for module in ('admin-photo-list.js', 'admin-photo-tags.js', 'admin-photo-metadata.js', 'admin-photo-files.js'):
