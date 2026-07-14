@@ -202,7 +202,7 @@ def test_photo_upload_no_file(client):
 
 
 def test_photo_upload_preserves_exif(client, tmp_path, monkeypatch):
-    import backend.routes.photos as photos_route
+    from backend.routes import photo_context
 
     source = Image.new('RGB', (10, 10), color='red')
     exif = source.getexif()
@@ -216,10 +216,10 @@ def test_photo_upload_preserves_exif(client, tmp_path, monkeypatch):
     image_dir = tmp_path / 'images'
     base_dir = tmp_path
     saved = []
-    monkeypatch.setattr(photos_route, 'IMAGES_DIR', str(image_dir))
-    monkeypatch.setattr(photos_route, 'BASE_DIR', str(base_dir))
-    monkeypatch.setattr(photos_route, 'load_json', lambda _name: saved.copy())
-    monkeypatch.setattr(photos_route, 'atomic_write_json', lambda _name, data: saved.extend(data))
+    monkeypatch.setattr(photo_context, 'IMAGES_DIR', str(image_dir))
+    monkeypatch.setattr(photo_context, 'BASE_DIR', str(base_dir))
+    monkeypatch.setattr(photo_context, 'load_json', lambda _name: saved.copy())
+    monkeypatch.setattr(photo_context, 'atomic_write_json', lambda _name, data: saved.extend(data))
 
     response = client.post(
         '/api/photos/upload',
@@ -238,7 +238,7 @@ def test_photo_upload_preserves_exif(client, tmp_path, monkeypatch):
 
 
 def test_photo_upload_cleans_files_when_metadata_save_fails(client, tmp_path, monkeypatch):
-    import backend.routes.photos as photos_route
+    from backend.routes import photo_context, photo_files
 
     source = Image.new('RGB', (10, 10), color='blue')
     source_bytes = io.BytesIO()
@@ -247,14 +247,14 @@ def test_photo_upload_cleans_files_when_metadata_save_fails(client, tmp_path, mo
 
     image_dir = tmp_path / 'images'
     base_dir = tmp_path
-    monkeypatch.setattr(photos_route, 'IMAGES_DIR', str(image_dir))
-    monkeypatch.setattr(photos_route, 'BASE_DIR', str(base_dir))
-    monkeypatch.setattr(photos_route.uuid, 'uuid4', lambda: SimpleNamespace(hex='rollback12345678'))
+    monkeypatch.setattr(photo_context, 'IMAGES_DIR', str(image_dir))
+    monkeypatch.setattr(photo_context, 'BASE_DIR', str(base_dir))
+    monkeypatch.setattr(photo_files.uuid, 'uuid4', lambda: SimpleNamespace(hex='rollback12345678'))
 
     def fail_save(_name, _data):
         raise RuntimeError('metadata save failed')
 
-    monkeypatch.setattr(photos_route, 'atomic_write_json', fail_save)
+    monkeypatch.setattr(photo_context, 'atomic_write_json', fail_save)
     with pytest.raises(RuntimeError, match='metadata save failed'):
         client.post(
             '/api/photos/upload',
@@ -268,7 +268,7 @@ def test_photo_upload_cleans_files_when_metadata_save_fails(client, tmp_path, mo
 
 
 def test_parallel_photo_metadata_appends_are_serialized(monkeypatch):
-    import backend.routes.photos as photos_route
+    from backend.routes import photo_context, photo_files
 
     state = []
 
@@ -280,11 +280,11 @@ def test_parallel_photo_metadata_appends_are_serialized(monkeypatch):
     def write_photos(_name, data):
         state[:] = data
 
-    monkeypatch.setattr(photos_route, 'load_json', read_photos)
-    monkeypatch.setattr(photos_route, 'atomic_write_json', write_photos)
+    monkeypatch.setattr(photo_context, 'load_json', read_photos)
+    monkeypatch.setattr(photo_context, 'atomic_write_json', write_photos)
     entries = [{'filename': f'{index}.jpg'} for index in range(6)]
     with ThreadPoolExecutor(max_workers=6) as pool:
-        list(pool.map(photos_route._append_photo_entry, entries))
+        list(pool.map(photo_files._append_photo_entry, entries))
 
     assert sorted(item['filename'] for item in state) == [f'{index}.jpg' for index in range(6)]
 

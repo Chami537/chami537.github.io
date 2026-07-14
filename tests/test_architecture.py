@@ -39,6 +39,20 @@ def test_essay_routes_are_split_by_responsibility():
         assert len(source.splitlines()) <= 160
 
 
+def test_photo_routes_are_split_by_responsibility():
+    route_dir = ROOT / 'backend' / 'routes'
+    aggregator = (route_dir / 'photos.py').read_text(encoding='utf-8')
+    modules = ('photo_files.py', 'photo_details.py', 'photo_stories.py')
+    assert '@bp.route' not in aggregator
+    assert 'from backend.routes.photo_context import bp' in aggregator
+    assert 'PHOTO_STORIES_REPOSITORY' not in aggregator
+    for module in modules:
+        source = (route_dir / module).read_text(encoding='utf-8')
+        assert 'from backend.routes import photo_context' in source
+        assert 'from backend.routes.photo_context import' not in source
+        assert len(source.splitlines()) <= 160
+
+
 def test_admin_shared_modules_load_before_domain_modules():
     html = (ROOT / 'admin.html').read_text(encoding='utf-8')
     api_pos = html.index('assets/js/admin-api.js')
