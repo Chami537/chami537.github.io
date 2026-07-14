@@ -14,6 +14,7 @@ from backend.exif_utils import extract_exif as _extract_exif, without_camera_mod
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
 PHOTO_STORIES_REPOSITORY = repository_for('photo_stories.json')
+_PHOTO_SIZES = [('lg', 1920), ('md', 800), ('sm', 400)]
 
 # Compatibility seams for existing tests and extensions; default behavior still
 # goes through the repository rather than backend.data's file implementation.
@@ -23,6 +24,34 @@ def load_json(name):
 
 def atomic_write_json(name, data):
     repository_for(name).save(data)
+
+
+def _photo_upload_payload(img):
+    exif_data = _without_camera_model(_extract_exif(img))
+    return exif_data, img.getexif().tobytes()
+
+
+def _save_photo_variants(img, filename, exif_bytes):
+    for size_name, max_width in _PHOTO_SIZES:
+        thumb = img.copy()
+        if thumb.mode == 'RGBA':
+            thumb = thumb.convert('RGB')
+        thumb.thumbnail((max_width, max_width), Image.LANCZOS)
+        out_dir = os.path.join(IMAGES_DIR, size_name)
+        os.makedirs(out_dir, exist_ok=True)
+        thumb.save(os.path.join(out_dir, filename))
+
+    img.save(os.path.join(IMAGES_DIR, filename), exif=exif_bytes)
+    raw_dir = os.path.join(BASE_DIR, 'raw_photos')
+    os.makedirs(raw_dir, exist_ok=True)
+    img.save(os.path.join(raw_dir, filename), exif=exif_bytes)
+
+
+def _photo_entry(filename, exif_data, size):
+    entry = {'filename': filename, 'size': size, 'exif': exif_data}
+    if exif_data.get('date'):
+        entry['date'] = _parse_date(exif_data['date'])
+    return entry
 
 @bp.route('/api/photos', methods=['GET'])
 def list_photos():
@@ -53,33 +82,13 @@ def upload_photo():
 
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
 
-    # Extract EXIF (shared helper in ssg.py)
-    exif_data = _without_camera_model(_extract_exif(img))
-    exif_bytes = img.getexif().tobytes()
-
-    # Generate thumbnails
-    for size_name, max_w in [('lg', 1920), ('md', 800), ('sm', 400)]:
-        thumb = img.copy()
-        if thumb.mode == 'RGBA':
-            thumb = thumb.convert('RGB')
-        thumb.thumbnail((max_w, max_w), Image.LANCZOS)
-        out_dir = os.path.join(IMAGES_DIR, size_name)
-        os.makedirs(out_dir, exist_ok=True)
-        thumb.save(os.path.join(out_dir, filename))
-
-    # Save original to images/ and copy to raw_photos/
-    img.save(os.path.join(IMAGES_DIR, filename), exif=exif_bytes)
-    raw_dir = os.path.join(BASE_DIR, 'raw_photos')
-    os.makedirs(raw_dir, exist_ok=True)
-    img.save(os.path.join(raw_dir, filename), exif=exif_bytes)
+    exif_data, exif_bytes = _photo_upload_payload(img)
+    _save_photo_variants(img, filename, exif_bytes)
 
     # Update JSON
     photos = load_json('photos.json')
     size = request.form.get('size', 'sm')
-    entry = {"filename": filename, "size": size, "exif": exif_data}
-    if exif_data.get('date'):
-        entry['date'] = _parse_date(exif_data['date'])
-    photos.append(entry)
+    photos.append(_photo_entry(filename, exif_data, size))
     atomic_write_json('photos.json', photos)
 
     return jsonify({"status": "success", "filename": filename, "exif": exif_data}), 201
