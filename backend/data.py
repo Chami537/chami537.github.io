@@ -65,6 +65,28 @@ def set_essay_password(slug, password):
     _write_password_store(store)
 
 
+def rename_essay_password(old_slug, new_slug):
+    """Move a locally stored essay password when its slug changes."""
+    if old_slug == new_slug:
+        return
+    store = _read_password_store()
+    if old_slug not in store:
+        return
+    if new_slug in store:
+        raise ValueError(f'Password already exists for slug: {new_slug}')
+    store[new_slug] = store.pop(old_slug)
+    _write_password_store(store)
+
+
+def delete_essay_password(slug):
+    """Remove an orphan-prone local password entry for a deleted essay."""
+    store = _read_password_store()
+    if slug not in store:
+        return
+    store.pop(slug)
+    _write_password_store(store)
+
+
 def has_essay_password(slug):
     """Check if an essay has a password set."""
     return bool(get_essay_password(slug))

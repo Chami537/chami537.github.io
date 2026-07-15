@@ -7,6 +7,7 @@ import shutil
 from flask import jsonify, request
 
 from backend.crud import require_json
+from backend.data import delete_essay_password, rename_essay_password
 from backend.routes import essay_context
 from backend.ssg import (
     ESSAYS_DIR,
@@ -32,7 +33,14 @@ def update_essay_meta(slug):
         return jsonify({"error": error}), 409 if error == 'slug 已存在' else 400
 
     _apply_meta_updates(target, request.json, new_slug)
-    essay_context.ESSAY_REPOSITORY.save(essays)
+    try:
+        rename_essay_password(slug, new_slug)
+        essay_context.ESSAY_REPOSITORY.save(essays)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 409
+    except Exception:
+        rename_essay_password(new_slug, slug)
+        raise
     _rename_essay_sources(slug, new_slug)
     _sync_related_essays(target, slug, essays)
     _generate_feeds()
@@ -83,6 +91,7 @@ def delete_essay(slug):
         return jsonify({"error": "Invalid title"}), 400
     essays = [essay for essay in essays if essay['slug'] != slug]
     essay_context.ESSAY_REPOSITORY.save(essays)
+    delete_essay_password(slug)
     _remove_essay_files(slug, title_folder)
     _sync_after_essay_delete(target, essays)
     return jsonify({"status": "deleted"})

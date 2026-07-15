@@ -20,8 +20,17 @@ def get_readme():
 @bp.route('/api/readme', methods=['PUT'])
 @require_json
 def save_readme():
-    content = request.json.get('content', '')
+    content = request.json.get('content')
+    if not isinstance(content, str):
+        return jsonify({"error": "content must be a string"}), 400
     readme_path = os.path.join(BASE_DIR, 'README.md')
-    with open(readme_path, 'w', encoding='utf-8') as f:
-        f.write(content)
+    temp_path = readme_path + '.tmp'
+    try:
+        with open(temp_path, 'w', encoding='utf-8') as f:
+            f.write(content)
+        os.replace(temp_path, readme_path)
+    except Exception:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        raise
     return jsonify({"status": "saved"})

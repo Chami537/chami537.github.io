@@ -184,6 +184,40 @@ def test_get_readme(client):
     assert 'content' in r.json
 
 
+def test_save_readme_rejects_non_string_without_truncating(client_no_auth, tmp_path, monkeypatch):
+    import backend.routes.readme as readme_route
+
+    readme_path = tmp_path / 'README.md'
+    readme_path.write_text('keep me', encoding='utf-8')
+    monkeypatch.setattr(readme_route, 'BASE_DIR', str(tmp_path))
+    assert client_no_auth.post('/api/login', json={'password': 'chami'}).status_code == 200
+
+    response = client_no_auth.put('/api/readme', json={'content': 123})
+
+    assert response.status_code == 400
+    assert response.json == {'error': 'content must be a string'}
+    assert readme_path.read_text(encoding='utf-8') == 'keep me'
+
+
+def test_save_readme_replace_failure_keeps_original(client, tmp_path, monkeypatch):
+    import backend.routes.readme as readme_route
+
+    readme_path = tmp_path / 'README.md'
+    readme_path.write_text('original', encoding='utf-8')
+    monkeypatch.setattr(readme_route, 'BASE_DIR', str(tmp_path))
+    monkeypatch.setattr(
+        readme_route.os,
+        'replace',
+        lambda _source, _target: (_ for _ in ()).throw(OSError('replace failed')),
+    )
+
+    with pytest.raises(OSError, match='replace failed'):
+        client.put('/api/readme', json={'content': 'replacement'})
+
+    assert readme_path.read_text(encoding='utf-8') == 'original'
+    assert not (tmp_path / 'README.md.tmp').exists()
+
+
 # ── CRUD: create → update → delete (contact, id-based) ──
 
 def test_contact_crud(client, data_backup):
@@ -245,6 +279,33 @@ def test_create_essay_duplicate_slug(client):
     slug = essays[0]['slug']
     r = client.post('/api/essays', json={'slug': slug, 'title': 'Dup'})
     assert r.status_code == 409
+
+
+def test_essay_password_follows_slug_rename_and_delete(client, data_backup, tmp_path, monkeypatch):
+    import backend.data as data_module
+
+    password_store = tmp_path / 'essay_passwords.json'
+    monkeypatch.setattr(data_module, 'PASSWORD_STORE', str(password_store))
+    created = client.post('/api/essays', json={
+        'slug': 'lifecycle-old',
+        'title': 'Lifecycle Test',
+        'date': '2026-07-15',
+        'tag': '',
+        'password': 'secret',
+    })
+    assert created.status_code == 201
+
+    renamed = client.put('/api/essays/lifecycle-old', json={
+        'slug': 'lifecycle-new',
+        'title': 'Lifecycle Test',
+    })
+    assert renamed.status_code == 200
+    assert data_module.get_essay_password('lifecycle-old') == ''
+    assert data_module.get_essay_password('lifecycle-new') == 'secret'
+
+    deleted = client.delete('/api/essays/lifecycle-new')
+    assert deleted.status_code == 200
+    assert data_module.get_essay_password('lifecycle-new') == ''
 
 
 # ── Photos: reorder validation ──
