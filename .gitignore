@@ -12,5 +12,6 @@ _stars_etag.json
 /data/essay_passwords.json
 .env
 .tokensave
+/.worktrees/
 AGENTS.md
 CLAUDE.md
