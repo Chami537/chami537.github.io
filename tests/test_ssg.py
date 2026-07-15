@@ -1,4 +1,5 @@
 """Tests for SSG functions and EXIF helpers."""
+import html as html_mod
 import os
 import json
 from pathlib import Path
@@ -288,6 +289,18 @@ def test_render_markdown_blocks_javascript_links():
     html = render_markdown('[unsafe](javascript:alert(1))')
 
     assert 'javascript:' not in html.lower()
+
+
+@pytest.mark.parametrize('target', [
+    'java&#x73;cript:alert(1)',
+    'jav&#97;script:alert(1)',
+    'java&#x09;script:alert(1)',
+])
+def test_render_markdown_blocks_canonicalized_script_schemes(target):
+    rendered = render_markdown(f'[unsafe]({target})')
+
+    assert 'javascript:' not in html_mod.unescape(rendered).lower()
+    assert '#blocked:' in rendered
 
 
 # ── _sync_essay_html password / no-password output ──

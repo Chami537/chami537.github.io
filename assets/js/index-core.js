@@ -152,10 +152,19 @@ function initMusicPlayer() {
 // ═══════════════════════════════════
 // JSON Data Loading (skeleton + cache busting + fallback)
 // ═══════════════════════════════════
-function htmlEncode(str) {
-  const d = document.createElement('div');
-  d.textContent = str != null ? str : '';
-  return d.innerHTML.replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+function htmlEncode(value) {
+  return String(value == null ? '' : value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function inlineJsString(value) {
+  return htmlEncode(String(value == null ? '' : value)
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'"));
 }
 
 function safeExternalUrl(url) {

@@ -11,7 +11,7 @@ function _photoItemHtml(photo) {
   var filename = encodeURIComponent(photo.filename);
   var exif = photo.exif || {};
   var meta = _photoMeta(photo, exif);
-  var dateHtml = meta.date ? '<span class="photo-date">' + meta.date + '</span>' : '';
+  var dateHtml = meta.date ? '<span class="photo-date">' + htmlEncode(meta.date) + '</span>' : '';
   var infoHtml = (meta.exifText || meta.gpsHtml) ? '<div class="photo-info">' + meta.exifText + meta.gpsHtml + '</div>' : '';
   var tagStr = (photo.tags || []).join(',');
   return '<div class="photo-item" data-tags="' + htmlEncode(tagStr) + '">' +
@@ -64,7 +64,7 @@ function renderPhotoStories(data) {
       '<div class="story-info">' +
       '<span class="story-name">' + htmlEncode(story.name) + '</span>' +
       (story.caption ? '<span class="story-caption">' + htmlEncode(story.caption) + '</span>' : '') +
-      '<span class="story-meta">' + (story.date ? story.date : 'Untitled story') + '</span>' +
+      '<span class="story-meta">' + htmlEncode(story.date ? story.date : 'Untitled story') + '</span>' +
       (loc ? '<span class="story-loc">' + loc + '</span>' : '') +
       '</div></button>';
   });
@@ -107,7 +107,7 @@ function buildPhotoTagFilter() {
   el.style.display = 'flex';
   var html = '<span tabindex="0" role="button" class="ef-chip' + (!_currentPhotoTag ? ' active' : '') + '" onclick="filterPhotosByTag(\'\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterPhotosByTag(\'\')}">全部</span>';
   tags.forEach(function(t) {
-    html += '<span tabindex="0" role="button" class="ef-chip' + (_currentPhotoTag === t ? ' active' : '') + '" onclick="filterPhotosByTag(\'' + htmlEncode(t) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterPhotosByTag(\'' + htmlEncode(t) + '\')}">' + htmlEncode(t) + '</span>';
+    html += '<span tabindex="0" role="button" class="ef-chip' + (_currentPhotoTag === t ? ' active' : '') + '" onclick="filterPhotosByTag(\'' + inlineJsString(t) + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();filterPhotosByTag(\'' + inlineJsString(t) + '\')}">' + htmlEncode(t) + '</span>';
   });
   el.innerHTML = html;
 }

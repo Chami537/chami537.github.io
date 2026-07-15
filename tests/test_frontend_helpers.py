@@ -10,6 +10,80 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def _run_node(script):
+    node = shutil.which('node')
+    if not node:
+        pytest.skip('Node.js is unavailable')
+    subprocess.run([node, '-e', script], cwd=ROOT, check=True, capture_output=True, text=True)
+
+
+def test_public_renderers_escape_attribute_quotes_and_dates():
+    core_path = (ROOT / 'assets' / 'js' / 'index-core.js').as_posix()
+    gallery_path = (ROOT / 'assets' / 'js' / 'index-photo-gallery.js').as_posix()
+    script = f"""
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+
+const storyContainer = {{style: {{}}, innerHTML: ''}};
+const document = {{
+  querySelector() {{ return {{style: {{}}, classList: {{add() {{}}, remove() {{}}, toggle() {{}}}}}}; }},
+  querySelectorAll() {{ return []; }},
+  getElementById(id) {{ return id === 'photo-stories' ? storyContainer : null; }},
+  createElement() {{
+    return {{
+      _text: '',
+      set textContent(value) {{ this._text = String(value); }},
+      get innerHTML() {{
+        return this._text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }}
+    }};
+  }}
+}};
+const context = {{
+  document,
+  window: {{}},
+  addEventListener() {{}},
+  scrollY: 0,
+  innerHeight: 800,
+  console,
+  encodeURIComponent,
+  Set,
+}};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('{core_path}', 'utf8'), context);
+vm.runInContext(fs.readFileSync('{gallery_path}', 'utf8'), context);
+
+assert.strictEqual(context.htmlEncode('"'), '&quot;');
+const work = context.renderWork([{{
+  id: 1,
+  title: 'X',
+  description: 'Y',
+  tags: [],
+  url: 'https://safe.test/" onmouseover="alert(1)'
+}}]);
+assert(!work.includes('" onmouseover="'));
+assert(work.includes('&quot; onmouseover=&quot;'));
+
+const photo = context._photoItemHtml({{
+  filename: 'x.jpg',
+  date: '<img src=x onerror=alert(1)>'
+}});
+assert(photo.includes('&lt;img src=x onerror=alert(1)&gt;'));
+assert(!photo.includes('<span class="photo-date"><img'));
+
+context.renderPhotoStories([{{
+  id: 'story',
+  name: 'Story',
+  photos: ['x.jpg'],
+  date: '<img src=x onerror=alert(1)>'
+}}]);
+assert(storyContainer.innerHTML.includes('&lt;img src=x onerror=alert(1)&gt;'));
+assert(!storyContainer.innerHTML.includes('<span class="story-meta"><img'));
+"""
+    _run_node(script)
+
+
 def test_gpx_parser_calculates_points_distance_and_elevation_gain():
     node = shutil.which('node')
     if not node:
