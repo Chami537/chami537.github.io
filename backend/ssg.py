@@ -283,3 +283,10 @@ def _sync_essay_html(essay, raw_md_memory=None, essays=None):
 
 def _fetch_stars():
     return fetch_stars()
+
+
+# Public generation boundary used by the essay application workflow.
+calculate_read_time = _calc_read_time
+parse_date = _parse_date
+generate_feeds = _generate_feeds
+sync_essay_html = _sync_essay_html

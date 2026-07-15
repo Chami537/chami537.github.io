@@ -7,17 +7,15 @@ from datetime import datetime
 from flask import jsonify, request
 
 from backend.crud import require_json
-from backend.data import get_essay_password, has_essay_password, set_essay_password as store_password
-from backend.routes import essay_context
-from backend.ssg import (
+from backend.data import (
     ESSAYS_DIR,
     MD_DIR,
-    _calc_read_time,
-    _decrypt_content,
-    _encrypt_content,
-    _generate_feeds,
-    _sync_essay_html,
+    get_essay_password,
+    has_essay_password,
+    set_essay_password as store_password,
 )
+from backend.essay_crypto import decrypt_content, encrypt_content
+from backend.routes import essay_context
 
 
 def _rewrite_encrypted_essay(md_file, old_password, new_password):
@@ -27,11 +25,11 @@ def _rewrite_encrypted_essay(md_file, old_password, new_password):
     with open(md_file, 'r', encoding='utf-8') as file:
         raw_md = file.read()
     try:
-        raw_md = _decrypt_content(raw_md, old_password)
+        raw_md = decrypt_content(raw_md, old_password)
     except (ValueError, UnicodeDecodeError):
         return "旧密码错误，无法重新加密内容"
     with open(md_file, 'w', encoding='utf-8') as file:
-        file.write(_encrypt_content(raw_md, new_password))
+        file.write(encrypt_content(raw_md, new_password))
     return None
 
 
@@ -42,7 +40,7 @@ def _decrypt_essay_file(md_file, password):
     with open(md_file, 'r', encoding='utf-8') as file:
         raw_md = file.read()
     try:
-        raw_md = _decrypt_content(raw_md, password)
+        raw_md = decrypt_content(raw_md, password)
     except (ValueError, UnicodeDecodeError):
         return "旧密码错误，无法解密内容"
     with open(md_file, 'w', encoding='utf-8') as file:
@@ -69,8 +67,8 @@ def set_essay_password(slug):
     if error:
         return jsonify({"error": error}), 400
     _persist_password_state(slug, new_password, essays)
-    _sync_essay_html(target, essays=essays)
-    _generate_feeds()
+    essay_context.ESSAY_WORKFLOW.sync(target, essays=essays)
+    essay_context.ESSAY_WORKFLOW.regenerate_feeds()
     return jsonify({"password_set": bool(new_password)})
 
 
@@ -98,7 +96,7 @@ def get_essay_content(slug):
             content = file.read()
         if target and has_essay_password(slug):
             try:
-                content = _decrypt_content(content, get_essay_password(slug))
+                content = decrypt_content(content, get_essay_password(slug))
             except (ValueError, UnicodeDecodeError):
                 return jsonify({"error": "解密失败，密码可能已变更或数据损坏"}), 500
         return jsonify({"content": content, "format": "markdown"})
@@ -118,7 +116,7 @@ def get_essay_content(slug):
 @require_json
 def update_essay_content(slug):
     md_content = request.json.get('content', '')
-    read_time = _calc_read_time(md_content)
+    read_time = essay_context.ESSAY_WORKFLOW.read_time(md_content)
     essays = essay_context.ESSAY_REPOSITORY.list()
     target = None
     now = datetime.now().strftime('%Y-%m-%d %H:%M')
@@ -133,6 +131,10 @@ def update_essay_content(slug):
     if not target:
         return jsonify({"error": "Essay not found"}), 404
 
-    _sync_essay_html(target, raw_md_memory=md_content, essays=essays)
-    _generate_feeds()
+    essay_context.ESSAY_WORKFLOW.sync(
+        target,
+        raw_md_memory=md_content,
+        essays=essays,
+    )
+    essay_context.ESSAY_WORKFLOW.regenerate_feeds()
     return jsonify({"status": "success", "message": f"{slug}.html updated"})

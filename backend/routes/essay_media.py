@@ -8,7 +8,7 @@ from flask import jsonify, request
 
 from backend.markdown_utils import render_markdown
 from backend.routes import essay_context
-from backend.ssg import IMAGES_DIR
+from backend.data import IMAGES_DIR
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
 

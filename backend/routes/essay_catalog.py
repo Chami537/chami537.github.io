@@ -6,7 +6,6 @@ from flask import jsonify, request
 
 from backend.crud import require_json
 from backend.data import has_essay_password, set_essay_password as store_password
-from backend.ssg import _calc_read_time, _generate_feeds, _parse_date, _sync_essay_html
 from backend.routes import essay_context
 
 
@@ -22,13 +21,16 @@ def save_tag_order():
     if not isinstance(order, list):
         return jsonify({"error": "order must be a list"}), 400
     essay_context.ESSAY_REPOSITORY.save_tag_order(order)
-    _generate_feeds()
+    essay_context.ESSAY_WORKFLOW.regenerate_feeds()
     return jsonify({"status": "saved"})
 
 
 @essay_context.bp.route('/api/essays', methods=['GET'])
 def list_essays():
-    return jsonify(essay_context.ESSAY_SERVICE.list_for_admin(_parse_date, has_essay_password))
+    return jsonify(essay_context.ESSAY_SERVICE.list_for_admin(
+        essay_context.ESSAY_WORKFLOW.format_date,
+        has_essay_password,
+    ))
 
 
 @essay_context.bp.route('/api/essays', methods=['POST'])
@@ -61,12 +63,18 @@ def _prepare_new_essay(item, slug):
     if password:
         store_password(slug, password)
     body_md = item.get('body', '')
-    item['readTime'] = _calc_read_time(body_md or item.get('content', ''))
+    item['readTime'] = essay_context.ESSAY_WORKFLOW.read_time(
+        body_md or item.get('content', ''),
+    )
     return body_md
 
 
 def _sync_created_essay(item, body_md, essays):
-    _sync_essay_html(item, raw_md_memory=body_md if body_md else None, essays=essays)
+    essay_context.ESSAY_WORKFLOW.sync(
+        item,
+        raw_md_memory=body_md if body_md else None,
+        essays=essays,
+    )
     if len(essays) > 1:
-        _sync_essay_html(essays[-2], essays=essays)
-    _generate_feeds()
+        essay_context.ESSAY_WORKFLOW.sync(essays[-2], essays=essays)
+    essay_context.ESSAY_WORKFLOW.regenerate_feeds()

@@ -54,6 +54,24 @@ def test_essay_routes_are_split_by_responsibility():
         assert len(source.splitlines()) <= 160
 
 
+def test_essay_routes_use_public_workflow_instead_of_private_ssg_helpers():
+    route_dir = ROOT / 'backend' / 'routes'
+    sources = ''.join(
+        path.read_text(encoding='utf-8')
+        for path in route_dir.glob('essay_*.py')
+    )
+
+    assert 'from backend.ssg import' not in sources
+    for private_name in (
+        '_sync_essay_html',
+        '_generate_feeds',
+        '_calc_read_time',
+        '_parse_date',
+    ):
+        assert private_name not in sources
+    assert 'ESSAY_WORKFLOW' in (route_dir / 'essay_context.py').read_text(encoding='utf-8')
+
+
 def test_photo_routes_are_split_by_responsibility():
     route_dir = ROOT / 'backend' / 'routes'
     aggregator = (route_dir / 'photos.py').read_text(encoding='utf-8')

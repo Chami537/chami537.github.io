@@ -65,3 +65,25 @@ def test_password_store_helpers_follow_slug_lifecycle(tmp_path, monkeypatch):
 
     delete_password('new-slug')
     assert json.loads(password_store.read_text(encoding='utf-8')) == {}
+
+
+def test_essay_workflow_exposes_public_generation_boundary():
+    from backend.essay_workflow import EssayWorkflow
+
+    events = []
+    workflow = EssayWorkflow(
+        sync_essay=lambda *args, **kwargs: events.append(('sync', args, kwargs)),
+        generate_feeds=lambda: events.append(('feeds',)),
+        parse_date=lambda value, include_time=False: f'{value}:{include_time}',
+        calculate_read_time=lambda value: len(value),
+    )
+
+    assert workflow.format_date('2026-07', include_time=True) == '2026-07:True'
+    assert workflow.read_time('abc') == 3
+    workflow.sync({'slug': 'one'}, raw_md_memory='body', essays=[])
+    workflow.regenerate_feeds()
+
+    assert events == [
+        ('sync', ({'slug': 'one'},), {'raw_md_memory': 'body', 'essays': []}),
+        ('feeds',),
+    ]

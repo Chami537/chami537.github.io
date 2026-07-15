@@ -5,6 +5,7 @@ from flask import Blueprint
 from backend.data import STORE
 from backend.essay_repository import EssayRepository
 from backend.essay_service import EssayService
+from backend.essay_workflow import ESSAY_WORKFLOW
 
 
 bp = Blueprint('essays', __name__)

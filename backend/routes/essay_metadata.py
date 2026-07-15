@@ -7,16 +7,15 @@ import shutil
 from flask import jsonify, request
 
 from backend.crud import require_json
-from backend.data import delete_essay_password, rename_essay_password
-from backend.routes import essay_context
-from backend.ssg import (
+from backend.data import (
     ESSAYS_DIR,
     IMAGES_DIR,
     MD_DIR,
-    _generate_feeds,
-    _parse_tags,
-    _sync_essay_html,
+    delete_essay_password,
+    rename_essay_password,
 )
+from backend.essay_navigation import parse_tags
+from backend.routes import essay_context
 
 
 @essay_context.bp.route('/api/essays/<slug>', methods=['PUT'])
@@ -43,7 +42,7 @@ def update_essay_meta(slug):
         raise
     _rename_essay_sources(slug, new_slug)
     _sync_related_essays(target, slug, essays)
-    _generate_feeds()
+    essay_context.ESSAY_WORKFLOW.regenerate_feeds()
     return jsonify(target)
 
 
@@ -73,11 +72,11 @@ def _rename_essay_sources(old_slug, new_slug):
 
 
 def _sync_related_essays(updated, old_slug, essays):
-    _sync_essay_html(updated, essays=essays)
-    tags = _parse_tags(updated.get('tag', ''), updated)
+    essay_context.ESSAY_WORKFLOW.sync(updated, essays=essays)
+    tags = parse_tags(updated.get('tag', ''), updated)
     for essay in essays:
-        if essay['slug'] != old_slug and (not tags or tags & _parse_tags(essay.get('tag', ''), essay)):
-            _sync_essay_html(essay, essays=essays)
+        if essay['slug'] != old_slug and (not tags or tags & parse_tags(essay.get('tag', ''), essay)):
+            essay_context.ESSAY_WORKFLOW.sync(essay, essays=essays)
 
 
 @essay_context.bp.route('/api/essays/<slug>', methods=['DELETE'])
@@ -116,11 +115,11 @@ def _remove_essay_files(slug, title_folder):
 
 
 def _sync_after_essay_delete(deleted, essays):
-    deleted_tags = _parse_tags(deleted.get('tag', ''), deleted)
+    deleted_tags = parse_tags(deleted.get('tag', ''), deleted)
     for essay in essays:
-        if not deleted_tags or deleted_tags & _parse_tags(essay.get('tag', ''), essay):
-            _sync_essay_html(essay, essays=essays)
-    _generate_feeds()
+        if not deleted_tags or deleted_tags & parse_tags(essay.get('tag', ''), essay):
+            essay_context.ESSAY_WORKFLOW.sync(essay, essays=essays)
+    essay_context.ESSAY_WORKFLOW.regenerate_feeds()
 
 
 @essay_context.bp.route('/api/essays/<slug>/pin', methods=['POST'])
@@ -142,6 +141,6 @@ def toggle_pin(slug):
         target['pinned'] = False
 
     essay_context.ESSAY_REPOSITORY.save(essays)
-    _generate_feeds()
+    essay_context.ESSAY_WORKFLOW.regenerate_feeds()
     pinned_count = sum(1 for essay in essays if essay.get('pinned'))
     return jsonify({"pinned": target['pinned'], "count": pinned_count})
