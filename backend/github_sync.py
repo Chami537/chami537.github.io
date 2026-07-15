@@ -5,7 +5,7 @@ import os
 import urllib.request
 
 from backend.data import DATA_DIR
-from backend.storage import repository_for
+from backend.repositories import repository_for
 
 
 def fetch_stars():

@@ -4,7 +4,7 @@ from functools import wraps
 
 from flask import jsonify, request
 
-from backend.storage import repository_for
+from backend.repositories import repository_for
 
 
 def require_json(f):

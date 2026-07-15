@@ -6,7 +6,7 @@ import uuid
 from flask import Blueprint, jsonify, request
 
 from backend.data import BASE_DIR
-from backend.storage import repository_for
+from backend.repositories import repository_for
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_gpx_upload
 
 

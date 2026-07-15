@@ -4,7 +4,7 @@ from flask import Blueprint, jsonify
 
 bp = Blueprint('dashboard', __name__)
 from backend.data import has_essay_password
-from backend.storage import repository_for
+from backend.repositories import repository_for
 
 
 def load_json(name):

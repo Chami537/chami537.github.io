@@ -5,7 +5,7 @@ import threading
 from flask import Blueprint
 
 from backend.data import BASE_DIR, IMAGES_DIR
-from backend.storage import repository_for
+from backend.repositories import repository_for
 
 
 bp = Blueprint('photos', __name__)

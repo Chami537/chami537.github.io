@@ -1,12 +1,10 @@
 """Persistence boundary for essay metadata and tag ordering."""
 
-from backend.data import STORE
-
 
 class EssayRepository:
     """Store-backed essay access without exposing file names to routes."""
 
-    def __init__(self, store=STORE):
+    def __init__(self, store):
         self.store = store
 
     def list(self):

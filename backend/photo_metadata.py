@@ -6,7 +6,7 @@ from PIL import Image
 
 from backend.data import BASE_DIR
 from backend.exif_utils import decimal_to_dms
-from backend.storage import repository_for
+from backend.repositories import repository_for
 
 
 def set_gps(filename, lat, lng):

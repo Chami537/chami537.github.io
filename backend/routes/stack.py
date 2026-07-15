@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 bp = Blueprint('stack', __name__)
-from backend.storage import repository_for
+from backend.repositories import repository_for
 
 
 @bp.route('/api/stack', methods=['GET'])

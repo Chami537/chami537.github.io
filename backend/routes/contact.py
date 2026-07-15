@@ -1,7 +1,7 @@
 from flask import Blueprint, request, jsonify
 
 bp = Blueprint('contact', __name__)
-from backend.storage import repository_for
+from backend.repositories import repository_for
 from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id, require_json
 
 

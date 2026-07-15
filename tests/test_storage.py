@@ -3,7 +3,7 @@ import json
 import pytest
 
 import backend.data as data_module
-from backend.storage import DataCorruptionError, JsonStore
+from backend.storage import DataCorruptionError, JsonRepository, JsonStore
 
 
 def test_json_store_returns_default_for_missing_file(tmp_path):
@@ -38,3 +38,11 @@ def test_json_store_writes_json_atomically(tmp_path):
         {'id': 1, 'title': '测试'}
     ]
     assert not (tmp_path / 'items.json.tmp').exists()
+
+
+def test_json_repository_uses_an_explicit_store(tmp_path):
+    repository = JsonRepository('items.json', JsonStore(tmp_path))
+
+    repository.save([{'id': 1}])
+
+    assert repository.list() == [{'id': 1}]

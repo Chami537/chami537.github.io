@@ -6,6 +6,21 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 
 
+def test_storage_primitives_do_not_depend_on_project_data_module():
+    storage_dir = ROOT / 'backend' / 'storage'
+    repository = (storage_dir / 'repository.py').read_text(encoding='utf-8')
+    package = (storage_dir / '__init__.py').read_text(encoding='utf-8')
+    composition_path = ROOT / 'backend' / 'repositories.py'
+
+    assert 'backend.data' not in repository
+    assert 'repository_for' not in repository
+    assert 'repository_for' not in package
+    assert composition_path.is_file()
+    composition = composition_path.read_text(encoding='utf-8')
+    assert 'from backend.data import STORE' in composition
+    assert 'def repository_for(filename)' in composition
+
+
 def test_routes_do_not_import_app_module():
     route_sources = list((ROOT / 'backend' / 'routes').glob('*.py')) + [ROOT / 'backend' / 'auth.py']
     assert all('from backend.app import app' not in path.read_text(encoding='utf-8') for path in route_sources)
@@ -17,7 +32,7 @@ def test_essay_routes_use_repository_boundary():
     sources = ''.join(path.read_text(encoding='utf-8') for path in route_dir.glob('essay_*.py'))
     assert "load_json('essays.json')" not in sources
     assert "atomic_write_json('essays.json'" not in sources
-    assert 'ESSAY_REPOSITORY = EssayRepository()' in context
+    assert 'ESSAY_REPOSITORY = EssayRepository(STORE)' in context
 
 
 def test_essay_routes_are_split_by_responsibility():

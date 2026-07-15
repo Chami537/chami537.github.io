@@ -15,7 +15,7 @@ from backend.essay_crypto import (
     encrypt_content as _encrypt_content,
 )
 
-from backend.data import get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR
+from backend.data import get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR, STORE
 from backend.exif_utils import extract_exif, extract_gps, without_camera_model
 from backend.photo_metadata import set_gps
 from backend.github_sync import fetch_stars
@@ -25,11 +25,11 @@ from backend.essay_feed_data import strip_enrich
 from backend.essay_repository import EssayRepository
 from backend.essay_service import EssayService
 from backend.essay_renderer import render_essay_html, write_essay_html
-from backend.storage import repository_for
+from backend.repositories import repository_for
 from jinja2 import Environment, FileSystemLoader
 
 _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
-ESSAY_REPOSITORY = EssayRepository()
+ESSAY_REPOSITORY = EssayRepository(STORE)
 ESSAY_SERVICE = EssayService(ESSAY_REPOSITORY)
 
 

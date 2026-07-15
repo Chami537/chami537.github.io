@@ -4,7 +4,7 @@ from flask import Blueprint, request, jsonify
 
 bp = Blueprint('about', __name__)
 from backend.data import BASE_DIR
-from backend.storage import repository_for
+from backend.repositories import repository_for
 from backend.crud import require_json
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 
