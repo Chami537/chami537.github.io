@@ -54,7 +54,7 @@ def browser():
 def test_admin_shell_loads_shared_modules_and_switches_tabs(live_server, browser):
     page = browser.new_page()
     try:
-        page.goto(live_server + '/', wait_until='networkidle')
+        page.goto(live_server + '/', wait_until='domcontentloaded')
         assert page.title() == 'Chami — Site Admin'
         assert page.evaluate("typeof api") == 'function'
         assert page.evaluate("typeof switchTab") == 'function'
@@ -93,7 +93,7 @@ def test_public_homepage_shell_loads_essay_surface(live_server, browser):
 def test_admin_api_error_and_password_dialog(live_server, browser):
     page = browser.new_page()
     try:
-        page.goto(live_server + '/', wait_until='networkidle')
+        page.goto(live_server + '/', wait_until='domcontentloaded')
         status = page.evaluate("fetch('/api/essays/__browser_missing__/content').then(function(r) { return r.status; })")
         assert status == 404
         page.locator('.tab-btn[data-tab="essays"]').click()
@@ -110,7 +110,7 @@ def test_admin_api_error_and_password_dialog(live_server, browser):
 def test_admin_dashboard_photo_story_and_music_tabs_render(live_server, browser):
     page = browser.new_page()
     try:
-        page.goto(live_server + '/', wait_until='networkidle')
+        page.goto(live_server + '/', wait_until='domcontentloaded')
         page.locator('#dashboard-content').wait_for(state='visible')
         assert page.locator('#dashboard-counts .dashboard-count-item').count() > 0
 
@@ -144,7 +144,7 @@ def test_admin_health_tab_renders_checks_and_filters(live_server, browser):
             'summary': {'passed': 8, 'warnings': 0, 'errors': 1},
             'checks': checks,
         }))
-        page.goto(live_server + '/', wait_until='networkidle')
+        page.goto(live_server + '/', wait_until='domcontentloaded')
         page.locator('.tab-btn[data-tab="health"]').click()
         page.locator('#health-content').wait_for(state='visible')
         assert page.locator('#health-checks .health-check').count() >= 8
@@ -161,7 +161,7 @@ def test_admin_health_tab_renders_checks_and_filters(live_server, browser):
 def test_admin_tabs_keep_active_health_tab_aligned_on_narrow_viewport(live_server, browser):
     page = browser.new_page(viewport={'width': 634, 'height': 400})
     try:
-        page.goto(live_server + '/', wait_until='networkidle')
+        page.goto(live_server + '/', wait_until='domcontentloaded')
         page.locator('.tab-btn[data-tab="health"]').click()
         box = page.locator('.tabs').bounding_box()
         tab = page.locator('.tab-btn[data-tab="health"]').bounding_box()
@@ -174,7 +174,7 @@ def test_admin_tabs_keep_active_health_tab_aligned_on_narrow_viewport(live_serve
 def test_admin_about_tracks_and_readme_modules_load(live_server, browser):
     page = browser.new_page()
     try:
-        page.goto(live_server + '/', wait_until='networkidle')
+        page.goto(live_server + '/', wait_until='domcontentloaded')
         for name in ('loadAbout', 'loadTracks', 'loadReadme'):
             assert page.evaluate('typeof ' + name) == 'function'
         assert page.evaluate('typeof window._renderAdminEditor') == 'function'
