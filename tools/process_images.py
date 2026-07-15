@@ -9,7 +9,7 @@ import os
 import sys
 from PIL import Image
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'))
-from backend.data import load_json, atomic_write_json
+from backend.repositories import PHOTO_REPOSITORY
 from backend.ssg import _parse_date
 from backend.exif_utils import extract_exif as _extract_exif, without_camera_model as _without_camera_model
 
@@ -32,7 +32,7 @@ def process_all_images():
 
     # Load existing data to preserve user-edited fields (date, size, tags)
     existing = {}
-    for p in load_json('photos.json'):
+    for p in PHOTO_REPOSITORY.list():
         existing[p['filename']] = p
 
     photos_data = []
@@ -113,7 +113,7 @@ def process_all_images():
             orphaned += 1
 
     # Atomic write
-    atomic_write_json('photos.json', photos_data)
+    PHOTO_REPOSITORY.save(photos_data)
 
     print(f"完成！总计 {len(photos_data)} 张照片，新增 {new_count}，补全 EXIF {updated_count}。" + (f" 清理孤儿条目 {orphaned}。" if orphaned else ""))
 

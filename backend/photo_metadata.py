@@ -6,7 +6,7 @@ from PIL import Image
 
 from backend.data import BASE_DIR
 from backend.exif_utils import decimal_to_dms
-from backend.repositories import repository_for
+from backend.repositories import PHOTO_REPOSITORY
 
 
 def set_gps(filename, lat, lng):
@@ -29,16 +29,17 @@ def set_gps(filename, lat, lng):
             img = img.convert('RGB')
         img.save(path, 'JPEG', quality=95, exif=exif.tobytes())
 
-    photos_data = repository_for('photos.json').list()
-
-    for photo in photos_data:
-        if photo['filename'] == filename:
-            photo.setdefault('exif', {})['gps'] = {'lat': round(lat, 6), 'lng': round(lng, 6)}
-            break
-    else:
-        photos_data.append({'filename': filename, 'exif': {'gps': {'lat': round(lat, 6), 'lng': round(lng, 6)}}})
-
-    repository_for('photos.json').save(photos_data)
+    updated = PHOTO_REPOSITORY.update(
+        filename,
+        lambda photo: photo.setdefault('exif', {}).update(
+            gps={'lat': round(lat, 6), 'lng': round(lng, 6)},
+        ),
+    )
+    if updated is None:
+        PHOTO_REPOSITORY.append({
+            'filename': filename,
+            'exif': {'gps': {'lat': round(lat, 6), 'lng': round(lng, 6)}},
+        })
     print(f"GPS 已写入: {filename}")
     print(f"  纬度: {lat} ({'N' if lat >= 0 else 'S'})")
     print(f"  经度: {lng} ({'E' if lng >= 0 else 'W'})")

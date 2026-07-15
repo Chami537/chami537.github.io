@@ -68,6 +68,22 @@ def test_photo_routes_are_split_by_responsibility():
         assert len(source.splitlines()) <= 160
 
 
+def test_photos_json_has_one_repository_owner():
+    checked = [
+        *(ROOT / 'backend' / 'routes').glob('photo_*.py'),
+        ROOT / 'backend' / 'photo_metadata.py',
+        ROOT / 'backend' / 'ssg.py',
+        ROOT / 'tools' / 'process_images.py',
+    ]
+    combined = ''.join(path.read_text(encoding='utf-8') for path in checked)
+
+    assert "load_json('photos.json')" not in combined
+    assert "atomic_write_json('photos.json'" not in combined
+    assert "repository_for('photos.json')" not in combined
+    context = (ROOT / 'backend' / 'routes' / 'photo_context.py').read_text(encoding='utf-8')
+    assert 'PHOTO_REPOSITORY' in context
+
+
 def test_admin_shared_modules_load_before_domain_modules():
     html = (ROOT / 'admin.html').read_text(encoding='utf-8')
     api_pos = html.index('assets/js/admin-api.js')

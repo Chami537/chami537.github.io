@@ -186,6 +186,8 @@ def test_photo_upload_no_file(client):
 
 def test_photo_upload_preserves_exif(client, tmp_path, monkeypatch):
     from backend.routes import photo_context
+    from backend.photo_repository import PhotoRepository
+    from backend.storage import JsonStore
 
     source = Image.new('RGB', (10, 10), color='red')
     exif = source.getexif()
@@ -198,11 +200,12 @@ def test_photo_upload_preserves_exif(client, tmp_path, monkeypatch):
 
     image_dir = tmp_path / 'images'
     base_dir = tmp_path
-    saved = []
+    data_dir = tmp_path / 'data'
+    data_dir.mkdir()
+    repository = PhotoRepository(JsonStore(data_dir))
     monkeypatch.setattr(photo_context, 'IMAGES_DIR', str(image_dir))
     monkeypatch.setattr(photo_context, 'BASE_DIR', str(base_dir))
-    monkeypatch.setattr(photo_context, 'load_json', lambda _name: saved.copy())
-    monkeypatch.setattr(photo_context, 'atomic_write_json', lambda _name, data: saved.extend(data))
+    monkeypatch.setattr(photo_context, 'PHOTO_REPOSITORY', repository)
 
     response = client.post(
         '/api/photos/upload',
@@ -213,7 +216,7 @@ def test_photo_upload_preserves_exif(client, tmp_path, monkeypatch):
     assert response.status_code == 201
     filename = response.json['filename']
     assert response.json['exif']['date'] == '2026-06-26 18:40'
-    assert saved[0]['date'] == 'Jun 26, 2026'
+    assert repository.list()[0]['date'] == 'Jun 26, 2026'
     assert 'camera' not in response.json['exif']
     assert 'model' not in response.json['exif']
     with Image.open(base_dir / 'raw_photos' / filename) as uploaded:
@@ -234,10 +237,11 @@ def test_photo_upload_cleans_files_when_metadata_save_fails(client, tmp_path, mo
     monkeypatch.setattr(photo_context, 'BASE_DIR', str(base_dir))
     monkeypatch.setattr(photo_files.uuid, 'uuid4', lambda: SimpleNamespace(hex='rollback12345678'))
 
-    def fail_save(_name, _data):
-        raise RuntimeError('metadata save failed')
+    class FailingRepository:
+        def append(self, _entry):
+            raise RuntimeError('metadata save failed')
 
-    monkeypatch.setattr(photo_context, 'atomic_write_json', fail_save)
+    monkeypatch.setattr(photo_context, 'PHOTO_REPOSITORY', FailingRepository())
     with pytest.raises(RuntimeError, match='metadata save failed'):
         client.post(
             '/api/photos/upload',
@@ -252,19 +256,20 @@ def test_photo_upload_cleans_files_when_metadata_save_fails(client, tmp_path, mo
 
 def test_parallel_photo_metadata_appends_are_serialized(monkeypatch):
     from backend.routes import photo_context, photo_files
+    from backend.photo_repository import PhotoRepository
 
     state = []
 
-    def read_photos(_name):
-        snapshot = state.copy()
-        time.sleep(0.01)
-        return snapshot
+    class SlowStore:
+        def read(self, _name):
+            snapshot = state.copy()
+            time.sleep(0.01)
+            return snapshot
 
-    def write_photos(_name, data):
-        state[:] = data
+        def write(self, _name, data):
+            state[:] = data
 
-    monkeypatch.setattr(photo_context, 'load_json', read_photos)
-    monkeypatch.setattr(photo_context, 'atomic_write_json', write_photos)
+    monkeypatch.setattr(photo_context, 'PHOTO_REPOSITORY', PhotoRepository(SlowStore()))
     entries = [{'filename': f'{index}.jpg'} for index in range(6)]
     with ThreadPoolExecutor(max_workers=6) as pool:
         list(pool.map(photo_files._append_photo_entry, entries))

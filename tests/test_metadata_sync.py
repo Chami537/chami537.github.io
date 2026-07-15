@@ -34,22 +34,23 @@ def test_fetch_stars_updates_repository_and_etag(monkeypatch, tmp_path):
 
 def test_set_gps_updates_raw_photo_and_repository(monkeypatch, tmp_path):
     import backend.photo_metadata as metadata
+    from backend.photo_repository import PhotoRepository
+    from backend.storage import JsonStore
 
     raw_dir = tmp_path / 'raw_photos'
     raw_dir.mkdir()
     path = raw_dir / 'photo.jpg'
     Image.new('RGB', (8, 8), 'white').save(path, 'JPEG')
-    saved = []
-
-    class Repo:
-        def list(self): return []
-        def save(self, value): saved[:] = value
+    data_dir = tmp_path / 'data'
+    data_dir.mkdir()
+    repository = PhotoRepository(JsonStore(data_dir))
 
     monkeypatch.setattr(metadata, 'BASE_DIR', str(tmp_path))
-    monkeypatch.setattr(metadata, 'repository_for', lambda _: Repo())
+    monkeypatch.setattr(metadata, 'PHOTO_REPOSITORY', repository)
 
     metadata.set_gps('photo.jpg', 22.5431, 113.9579)
 
+    saved = repository.list()
     assert saved[0]['filename'] == 'photo.jpg'
     assert saved[0]['exif']['gps'] == {'lat': 22.5431, 'lng': 113.9579}
     with Image.open(path) as image:

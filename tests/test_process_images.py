@@ -1,7 +1,7 @@
 import pytest
 from PIL import Image
 
-import backend.data as data_module
+from backend.photo_repository import PhotoRepository
 from backend.storage import DataCorruptionError, JsonStore
 from tools import process_images
 
@@ -14,7 +14,7 @@ def _configure_photo_workspace(tmp_path, monkeypatch):
     image_dir.mkdir()
     data_dir.mkdir()
     store = JsonStore(data_dir)
-    monkeypatch.setattr(data_module, 'STORE', store)
+    monkeypatch.setattr(process_images, 'PHOTO_REPOSITORY', PhotoRepository(store))
     monkeypatch.setattr(process_images, 'RAW_DIR', str(raw_dir))
     monkeypatch.setattr(process_images, 'IMG_DIR', str(image_dir))
     monkeypatch.setattr(

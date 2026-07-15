@@ -10,11 +10,7 @@ from backend.routes import photo_context
 
 def _find_photo(filename):
     """Return a matching photo and the full collection."""
-    photos = photo_context.load_json('photos.json')
-    for photo in photos:
-        if photo['filename'] == filename:
-            return photo, photos
-    return None, photos
+    return photo_context.PHOTO_REPOSITORY.find(filename)
 
 
 @photo_context.bp.route('/api/photo-tags', methods=['PUT'])
@@ -22,11 +18,13 @@ def update_photo_tags():
     data = request.json
     if not isinstance(data, dict) or 'filename' not in data or 'tags' not in data:
         return jsonify({'error': 'Expected {filename, tags}'}), 400
-    photo, photos = _find_photo(data['filename'])
+    photo, _photos = _find_photo(data['filename'])
     if not photo:
         return jsonify({'error': 'Photo not found'}), 404
-    photo['tags'] = data['tags']
-    photo_context.atomic_write_json('photos.json', photos)
+    photo_context.PHOTO_REPOSITORY.update(
+        data['filename'],
+        lambda item: item.update(tags=data['tags']),
+    )
     return jsonify({'status': 'ok', 'tags': data['tags']})
 
 
@@ -36,14 +34,15 @@ def update_photo_date():
     if not isinstance(data, dict) or 'filename' not in data:
         return jsonify({'error': 'Expected {filename, date}'}), 400
     date = (data.get('date') or '').strip()
-    photo, photos = _find_photo(data['filename'])
+    photo, _photos = _find_photo(data['filename'])
     if not photo:
         return jsonify({'error': 'Photo not found'}), 404
-    if date:
-        photo['date'] = date
-    else:
-        photo.pop('date', None)
-    photo_context.atomic_write_json('photos.json', photos)
+    def set_date(item):
+        if date:
+            item['date'] = date
+        else:
+            item.pop('date', None)
+    photo_context.PHOTO_REPOSITORY.update(data['filename'], set_date)
     return jsonify({'status': 'ok', 'date': date})
 
 
@@ -59,11 +58,15 @@ def update_photo_gps():
         return jsonify({'error': 'lat must be -90..90, lng must be -180..180'}), 400
 
     lat, lng = float(data['lat']), float(data['lng'])
-    photo, photos = _find_photo(data['filename'])
+    photo, _photos = _find_photo(data['filename'])
     if not photo:
         return jsonify({'error': 'Photo not found'}), 404
-    photo.setdefault('exif', {})['gps'] = {'lat': round(lat, 6), 'lng': round(lng, 6)}
-    photo_context.atomic_write_json('photos.json', photos)
+    photo_context.PHOTO_REPOSITORY.update(
+        data['filename'],
+        lambda item: item.setdefault('exif', {}).update(
+            gps={'lat': round(lat, 6), 'lng': round(lng, 6)},
+        ),
+    )
 
     safe_name = os.path.basename(data['filename'])
     raw_path = os.path.join(photo_context.BASE_DIR, 'raw_photos', safe_name)

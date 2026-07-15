@@ -25,7 +25,7 @@ from backend.essay_feed_data import strip_enrich
 from backend.essay_repository import EssayRepository
 from backend.essay_service import EssayService
 from backend.essay_renderer import render_essay_html, write_essay_html
-from backend.repositories import repository_for
+from backend.repositories import PHOTO_REPOSITORY, repository_for
 from jinja2 import Environment, FileSystemLoader
 
 _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
@@ -148,7 +148,7 @@ def _prepare_map_data(photos):
 
 def _generate_map():
     """Generate map.html — Leaflet map with GPS-tagged photos (Jinja2 template)."""
-    context = _prepare_map_data(repository_for('photos.json').list())
+    context = _prepare_map_data(PHOTO_REPOSITORY.list())
     html = _env.get_template('map.html').render(
         **context,
         build_ts=int(datetime.now().timestamp()))

@@ -61,7 +61,7 @@ def _normalize_photo_stories(data):
     """Validate and normalize manually curated photo stories."""
     valid_filenames = {
         photo.get('filename')
-        for photo in photo_context.load_json('photos.json')
+        for photo in photo_context.PHOTO_REPOSITORY.list()
         if photo.get('filename')
     }
     seen_ids = set()

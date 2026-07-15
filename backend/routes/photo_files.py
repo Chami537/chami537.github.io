@@ -59,15 +59,12 @@ def _photo_entry(filename, exif_data, size):
 
 def _append_photo_entry(entry):
     """Serialize the read-modify-write used by parallel browser uploads."""
-    with photo_context.PHOTO_METADATA_LOCK:
-        photos = photo_context.load_json('photos.json')
-        photos.append(entry)
-        photo_context.atomic_write_json('photos.json', photos)
+    photo_context.PHOTO_REPOSITORY.append(entry)
 
 
 @photo_context.bp.route('/api/photos', methods=['GET'])
 def list_photos():
-    return jsonify(photo_context.load_json('photos.json'))
+    return jsonify(photo_context.PHOTO_REPOSITORY.list())
 
 
 @photo_context.bp.route('/api/photos', methods=['PUT'])
@@ -76,14 +73,10 @@ def reorder_photos():
     if not isinstance(request.json, list):
         return jsonify({'error': 'Expected a JSON array'}), 400
     new_data = request.json
-    existing = photo_context.load_json('photos.json')
-    existing_fns = {photo['filename'] for photo in existing}
-    new_fns = {photo.get('filename', '') for photo in new_data}
-    lost = existing_fns - new_fns
+    lost = photo_context.PHOTO_REPOSITORY.replace_preserving(new_data)
     if lost:
         names = ', '.join(sorted(lost))
         return jsonify({'error': f'Refusing to drop {len(lost)} existing photos: {names}'}), 409
-    photo_context.atomic_write_json('photos.json', new_data)
     return jsonify({'status': 'reordered'})
 
 
@@ -110,9 +103,7 @@ def upload_photo():
 
 @photo_context.bp.route('/api/photos/<filename>', methods=['DELETE'])
 def delete_photo(filename):
-    photos = photo_context.load_json('photos.json')
-    photos = [photo for photo in photos if photo['filename'] != filename]
-    photo_context.atomic_write_json('photos.json', photos)
+    photo_context.PHOTO_REPOSITORY.delete(filename)
     safe_name = os.path.basename(filename)
     _cleanup_photo_files(_photo_file_paths(safe_name))
     return jsonify({'status': 'deleted'})
