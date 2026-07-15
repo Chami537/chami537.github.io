@@ -3,79 +3,44 @@
 import os
 import re
 
+
+_ASSET_REFERENCE_RE = re.compile(
+    r'(?P<prefix>\b(?:href|src)\s*=\s*)'
+    r'(?P<quote>["\'])'
+    r'(?P<path>assets/(?:css|js)/[^?"\']+)'
+    r'(?:\?v=\d+)?'
+    r'(?P=quote)',
+)
+
+
 def cache_bust_assets(base_dir):
-    """Update CSS/JS query versions from the newest referenced asset mtime."""
-    pages = [
-        ('index.html', (
-            'assets/css/index-foundation.css',
-            'assets/css/index-work.css',
-            'assets/css/index-photos.css',
-            'assets/css/index-content.css',
-            'assets/css/index-essays.css',
-            'assets/css/index-polish.css',
-        ), (
-            'assets/js/theme.js',
-            'assets/js/index-core.js',
-            'assets/js/index-essays.js',
-            'assets/js/index-photo-gallery.js',
-            'assets/js/index-photo-map.js',
-            'assets/js/index-content.js',
-            'assets/js/index-lightbox.js',
-            'assets/js/index.js',
-        )),
-        ('admin.html', (
-            'assets/css/admin-foundation.css',
-            'assets/css/admin-photo.css',
-            'assets/css/admin-git.css',
-            'assets/css/admin-essay.css',
-            'assets/css/admin-health.css',
-        ), (
-            'assets/js/theme.js',
-            'assets/js/admin-core.js',
-            'assets/js/admin-dashboard.js',
-            'assets/js/admin-health.js',
-            'assets/js/admin-editor-rendering.js',
-            'assets/js/admin-work.js',
-            'assets/js/admin-social.js',
-            'assets/js/admin-music.js',
-            'assets/js/admin-stack.js',
-            'assets/js/admin-git.js',
-            'assets/js/admin-essay-tag-state.js',
-            'assets/js/admin-essay-taxonomy.js',
-            'assets/js/admin-essay-tag-order.js',
-            'assets/js/admin-essay-tag-actions.js',
-            'assets/js/admin-essay-security.js',
-            'assets/js/admin-about.js',
-            'assets/js/admin-tracks.js',
-            'assets/js/admin-readme.js',
-            'assets/js/admin-essay-meta.js',
-            'assets/js/admin-essay-content.js',
-            'assets/js/admin-essay-formatting.js',
-            'assets/js/admin-essay-media.js',
-            'assets/js/admin-essays-view.js',
-            'assets/js/admin-photo-list.js',
-            'assets/js/admin-photo-tags.js',
-            'assets/js/admin-photo-metadata.js',
-            'assets/js/admin-photo-files.js',
-            'assets/js/admin-photo-stories.js',
-            'assets/js/admin-upload.js',
-            'assets/js/admin-tabs.js',
-        )),
-    ]
-    for html_fn, css_fns, js_fns in pages:
-        html_path = os.path.join(base_dir, html_fn)
+    """Version every local CSS/JS asset actually referenced by each entry page."""
+    for html_filename in ('index.html', 'admin.html'):
+        html_path = os.path.join(base_dir, html_filename)
         if not os.path.exists(html_path):
             continue
-        asset_paths = [os.path.join(base_dir, f) for f in css_fns + js_fns]
-        existing = [p for p in asset_paths if os.path.exists(p)]
+        with open(html_path, 'r', encoding='utf-8') as handle:
+            html = handle.read()
+
+        referenced = {match.group('path') for match in _ASSET_REFERENCE_RE.finditer(html)}
+        existing = {
+            path: os.path.join(base_dir, path)
+            for path in referenced
+            if os.path.exists(os.path.join(base_dir, path))
+        }
         if not existing:
             continue
-        ts = max(int(os.path.getmtime(path)) for path in existing)
-        with open(html_path, 'r', encoding='utf-8') as f:
-            html = f.read()
-        for css_fn in css_fns:
-            html = re.sub(rf'href="{re.escape(css_fn)}(\?v=\d+)?"', f'href="{css_fn}?v={ts}"', html)
-        for js_fn in js_fns:
-            html = re.sub(rf'src="{re.escape(js_fn)}(\?v=\d+)?"', f'src="{js_fn}?v={ts}"', html)
-        with open(html_path, 'w', encoding='utf-8') as f:
-            f.write(html)
+        timestamp = max(int(os.path.getmtime(path)) for path in existing.values())
+
+        def add_version(match):
+            path = match.group('path')
+            if path not in existing:
+                return match.group(0)
+            return (
+                f"{match.group('prefix')}{match.group('quote')}"
+                f"{path}?v={timestamp}{match.group('quote')}"
+            )
+
+        updated = _ASSET_REFERENCE_RE.sub(add_version, html)
+        with open(html_path, 'w', encoding='utf-8') as handle:
+            handle.write(updated)

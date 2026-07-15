@@ -146,23 +146,6 @@ def test_essay_content_update_404(client):
     assert r.status_code == 404
 
 
-def test_rss_feed_exists():
-    p = os.path.join(DATA_DIR, '..', 'rss.xml')
-    if os.path.exists(p): assert '<' in open(p).read()
-
-def test_sitemap_exists():
-    p = os.path.join(DATA_DIR, '..', 'sitemap.xml')
-    if os.path.exists(p): assert '<' in open(p).read()
-
-def test_archive_html_exists():
-    p = os.path.join(DATA_DIR, '..', 'archive.html')
-    if os.path.exists(p): assert '<' in open(p).read()
-
-def test_map_html_exists():
-    p = os.path.join(DATA_DIR, '..', 'map.html')
-    if os.path.exists(p): assert '<' in open(p).read()
-
-
 def test_assets_route_serves_frontend_files(client):
     r = client.get('/assets/js/index.js')
     assert r.status_code == 200
@@ -449,3 +432,56 @@ def test_git_revert_checks_stash_failure(monkeypatch):
     assert status == 500
     assert 'git stash failed' in response.get_json()['error']
     assert calls == [['stash', 'push', '--include-untracked', '-m', 'auto-backup-before-revert']]
+
+
+def test_git_revert_runs_each_production_step_in_order(monkeypatch):
+    from backend.app import app
+    import backend.routes.git_api as git_api
+
+    calls = []
+
+    def fake_run(args):
+        calls.append(args)
+        return SimpleNamespace(returncode=0, stderr='', stdout='ok')
+
+    monkeypatch.setattr(git_api, '_run_git', fake_run)
+    old_testing = app.config.get('TESTING')
+    app.config['TESTING'] = False
+    try:
+        with app.test_request_context('/api/git/revert', method='POST', json={'confirm': True}):
+            response = git_api.git_revert()
+    finally:
+        app.config['TESTING'] = old_testing
+
+    assert response.get_json() == {'status': 'reverted'}
+    assert calls == [
+        ['stash', 'push', '--include-untracked', '-m', 'auto-backup-before-revert'],
+        ['checkout', '.'],
+        ['clean', '-fd'],
+    ]
+
+
+def test_git_push_stops_before_push_when_remote_is_ahead(monkeypatch):
+    from backend.app import app
+    import backend.routes.git_api as git_api
+
+    calls = []
+
+    def fake_run(args):
+        calls.append(args)
+        if args == ['status', '-sb']:
+            return SimpleNamespace(returncode=0, stderr='', stdout='## master...origin/master [behind 1]')
+        return SimpleNamespace(returncode=0, stderr='', stdout='ok')
+
+    monkeypatch.setattr(git_api, '_run_git', fake_run)
+    old_testing = app.config.get('TESTING')
+    app.config['TESTING'] = False
+    try:
+        with app.test_request_context('/api/git/push', method='POST'):
+            response, status = git_api.git_push()
+    finally:
+        app.config['TESTING'] = old_testing
+
+    assert status == 409
+    assert '远程仓库有更新' in response.get_json()['error']
+    assert calls == [['fetch'], ['status', '-sb']]

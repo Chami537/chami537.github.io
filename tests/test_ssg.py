@@ -233,6 +233,35 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
             assert '?v=999' not in result
 
 
+def test_cache_bust_assets_discovers_all_local_html_references(tmp_path):
+    from backend.asset_cache import cache_bust_assets
+
+    assets = (
+        ('assets/js/admin-core.js', 100),
+        ('assets/js/admin-api.js', 200),
+        ('assets/js/admin-ui.js', 300),
+    )
+    for relative_path, modified in assets:
+        path = tmp_path / relative_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text('// asset', encoding='utf-8')
+        os.utime(path, (modified, modified))
+    (tmp_path / 'admin.html').write_text(
+        '<script src="assets/js/admin-core.js?v=1"></script>\n'
+        '<script src="assets/js/admin-api.js?v=1"></script>\n'
+        '<script src="assets/js/admin-ui.js?v=1"></script>\n'
+        '<script src="https://cdn.example.test/library.js?v=1"></script>',
+        encoding='utf-8',
+    )
+
+    cache_bust_assets(str(tmp_path))
+
+    result = (tmp_path / 'admin.html').read_text(encoding='utf-8')
+    for relative_path, _modified in assets:
+        assert f'{relative_path}?v=300' in result
+    assert 'https://cdn.example.test/library.js?v=1' in result
+
+
 # ── Encryption roundtrip ──
 
 def test_encrypt_decrypt_roundtrip():
