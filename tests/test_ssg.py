@@ -5,10 +5,12 @@ import json
 from pathlib import Path
 import pytest
 from PIL import Image
+from backend.asset_cache import cache_bust_assets
+from backend.exif_utils import extract_exif as _extract_exif, extract_gps as _extract_gps
 from backend.ssg import (
-    _extract_exif, _extract_gps, _calc_read_time, _parse_date,
+    _calc_read_time, _parse_date,
     _parse_tags, _find_adjacent_siblings, _extract_first_image,
-    _cache_bust_assets, _encrypt_content, _decrypt_content, _is_encrypted_v3,
+    _encrypt_content, _decrypt_content, _is_encrypted_v3,
     _generate_public_essays, _sync_essay_html,
     ESSAYS_DIR, MD_DIR,
 )
@@ -152,8 +154,6 @@ def test_extract_exif_reads_nested_ifds():
 def test_cache_bust_assets(tmp_path, monkeypatch):
     """Verify cache bust replaces ?v=old → ?v=new in CSS/JS links."""
     import time
-    from backend.ssg import _cache_bust_assets
-    from backend.data import BASE_DIR
 
     # Create temp copies of all HTML, CSS, JS files
     configs = [
@@ -218,11 +218,10 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
         (tmp_path / html_fn).write_text(f'{css_tags}\n{js_tags}')
 
     now = int(time.time())
-    monkeypatch.setattr('backend.ssg.BASE_DIR', str(tmp_path))
     monkeypatch.setattr('os.path.getmtime', lambda p: now)
     monkeypatch.setattr('os.path.exists', lambda p: True)
 
-    _cache_bust_assets()
+    cache_bust_assets(str(tmp_path))
 
     for html_fn, css_fns, js_fns in configs:
         result = (tmp_path / html_fn).read_text()
@@ -726,38 +725,38 @@ def test_get_image_ext_invalid():
 # ── _strip_enrich ──
 
 def test_strip_enrich_strips_password():
-    from backend.ssg import _strip_enrich
+    from backend.essay_feed_data import strip_enrich
     essays = [{'slug': 'a', 'title': 'A', 'date': '2026-01-01', 'password': 'secret'}]
-    result = _strip_enrich(essays, 'pub_date', '%Y-%m-%d')
+    result = strip_enrich(essays, 'pub_date', '%Y-%m-%d')
     assert 'password' not in result[0]
 
 def test_strip_enrich_rss_format():
-    from backend.ssg import _strip_enrich
+    from backend.essay_feed_data import strip_enrich
     essays = [{'slug': 'a', 'title': 'A', 'date': '2026-06-15 14:30', 'password': 'x'}]
-    result = _strip_enrich(essays, 'pub_date', '%a, %d %b %Y %H:%M:%S +0800', 20)
+    result = strip_enrich(essays, 'pub_date', '%a, %d %b %Y %H:%M:%S +0800', 20)
     assert result[0]['pub_date'] != ''
     assert 'Jun' in result[0]['pub_date']
 
 def test_strip_enrich_sitemap_format():
-    from backend.ssg import _strip_enrich
+    from backend.essay_feed_data import strip_enrich
     essays = [{'slug': 'a', 'title': 'A', 'date': '2026-06-15', 'password': 'x'}]
-    result = _strip_enrich(essays, 'lastmod', '%Y-%m-%d')
+    result = strip_enrich(essays, 'lastmod', '%Y-%m-%d')
     assert result[0]['lastmod'] == '2026-06-15'
 
 def test_strip_enrich_invalid_date():
-    from backend.ssg import _strip_enrich
+    from backend.essay_feed_data import strip_enrich
     essays = [{'slug': 'a', 'title': 'A', 'date': 'not-a-date'}]
-    result = _strip_enrich(essays, 'pub_date', '%Y-%m-%d')
+    result = strip_enrich(essays, 'pub_date', '%Y-%m-%d')
     assert result[0]['pub_date'] == ''
 
 def test_strip_enrich_limit():
-    from backend.ssg import _strip_enrich
+    from backend.essay_feed_data import strip_enrich
     essays = [
         {'slug': 'a', 'date': '2026-01-01'},
         {'slug': 'b', 'date': '2026-01-02'},
         {'slug': 'c', 'date': '2026-01-03'},
     ]
-    result = _strip_enrich(essays, 'pub_date', '%Y-%m-%d', 2)
+    result = strip_enrich(essays, 'pub_date', '%Y-%m-%d', 2)
     assert len(result) == 2
 
 

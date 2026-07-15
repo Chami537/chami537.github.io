@@ -16,11 +16,7 @@ from backend.essay_crypto import (
 )
 
 from backend.data import get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR, STORE
-from backend.exif_utils import extract_exif, extract_gps, without_camera_model
-from backend.photo_metadata import set_gps
-from backend.github_sync import fetch_stars
 from backend.essay_navigation import parse_tags as _parse_tags, find_adjacent_siblings as _find_adjacent_siblings, build_nav as _build_nav
-from backend.asset_cache import cache_bust_assets
 from backend.essay_feed_data import strip_enrich
 from backend.essay_repository import EssayRepository
 from backend.essay_service import EssayService
@@ -38,10 +34,6 @@ def load_json(name):
     return repository_for(name).list()
 
 # ═══════════════════════════════════════════
-
-def _cache_bust_assets():
-    return cache_bust_assets(BASE_DIR)
-
 
 def _calc_read_time(text):
     """Estimate reading time from text. Chinese ~300 chars/min, English ~200 words/min. Minimum 1 min."""
@@ -85,14 +77,10 @@ def _extract_first_image(md_text):
     return 'https://chami537.github.io/images/avatar.jpg'
 
 
-def _strip_enrich(essays, date_key, date_fmt, limit=None):
-    return strip_enrich(essays, date_key, date_fmt, limit)
-
-
 def _generate_rss():
     """Generate rss.xml from essays.json (Jinja2 template)."""
     essays = ESSAY_REPOSITORY.list()
-    enriched = _strip_enrich(essays, 'pub_date', '%a, %d %b %Y %H:%M:%S +0800', 20)
+    enriched = strip_enrich(essays, 'pub_date', '%a, %d %b %Y %H:%M:%S +0800', 20)
     last_build = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0800')
     html = _env.get_template('rss.xml').render(essays=enriched, last_build=last_build)
     with open(os.path.join(BASE_DIR, 'rss.xml'), 'w', encoding='utf-8') as f:
@@ -102,7 +90,7 @@ def _generate_rss():
 def _generate_sitemap():
     """Generate sitemap.xml (Jinja2 template)."""
     essays = ESSAY_REPOSITORY.list()
-    enriched = _strip_enrich(essays, 'lastmod', '%Y-%m-%d')
+    enriched = strip_enrich(essays, 'lastmod', '%Y-%m-%d')
     html = _env.get_template('sitemap.xml').render(essays=enriched)
     with open(os.path.join(BASE_DIR, 'sitemap.xml'), 'w', encoding='utf-8') as f:
         f.write(html)
@@ -191,24 +179,6 @@ def _generate_feeds():
 
 
 
-def _extract_gps(exif_dict):
-    return extract_gps(exif_dict)
-
-
-def _extract_exif(img):
-    return extract_exif(img)
-
-
-def _without_camera_model(exif_data):
-    return without_camera_model(exif_data)
-
-
-def _set_gps(filename, lat, lng):
-    return set_gps(filename, lat, lng)
-
-
-
-
 def _is_encrypted_v3(content):
     """Detect v3 Fernet encrypted content by inspecting the first-line base64."""
     try:
@@ -279,10 +249,6 @@ def _sync_essay_html(essay, raw_md_memory=None, essays=None):
     essays = ESSAY_REPOSITORY.list() if essays is None else essays
     html = render_essay_html(essay, body_data, essays, _env.get_template('essay.html'), _parse_date)
     write_essay_html(os.path.join(ESSAYS_DIR, f"{slug}.html"), html)
-
-
-def _fetch_stars():
-    return fetch_stars()
 
 
 # Public generation boundary used by the essay application workflow.

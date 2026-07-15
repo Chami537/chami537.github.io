@@ -13,10 +13,6 @@ class EssayRepository:
     def save(self, essays):
         self.store.write('essays.json', essays)
 
-    def find(self, slug, essays=None):
-        source = self.list() if essays is None else essays
-        return next((essay for essay in source if essay.get('slug') == slug), None)
-
     def read_tag_order(self):
         return self.store.read('tags_order.json')
 

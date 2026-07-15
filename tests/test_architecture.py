@@ -21,6 +21,26 @@ def test_storage_primitives_do_not_depend_on_project_data_module():
     assert 'def repository_for(filename)' in composition
 
 
+def test_obsolete_repository_and_ssg_wrappers_are_removed():
+    crud = (ROOT / 'backend' / 'crud.py').read_text(encoding='utf-8')
+    essay_repository = (ROOT / 'backend' / 'essay_repository.py').read_text(encoding='utf-8')
+    ssg = (ROOT / 'backend' / 'ssg.py').read_text(encoding='utf-8')
+
+    assert 'def update_item_by_index' not in crud
+    assert 'def delete_item_by_index' not in crud
+    assert 'def find(self, slug' not in essay_repository
+    for wrapper in (
+        'def _fetch_stars',
+        'def _extract_gps',
+        'def _extract_exif',
+        'def _without_camera_model',
+        'def _set_gps',
+        'def _strip_enrich',
+        'def _cache_bust_assets',
+    ):
+        assert wrapper not in ssg
+
+
 def test_routes_do_not_import_app_module():
     route_sources = list((ROOT / 'backend' / 'routes').glob('*.py')) + [ROOT / 'backend' / 'auth.py']
     assert all('from backend.app import app' not in path.read_text(encoding='utf-8') for path in route_sources)

@@ -10,7 +10,8 @@ if __name__ == '__main__':
 
     if len(sys.argv) > 1:
         if sys.argv[1] == 'build':
-            from backend.ssg import _sync_essay_html, _generate_feeds, _cache_bust_assets
+            from backend.asset_cache import cache_bust_assets
+            from backend.ssg import generate_feeds, sync_essay_html
             from backend.site_health import run_site_health
             force = '--force' in sys.argv
             health = run_site_health(BASE_DIR, has_essay_password)
@@ -44,12 +45,12 @@ if __name__ == '__main__':
                         skipped += 1
                         continue
 
-                _sync_essay_html(e, essays=essays)
+                sync_essay_html(e, essays=essays)
                 print(f"  ✓ essays/{slug}.html")
                 rebuilt += 1
 
-            _generate_feeds()
-            _cache_bust_assets()
+            generate_feeds()
+            cache_bust_assets(BASE_DIR)
 
             # Pre-fetch GitHub stars (rate-limited, only on full or when work data changed)
             from backend.github_sync import fetch_stars
@@ -62,12 +63,12 @@ if __name__ == '__main__':
             import process_images
             process_images.process_all_images()
         elif sys.argv[1] == 'set-gps':
-            from backend.photo_metadata import set_gps as _set_gps
+            from backend.photo_metadata import set_gps
             if len(sys.argv) < 5:
                 print("Usage: python manage.py set-gps <filename> <lat> <lng>")
             else:
                 try:
-                    _set_gps(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]))
+                    set_gps(sys.argv[2], float(sys.argv[3]), float(sys.argv[4]))
                 except ValueError:
                     print("ERROR: lat/lng must be numbers, e.g. 39.9042 116.4074")
                     sys.exit(1)

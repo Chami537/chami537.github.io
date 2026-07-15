@@ -31,26 +31,6 @@ def create_item(filename, item, auto_id=False):
     return jsonify(item), 201
 
 
-def update_item_by_index(filename, index, updates):
-    repository = repository_for(filename)
-    data = repository.list()
-    if index < 0 or index >= len(data):
-        return jsonify({"error": "Index out of range"}), 404
-    data[index].update(updates)
-    repository.save(data)
-    return jsonify(data[index])
-
-
-def delete_item_by_index(filename, index):
-    repository = repository_for(filename)
-    data = repository.list()
-    if index < 0 or index >= len(data):
-        return jsonify({"error": "Index out of range"}), 404
-    data.pop(index)
-    repository.save(data)
-    return jsonify({"status": "deleted"})
-
-
 def update_item_by_id(filename, id_val, updates):
     repository = repository_for(filename)
     data = repository.list()
