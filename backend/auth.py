@@ -17,6 +17,11 @@ _LOGIN_ATTEMPTS = {}
 
 @bp.route('/api/login', methods=['POST'])
 def login():
+    data = request.get_json(silent=True)
+    password = data.get('password') if isinstance(data, dict) else None
+    if not isinstance(password, str):
+        return jsonify({"error": "Password must be a string"}), 400
+
     ip = request.remote_addr or '127.0.0.1'
     now = time.time()
     window = _LOGIN_ATTEMPTS.get(ip, [])
@@ -27,8 +32,7 @@ def login():
     window.append(now)
     _LOGIN_ATTEMPTS[ip] = window
 
-    data = request.get_json(silent=True) or {}
-    if hmac.compare_digest(data.get('password', ''), ADMIN_PASSWORD):
+    if hmac.compare_digest(password, ADMIN_PASSWORD):
         session['authenticated'] = True
         _LOGIN_ATTEMPTS.pop(ip, None)
         return jsonify({"status": "ok"})

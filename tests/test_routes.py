@@ -2,6 +2,9 @@
 import json
 import os
 from io import BytesIO
+
+import pytest
+
 from backend.data import DATA_DIR
 
 
@@ -581,6 +584,14 @@ def test_login_wrong_password(client_no_auth):
     r = client_no_auth.post('/api/login', json={'password': 'wrong'})
     assert r.status_code == 401
 
+
+@pytest.mark.parametrize('password', [123, None, [], {}])
+def test_login_rejects_non_string_password(client_no_auth, password):
+    r = client_no_auth.post('/api/login', json={'password': password})
+
+    assert r.status_code == 400
+    assert r.json == {'error': 'Password must be a string'}
+
 def test_logout(client_no_auth):
     client_no_auth.post('/api/login', json={'password': 'chami'})
     r = client_no_auth.post('/api/logout')
@@ -648,6 +659,17 @@ def test_csrf_rejects_cross_origin_post(client):
     """POST with foreign Origin header should be rejected."""
     r = client.post('/api/login', json={'password': 'chami'},
                     headers={'Origin': 'https://evil.com'})
+    assert r.status_code == 403
+    assert 'CSRF' in r.json.get('error', '')
+
+
+def test_csrf_does_not_trust_attacker_controlled_host(client):
+    r = client.post(
+        '/api/login',
+        json={'password': 'chami'},
+        headers={'Host': 'evil.example', 'Origin': 'http://evil.example'},
+    )
+
     assert r.status_code == 403
     assert 'CSRF' in r.json.get('error', '')
 

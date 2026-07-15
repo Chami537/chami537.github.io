@@ -22,6 +22,15 @@ app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['PERMANENT_SESSION_LIFETIME'] = 86400  # 24 hours
 _secure_cookie = os.environ.get('SESSION_COOKIE_SECURE', '').strip().lower()
 app.config['SESSION_COOKIE_SECURE'] = _secure_cookie in ('1', 'true', 'yes', 'on')
+_trusted_origin_env = os.environ.get(
+    'TRUSTED_ORIGINS',
+    'http://localhost,http://localhost:5000,http://127.0.0.1:5000',
+)
+app.config['TRUSTED_ORIGINS'] = tuple(
+    value.strip().rstrip('/')
+    for value in _trusted_origin_env.split(',')
+    if value.strip()
+)
 
 _PUBLIC_DATA_FILES = frozenset({
     'about.json', 'contact.json', 'essays_public.json', 'friends.json',
@@ -42,14 +51,30 @@ def _require_auth():
 
 
 # ── CSRF check: reject cross-origin state-changing requests ──
+def _normalize_origin(value):
+    parsed = urlparse(value)
+    if not parsed.scheme or not parsed.netloc:
+        return ''
+    return f'{parsed.scheme.lower()}://{parsed.netloc.lower()}'
+
+
+def _trusted_origins():
+    configured = app.config.get('TRUSTED_ORIGINS', ())
+    if isinstance(configured, str):
+        configured = configured.split(',')
+    return frozenset(
+        normalized
+        for value in configured
+        if (normalized := _normalize_origin(str(value).strip()))
+    )
+
+
 @app.before_request
 def _csrf_check():
     if request.method in ('POST', 'PUT', 'DELETE', 'PATCH'):
-        origin = request.headers.get('Origin', '')
-        if origin:
-            expected = app.config.get('SERVER_NAME') or request.host
-            if urlparse(origin).netloc != expected:
-                return jsonify({"error": "CSRF check failed"}), 403
+        source = request.headers.get('Origin') or request.headers.get('Referer', '')
+        if source and _normalize_origin(source) not in _trusted_origins():
+            return jsonify({"error": "CSRF check failed"}), 403
 
 
 # ── Admin UI ──
