@@ -119,6 +119,19 @@ def test_health_allows_encrypted_source_when_password_store_is_unavailable(tmp_p
     assert check['status'] == 'passed'
 
 
+def test_health_allows_empty_generated_essay_dir_before_first_build(tmp_path):
+    _make_minimal_site(tmp_path)
+    _write_json(tmp_path / 'data' / 'essays.json', json.dumps([{'slug': 'public-note'}]))
+    (tmp_path / 'md').mkdir()
+    (tmp_path / 'md' / 'public-note.md').write_text('public body', encoding='utf-8')
+    (tmp_path / 'essays').mkdir()
+
+    report = run_site_health(str(tmp_path), lambda _slug: False)
+
+    check = next(item for item in report['checks'] if item['id'] == 'essays.sources')
+    assert check['status'] == 'passed'
+
+
 def test_health_checks_password_gate_and_giscus_csp(tmp_path):
     _make_minimal_site(tmp_path)
     _write_json(tmp_path / 'data' / 'essays.json', json.dumps([{'slug': 'private-note'}]))

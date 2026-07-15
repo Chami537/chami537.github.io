@@ -91,6 +91,7 @@ def _check_essays(root, essays, has_password):
         return _unavailable('essays.sources', '随笔源文件')
     details = []
     essays_dir = root / 'essays'
+    has_generated_essays = essays_dir.is_dir() and any(essays_dir.glob('*.html'))
     for essay in essays:
         slug = str(essay.get('slug', ''))
         if not _SLUG_RE.fullmatch(slug):
@@ -113,7 +114,7 @@ def _check_essays(root, essays, has_password):
         if protected and not encrypted:
             details.append(f'md/{slug}.md: 密码状态与密文状态不一致')
         html_path = essays_dir / f'{slug}.html'
-        if essays_dir.is_dir() and not html_path.is_file():
+        if has_generated_essays and not html_path.is_file():
             details.append(f'essays/{slug}.html: 生成文件缺失')
         elif protected and html_path.is_file():
             try:
