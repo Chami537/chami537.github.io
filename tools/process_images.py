@@ -82,12 +82,11 @@ def process_all_images():
                         entry['date'] = old_entry['date']
                     elif exif_info.get('date'):
                         entry['date'] = _parse_date(exif_info['date'])
+                    for field in ('size', 'tags'):
+                        if field in old_entry:
+                            entry[field] = old_entry[field]
                 elif exif_info.get('date'):
                     entry['date'] = _parse_date(exif_info['date'])
-                    if old_entry.get('size'):
-                        entry['size'] = old_entry['size']
-                    if old_entry.get('tags'):
-                        entry['tags'] = old_entry['tags']
 
                 photos_data.append(entry)
                 if is_new:

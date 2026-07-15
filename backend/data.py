@@ -2,7 +2,7 @@
 
 import os
 import json
-from backend.storage import DataCorruptionError, JsonStore
+from backend.storage import JsonStore
 
 from dotenv import load_dotenv
 
@@ -89,11 +89,8 @@ STORE = JsonStore(DATA_DIR)
 
 
 def load_json(name):
-    try:
-        return STORE.read(name)
-    except DataCorruptionError:
-        print(f"WARNING: corrupted JSON — {os.path.join(DATA_DIR, name)}")
-        return []
+    """Read JSON data, propagating corruption instead of hiding data loss."""
+    return STORE.read(name)
 
 
 def atomic_write_json(filename, data):
