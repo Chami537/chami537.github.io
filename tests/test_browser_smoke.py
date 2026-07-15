@@ -1,12 +1,17 @@
 """Minimal real-browser checks for the static admin and homepage shells."""
 
 import os
+import json
 import threading
+from pathlib import Path
 
 import pytest
 from werkzeug.serving import make_server
 
 from backend.app import app
+
+
+ROOT = Path(__file__).parents[1]
 
 
 @pytest.fixture(scope='module')
@@ -180,5 +185,31 @@ def test_admin_about_tracks_and_readme_modules_load(live_server, browser):
         page.locator('#tracks-list').wait_for(state='visible')
         page.locator('.tab-btn[data-tab="readme"]').click()
         page.locator('#readme-content').wait_for(state='visible')
+    finally:
+        page.close()
+
+
+def test_shared_code_renderer_runs_in_admin_and_essay_pages(live_server, browser):
+    page = browser.new_page()
+    try:
+        page.goto(live_server + '/', wait_until='domcontentloaded')
+        page.wait_for_function("typeof highlightCodeBlocks === 'function'")
+        rendered = page.evaluate("""
+          (function() {
+            var root = document.createElement('div');
+            root.innerHTML = '<pre><code class="language-python">def main():\\n    return 1</code></pre>';
+            highlightCodeBlocks(root);
+            return {
+              highlighted: root.querySelector('.hljs-keyword') !== null,
+              button: root.querySelector('.code-language').textContent
+            };
+          })()
+        """)
+        assert rendered == {'highlighted': True, 'button': 'Python'}
+
+        essays = json.loads((ROOT / 'data' / 'essays.json').read_text(encoding='utf-8'))
+        page.goto(live_server + f"/essays/{essays[0]['slug']}.html", wait_until='domcontentloaded')
+        page.wait_for_function("typeof highlightCodeBlocks === 'function'")
+        assert page.locator('script[src*="code-rendering.js"]').count() == 1
     finally:
         page.close()

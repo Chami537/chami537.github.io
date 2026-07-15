@@ -386,10 +386,11 @@ def test_sync_essay_html_without_password(tmp_path, monkeypatch):
     assert 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js' in html
     assert '<script src="/assets/js/essay-code.js?v=' in html
     essay_code = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'essay-code.js').read_text(encoding='utf-8')
+    shared_code = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'code-rendering.js').read_text(encoding='utf-8')
     assert 'highlightCodeBlocks' in essay_code
-    assert 'fallbackHighlightCodeBlock' in essay_code
-    assert 'code-language' in essay_code
-    assert 'COPY' in essay_code
+    assert 'fallbackHighlightCodeBlock' in shared_code
+    assert 'code-language' in shared_code
+    assert 'COPY' in shared_code
     assert '_encryptedBody' not in html
 
 

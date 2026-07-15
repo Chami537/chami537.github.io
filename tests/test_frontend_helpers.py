@@ -84,6 +84,55 @@ assert(!storyContainer.innerHTML.includes('<span class="story-meta"><img'));
     _run_node(script)
 
 
+def test_shared_code_renderer_applies_fallback_highlighting():
+    renderer_path = (ROOT / 'assets' / 'js' / 'code-rendering.js').as_posix()
+    script = f"""
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+
+let button = null;
+const pre = {{
+  dataset: {{}},
+  querySelector() {{ return null; }},
+  appendChild(value) {{ button = value; }}
+}};
+const classes = ['language-python'];
+classes.add = function(value) {{ this.push(value); }};
+const code = {{
+  textContent: 'def main():\\n    return 1',
+  innerHTML: '',
+  classList: classes,
+  parentElement: pre,
+  querySelector() {{ return null; }}
+}};
+const context = {{
+  window: null,
+  navigator: {{}},
+  document: {{
+    createElement() {{
+      return {{
+        dataset: {{}},
+        setAttribute() {{}},
+        addEventListener() {{}},
+      }};
+    }}
+  }},
+  setTimeout() {{}},
+}};
+context.window = context;
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('{renderer_path}', 'utf8'), context);
+context.highlightCodeBlocks({{querySelectorAll() {{ return [code]; }}}});
+
+assert(code.innerHTML.includes('hljs-keyword'));
+assert(code.classList.includes('hljs'));
+assert.strictEqual(pre.dataset.language, 'Python');
+assert.strictEqual(button.textContent, 'Python');
+"""
+    _run_node(script)
+
+
 def test_gpx_parser_calculates_points_distance_and_elevation_gain():
     node = shutil.which('node')
     if not node:

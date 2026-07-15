@@ -130,6 +130,26 @@ def test_admin_domain_modules_are_loaded_explicitly():
     assert 'assets/js/admin.js' not in html
 
 
+def test_code_rendering_is_shared_by_admin_and_essay_pages():
+    admin_html = (ROOT / 'admin.html').read_text(encoding='utf-8')
+    essay_template = (ROOT / 'templates' / 'essay.html').read_text(encoding='utf-8')
+    shared = (ROOT / 'assets' / 'js' / 'code-rendering.js')
+    admin_renderer = (ROOT / 'assets' / 'js' / 'admin-editor-rendering.js').read_text(encoding='utf-8')
+    essay_renderer = (ROOT / 'assets' / 'js' / 'essay-code.js').read_text(encoding='utf-8')
+
+    assert shared.is_file()
+    assert admin_html.index('assets/js/code-rendering.js') < admin_html.index(
+        'assets/js/admin-editor-rendering.js'
+    )
+    assert essay_template.index('/assets/js/code-rendering.js') < essay_template.index(
+        '/assets/js/essay-code.js'
+    )
+    for duplicate in ('function highlightPlainCode', 'function fallbackHighlightCodeBlock'):
+        assert duplicate not in admin_renderer
+        assert duplicate not in essay_renderer
+        assert duplicate in shared.read_text(encoding='utf-8')
+
+
 def test_essay_editor_is_split_by_responsibility():
     html = (ROOT / 'admin.html').read_text(encoding='utf-8')
     for module in ('admin-essay-meta.js', 'admin-essay-content.js', 'admin-essay-formatting.js', 'admin-essay-media.js'):
