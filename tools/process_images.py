@@ -19,100 +19,106 @@ IMG_DIR = os.path.join(BASE_DIR, 'images')
 SIZES = {'sm': 400, 'md': 800, 'lg': 1920}
 
 
-def process_all_images():
-    """Sync: process ALL raw_photos files, update photos.json with full EXIF.
-    Preserves user-set fields (date, size, tags). Generates missing thumbnails."""
+def _ordered_filenames(existing, raw_files):
+    ordered = [filename for filename in existing if filename in raw_files]
+    ordered.extend(sorted(raw_files - existing.keys()))
+    return ordered
+
+
+def _build_photo_entry(filename, old_entry, exif_info):
+    entry = {'filename': filename, 'exif': exif_info}
+    date = old_entry.get('date') if old_entry else None
+    if not date and exif_info.get('date'):
+        date = _parse_date(exif_info['date'])
+    if date:
+        entry['date'] = date
+    if old_entry:
+        for field in ('size', 'tags'):
+            if field in old_entry:
+                entry[field] = old_entry[field]
+    return entry
+
+
+def _prepare_directories():
     if not os.path.exists(RAW_DIR):
         os.makedirs(RAW_DIR)
         print(f"已创建 {RAW_DIR}/ 文件夹，请将原图放入后重试。")
-        return
-
+        return False
     for size in SIZES:
         os.makedirs(os.path.join(IMG_DIR, size), exist_ok=True)
+    return True
 
-    # Load existing data to preserve user-edited fields (date, size, tags)
-    existing = {}
-    for p in PHOTO_REPOSITORY.list():
-        existing[p['filename']] = p
 
+def _write_thumbnails(img, filename):
+    targets = [
+        (size_name, max_width, os.path.join(IMG_DIR, size_name, filename))
+        for size_name, max_width in SIZES.items()
+        if not os.path.exists(os.path.join(IMG_DIR, size_name, filename))
+    ]
+    if not targets:
+        return
+
+    rgb_img = img.convert('RGB') if img.mode != 'RGB' else img
+    for _size_name, max_width, out_path in targets:
+        ratio = max_width / float(img.size[0])
+        if ratio < 1:
+            new_h = int(float(img.size[1]) * ratio)
+            resized = rgb_img.resize((max_width, new_h), Image.Resampling.LANCZOS)
+        else:
+            resized = rgb_img.copy()
+        resized.save(out_path, 'JPEG', quality=85)
+
+
+def _process_photo(filename, old_entry):
+    raw_path = os.path.join(RAW_DIR, filename)
+    with Image.open(raw_path) as img:
+        exif_info = _without_camera_model(_extract_exif(img))
+        _write_thumbnails(img, filename)
+    return _build_photo_entry(filename, old_entry, exif_info)
+
+
+def _preserve_orphans(existing, photos_data):
+    orphaned = 0
+    for leftover in existing.values():
+        filename = leftover.get('filename', '')
+        if os.path.exists(os.path.join(IMG_DIR, 'sm', filename)):
+            photos_data.append(leftover)
+            continue
+        print(f"  [清理] {filename} — 原图已删除且无缩略图，移除")
+        orphaned += 1
+    return orphaned
+
+
+def process_all_images():
+    """Sync: process ALL raw_photos files, update photos.json with full EXIF.
+    Preserves user-set fields (date, size, tags). Generates missing thumbnails."""
+    if not _prepare_directories():
+        return
+
+    existing = {photo['filename']: photo for photo in PHOTO_REPOSITORY.list()}
+    raw_files = {
+        filename for filename in os.listdir(RAW_DIR)
+        if filename.lower().endswith(('.jpg', '.jpeg', '.png'))
+    }
     photos_data = []
     new_count = 0
     updated_count = 0
 
-    # Preserve order from existing photos.json; append new files at end
-    raw_files = {f for f in os.listdir(RAW_DIR) if f.lower().endswith(('.jpg', '.jpeg', '.png'))}
-    ordered = [f for f in existing if f in raw_files]
-    ordered += [f for f in sorted(raw_files) if f not in existing]
-
-    for filename in ordered:
-
-        raw_path = os.path.join(RAW_DIR, filename)
+    for filename in _ordered_filenames(existing, raw_files):
         old_entry = existing.pop(filename, None)
-        is_new = old_entry is None
-        had_exif = old_entry and 'exif' in old_entry and old_entry['exif']
-
-        print(f"{'[新]' if is_new else '[更新]' if not had_exif else '[同步]'} {filename} ...")
-
+        label = '[新]' if old_entry is None else ('[同步]' if old_entry.get('exif') else '[更新]')
+        print(f"{label} {filename} ...")
         try:
-            with Image.open(raw_path) as img:
-                # Always extract EXIF
-                exif_info = _without_camera_model(_extract_exif(img))
-
-                # Generate thumbnails (skip if already exist)
-                for size_name, max_width in SIZES.items():
-                    out_path = os.path.join(IMG_DIR, size_name, filename)
-                    if os.path.exists(out_path):
-                        continue  # thumbnail exists, skip
-                    if img.mode != 'RGB':
-                        rgb_img = img.convert('RGB')
-                    else:
-                        rgb_img = img
-                    ratio = max_width / float(img.size[0])
-                    if ratio < 1:
-                        new_h = int(float(img.size[1]) * ratio)
-                        resized = rgb_img.resize((max_width, new_h), Image.Resampling.LANCZOS)
-                    else:
-                        resized = rgb_img.copy()
-                    resized.save(out_path, 'JPEG', quality=85)
-
-                # Build entry: EXIF from file, user fields from old entry
-                entry = {'filename': filename, 'exif': exif_info}
-                if old_entry:
-                    if old_entry.get('date'):
-                        entry['date'] = old_entry['date']
-                    elif exif_info.get('date'):
-                        entry['date'] = _parse_date(exif_info['date'])
-                    for field in ('size', 'tags'):
-                        if field in old_entry:
-                            entry[field] = old_entry[field]
-                elif exif_info.get('date'):
-                    entry['date'] = _parse_date(exif_info['date'])
-
-                photos_data.append(entry)
-                if is_new:
-                    new_count += 1
-                elif not had_exif:
-                    updated_count += 1
-
+            photos_data.append(_process_photo(filename, old_entry))
         except Exception as e:
             print(f"  出错: {e}")
-            # Keep old entry on failure
             if old_entry:
                 photos_data.append(old_entry)
+            continue
+        new_count += int(old_entry is None)
+        updated_count += int(old_entry is not None and not old_entry.get('exif'))
 
-    # Any remaining entries in existing are for files not in raw_photos/
-    # Keep only if thumbnails still exist; warn and drop orphans
-    orphaned = 0
-    for leftover in existing.values():
-        fn = leftover.get('filename', '')
-        sm_path = os.path.join(IMG_DIR, 'sm', fn)
-        if os.path.exists(sm_path):
-            photos_data.append(leftover)
-        else:
-            print(f"  [清理] {fn} — 原图已删除且无缩略图，移除")
-            orphaned += 1
-
-    # Atomic write
+    orphaned = _preserve_orphans(existing, photos_data)
     PHOTO_REPOSITORY.save(photos_data)
 
     print(f"完成！总计 {len(photos_data)} 张照片，新增 {new_count}，补全 EXIF {updated_count}。" + (f" 清理孤儿条目 {orphaned}。" if orphaned else ""))

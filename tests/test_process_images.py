@@ -30,6 +30,45 @@ def _write_jpeg(path, color):
     Image.new('RGB', (8, 6), color=color).save(path, 'JPEG')
 
 
+def test_ordered_filenames_preserves_existing_order_and_sorts_new_files():
+    existing = {
+        'second.jpg': {'filename': 'second.jpg'},
+        'first.jpg': {'filename': 'first.jpg'},
+        'removed.jpg': {'filename': 'removed.jpg'},
+    }
+
+    ordered = process_images._ordered_filenames(
+        existing,
+        {'first.jpg', 'new-b.jpg', 'second.jpg', 'new-a.jpg'},
+    )
+
+    assert ordered == ['second.jpg', 'first.jpg', 'new-a.jpg', 'new-b.jpg']
+
+
+def test_build_photo_entry_refreshes_exif_and_preserves_manual_fields():
+    old_entry = {
+        'filename': 'old.jpg',
+        'exif': {'model': 'Old Camera'},
+        'date': 'Jul 1, 2026',
+        'size': 'lg',
+        'tags': ['保留'],
+    }
+
+    entry = process_images._build_photo_entry(
+        'old.jpg',
+        old_entry,
+        {'model': 'New Camera', 'date': '2026-07-15 12:34'},
+    )
+
+    assert entry == {
+        'filename': 'old.jpg',
+        'exif': {'model': 'New Camera', 'date': '2026-07-15 12:34'},
+        'date': 'Jul 1, 2026',
+        'size': 'lg',
+        'tags': ['保留'],
+    }
+
+
 def test_photo_sync_keeps_manual_fields_and_appends_exif_dated_new_photo(tmp_path, monkeypatch):
     raw_dir, _data_dir, store = _configure_photo_workspace(tmp_path, monkeypatch)
     _write_jpeg(raw_dir / 'old.jpg', 'red')
@@ -62,3 +101,27 @@ def test_photo_sync_does_not_overwrite_corrupted_metadata(tmp_path, monkeypatch)
         process_images.process_all_images()
 
     assert photos_path.read_bytes() == original
+
+
+def test_photo_sync_keeps_entry_when_image_processing_fails(tmp_path, monkeypatch):
+    raw_dir, _data_dir, store = _configure_photo_workspace(tmp_path, monkeypatch)
+    (raw_dir / 'broken.jpg').write_bytes(b'not an image')
+    old_entry = {'filename': 'broken.jpg', 'date': 'Jul 1, 2026', 'tags': ['保留']}
+    store.write('photos.json', [old_entry])
+
+    process_images.process_all_images()
+
+    assert store.read('photos.json') == [old_entry]
+
+
+def test_photo_sync_keeps_orphan_with_existing_thumbnail(tmp_path, monkeypatch):
+    _raw_dir, _data_dir, store = _configure_photo_workspace(tmp_path, monkeypatch)
+    thumbnail_dir = tmp_path / 'images' / 'sm'
+    thumbnail_dir.mkdir()
+    _write_jpeg(thumbnail_dir / 'thumbnail-only.jpg', 'green')
+    old_entry = {'filename': 'thumbnail-only.jpg', 'date': 'Jul 1, 2026'}
+    store.write('photos.json', [old_entry])
+
+    process_images.process_all_images()
+
+    assert store.read('photos.json') == [old_entry]
