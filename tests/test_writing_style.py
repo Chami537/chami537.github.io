@@ -6,7 +6,9 @@ from backend.writing_style import (
     MAX_SAMPLE_CHARS,
     MAX_STYLE_ESSAYS,
     MAX_TOTAL_CHARS,
+    load_style_profile,
     load_style_reference,
+    save_style_profile,
 )
 
 
@@ -140,3 +142,33 @@ def test_load_style_reference_prefers_matching_tags_and_skips_tiny_drafts(tmp_pa
 
     assert [sample['title'] for sample in result['samples']] == ['Tech', 'Life']
     assert 'Tiny' not in [sample['title'] for sample in result['samples']]
+
+
+def test_style_profile_loads_safely_and_saves_normalized_value():
+    assert load_style_profile(loader=lambda _name: {
+        'profile': '  克制直接  ',
+        'updated_at': '2026-07-31T00:00:00Z',
+    }) == {
+        'profile': '克制直接',
+        'updated_at': '2026-07-31T00:00:00Z',
+    }
+
+    captured = {}
+    result = save_style_profile(
+        '  保留口语  ',
+        writer=lambda name, data: captured.update(name=name, data=data),
+    )
+
+    assert captured['name'] == 'writing_style.json'
+    assert captured['data'] == result
+    assert result['profile'] == '保留口语'
+    assert result['updated_at'].endswith('+00:00')
+
+
+def test_style_profile_rejects_empty_and_oversized_values():
+    import pytest
+
+    with pytest.raises(ValueError, match='不能为空'):
+        save_style_profile('  ')
+    with pytest.raises(ValueError, match='4000'):
+        save_style_profile('字' * 4001)

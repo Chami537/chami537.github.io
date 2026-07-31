@@ -64,6 +64,38 @@
   line-height: 1.5;
   text-align: right;
 }
+.essay-ai-style-profile {
+  margin-bottom: 12px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--card-bg);
+}
+.essay-ai-style-heading,
+.essay-ai-style-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.essay-ai-style-heading { margin-bottom: 7px; }
+.essay-ai-style-heading strong { font-size: 11px; }
+#essay-ai-style-status { color: var(--muted); font-size: 10px; }
+#essay-ai-style-profile {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  padding: 9px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 11px/1.65 ui-monospace, SFMono-Regular, Consolas, monospace;
+}
+.essay-ai-style-actions {
+  justify-content: flex-end;
+  margin-top: 7px;
+}
 .essay-ai-actions {
   display: flex;
   flex-wrap: wrap;
@@ -180,6 +212,7 @@
   #essay-ai-status { max-width: none; text-align: left; }
   .essay-ai-actions .btn { flex: 1 1 calc(50% - 4px); min-height: 44px; }
   .essay-ai-polish-controls { grid-template-columns: 1fr; }
+  .essay-ai-style-actions { align-items: stretch; flex-direction: column; }
 }
 
 /* Misc */

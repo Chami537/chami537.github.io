@@ -1,10 +1,10 @@
 """Bounded public essay samples for personal writing-style prompts."""
 
 import re
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
-from backend.data import MD_DIR, has_essay_password, load_json
+from backend.data import MD_DIR, atomic_write_json, has_essay_password, load_json
 from backend.essay_crypto import is_encrypted_content
 
 
@@ -12,6 +12,8 @@ MAX_STYLE_ESSAYS = 4
 MAX_SAMPLE_CHARS = 1_500
 MAX_TOTAL_CHARS = 5_000
 MIN_USEFUL_SAMPLE_CHARS = 300
+MAX_STYLE_PROFILE_CHARS = 4_000
+STYLE_PROFILE_FILE = 'writing_style.json'
 
 _SLUG_PATTERN = re.compile(r'^[a-z0-9-]+$')
 _IMAGE_LINE = re.compile(r'^\s*!\[[^\]]*\]\([^)]*\)\s*$')
@@ -57,6 +59,38 @@ def _tag_parts(value):
     if isinstance(value, list):
         return {part.strip().casefold() for part in value if isinstance(part, str) and part.strip()}
     return set()
+
+
+def load_style_profile(*, loader=None):
+    """Return the confirmed writing profile, degrading safely when absent."""
+    loader = loader or load_json
+    try:
+        data = loader(STYLE_PROFILE_FILE)
+    except (OSError, TypeError, ValueError):
+        data = {}
+    if not isinstance(data, dict):
+        data = {}
+    profile = data.get('profile')
+    updated_at = data.get('updated_at')
+    return {
+        'profile': profile.strip() if isinstance(profile, str) else '',
+        'updated_at': updated_at if isinstance(updated_at, str) else None,
+    }
+
+
+def save_style_profile(profile, *, writer=None):
+    """Validate and persist an author-confirmed writing profile."""
+    if not isinstance(profile, str) or not profile.strip():
+        raise ValueError('文风画像不能为空')
+    profile = profile.strip()
+    if len(profile) > MAX_STYLE_PROFILE_CHARS:
+        raise ValueError('文风画像不能超过 4000 个字符')
+    data = {
+        'profile': profile,
+        'updated_at': datetime.now(timezone.utc).isoformat(timespec='seconds'),
+    }
+    (writer or atomic_write_json)(STYLE_PROFILE_FILE, data)
+    return data
 
 
 def load_style_reference(

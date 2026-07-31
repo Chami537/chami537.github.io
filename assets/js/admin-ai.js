@@ -3,6 +3,8 @@
 var _essayAiController = null;
 var _essayAiSuggestion = null;
 var _essayAiProtected = false;
+var _essayAiStyleLoaded = false;
+var _essayAiSavedStyle = '';
 
 function _essayAiButtons() {
   return document.querySelectorAll('#essay-ai-actions button');
@@ -40,6 +42,57 @@ function updateEssayAiAvailability(slug) {
   _setEssayAiBusy(false, _essayAiProtected
     ? '密码保护文章不会发送给 AI'
     : '选择一项操作，结果不会自动保存');
+  if (!_essayAiStyleLoaded) loadEssayWritingStyle();
+}
+
+function _setEssayAiStyleBusy(busy, message) {
+  document.getElementById('essay-ai-style-analyze').disabled = busy;
+  document.getElementById('essay-ai-style-save').disabled = busy;
+  document.getElementById('essay-ai-style-profile').disabled = busy;
+  if (message) document.getElementById('essay-ai-style-status').textContent = message;
+}
+
+async function loadEssayWritingStyle() {
+  _setEssayAiStyleBusy(true, '正在读取…');
+  try {
+    var response = await api('GET', '/api/ai/writing-style');
+    _essayAiSavedStyle = response.profile || '';
+    document.getElementById('essay-ai-style-profile').value = _essayAiSavedStyle;
+    _essayAiStyleLoaded = true;
+    _setEssayAiStyleBusy(false, _essayAiSavedStyle ? '已保存，润色时优先引用' : '尚未总结');
+  } catch (error) {
+    _setEssayAiStyleBusy(false, '读取失败');
+  }
+}
+
+async function analyzeEssayWritingStyle() {
+  _setEssayAiStyleBusy(true, 'DeepSeek 正在总结公开文章…');
+  try {
+    var response = await api('POST', '/api/ai/writing-style/analyze', {});
+    document.getElementById('essay-ai-style-profile').value = response.result.profile;
+    _setEssayAiStyleBusy(false, '已参考 ' + response.style_reference_count + '篇，检查后保存');
+  } catch (error) {
+    _setEssayAiStyleBusy(false, '总结失败');
+    toast(error.message, true);
+  }
+}
+
+async function saveEssayWritingStyle() {
+  var profile = document.getElementById('essay-ai-style-profile').value.trim();
+  if (!profile) {
+    toast('文风画像不能为空', true);
+    return;
+  }
+  _setEssayAiStyleBusy(true, '正在保存…');
+  try {
+    var response = await api('PUT', '/api/ai/writing-style', {profile: profile});
+    _essayAiSavedStyle = response.profile;
+    document.getElementById('essay-ai-style-profile').value = response.profile;
+    _setEssayAiStyleBusy(false, '已保存，后续 AI 任务会优先引用');
+  } catch (error) {
+    _setEssayAiStyleBusy(false, '保存失败');
+    toast(error.message, true);
+  }
 }
 
 function _essayAiSnapshot(task) {
@@ -237,6 +290,7 @@ async function requestEssayAi(task) {
     var styleStatus = task !== 'tags' && styleCount
       ? '已参考 ' + styleCount + ' 篇公开随笔'
       : '通用编辑模式';
+    if (response.style_profile_used) styleStatus = '已引用文风画像 · ' + styleStatus;
     var unchangedStatus = task === 'polish' &&
       response.result.content === snapshot.content ? '无需修改 · ' : '';
     var scopeStatus = task === 'polish' ? snapshot.scope + ' · ' : '';
@@ -338,4 +392,15 @@ document.querySelectorAll('[data-ai-task]').forEach(function(button) {
   button.addEventListener('click', function() {
     requestEssayAi(button.dataset.aiTask);
   });
+});
+document.getElementById('essay-ai-style-analyze').addEventListener(
+  'click', analyzeEssayWritingStyle
+);
+document.getElementById('essay-ai-style-save').addEventListener(
+  'click', saveEssayWritingStyle
+);
+document.getElementById('essay-ai-style-profile').addEventListener('input', function() {
+  var current = this.value.trim();
+  document.getElementById('essay-ai-style-status').textContent =
+    current === _essayAiSavedStyle ? '已保存，润色时优先引用' : '有未保存的修改';
 });

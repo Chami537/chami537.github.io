@@ -17,6 +17,9 @@ def test_ai_essay_assist_returns_structured_result(client, monkeypatch):
         'samples': [{'title': '旧文', 'content': '历史片段'}],
         'count': 1,
     })
+    monkeypatch.setattr(ai, 'load_style_profile', lambda: {
+        'profile': '已确认文风', 'updated_at': None,
+    })
 
     def fake_assist(**kwargs):
         captured.update(kwargs)
@@ -41,8 +44,10 @@ def test_ai_essay_assist_returns_structured_result(client, monkeypatch):
         'result': {'excerpt': '摘要'},
         'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
         'style_reference_count': 1,
+        'style_profile_used': True,
     }
     assert captured['style_samples'] == [{'title': '旧文', 'content': '历史片段'}]
+    assert captured['style_profile'] == '已确认文风'
     assert '历史片段' not in response.get_data(as_text=True)
 
 
@@ -133,6 +138,12 @@ def test_ai_essay_assist_requires_auth(client_no_auth):
         'content': '正文',
     })
     assert response.status_code == 401
+
+    assert client_no_auth.get('/api/ai/writing-style').status_code == 401
+    assert client_no_auth.post('/api/ai/writing-style/analyze', json={}).status_code == 401
+    assert client_no_auth.put(
+        '/api/ai/writing-style', json={'profile': '画像'},
+    ).status_code == 401
 
 
 def test_ai_essay_assist_tags_skip_style_samples(client, monkeypatch):
@@ -233,6 +244,39 @@ def test_ai_essay_assist_forwards_polish_controls(client, monkeypatch):
     assert captured['polish_mode'] == 'rewrite'
     assert captured['instruction'] == '保留口语'
     assert captured['surrounding_context'] == {'before': '上文', 'after': '下文'}
+
+
+def test_writing_style_profile_get_analyze_and_update(client, monkeypatch):
+    import backend.routes.ai as ai
+
+    monkeypatch.setattr(ai, 'load_style_profile', lambda: {
+        'profile': '已保存画像', 'updated_at': '2026-07-31T00:00:00Z',
+    })
+    response = client.get('/api/ai/writing-style')
+    assert response.get_json()['profile'] == '已保存画像'
+
+    monkeypatch.setattr(ai, 'load_style_reference', lambda _slug: {
+        'samples': [{'title': '旧文', 'content': '历史正文'}], 'count': 1,
+    })
+    monkeypatch.setattr(ai, 'assist_essay', lambda **_kwargs: {
+        'result': {'profile': '## 语气\n克制'},
+        'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+    })
+    analyzed = client.post('/api/ai/writing-style/analyze', json={})
+    assert analyzed.status_code == 200
+    assert analyzed.get_json()['result']['profile'] == '## 语气\n克制'
+    assert analyzed.get_json()['style_reference_count'] == 1
+
+    captured = {}
+    monkeypatch.setattr(
+        ai, 'save_style_profile',
+        lambda profile: captured.update(profile=profile) or {
+            'profile': profile, 'updated_at': '2026-07-31T01:00:00Z',
+        },
+    )
+    updated = client.put('/api/ai/writing-style', json={'profile': '用户确认画像'})
+    assert updated.status_code == 200
+    assert captured['profile'] == '用户确认画像'
 
 
 def test_tracks_upload_list_and_delete(client, monkeypatch, tmp_path):
@@ -1024,6 +1068,7 @@ def test_password_store_is_not_served_as_public_data(client_no_auth, tmp_path, m
 def test_private_admin_data_is_not_served(client_no_auth):
     assert client_no_auth.get('/data/essays.json').status_code == 404
     assert client_no_auth.get('/data/tags_order.json').status_code == 404
+    assert client_no_auth.get('/data/writing_style.json').status_code == 404
 
 
 def test_session_cookie_is_usable_over_local_http():

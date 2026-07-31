@@ -84,6 +84,7 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
     page = browser.new_page()
     essay_writes = []
     ai_requests = []
+    style_writes = []
 
     def fulfill_ai(route):
         request_data = route.request.post_data_json
@@ -108,9 +109,29 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
             'result': results[task],
             'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
             'style_reference_count': 0 if task == 'tags' else 3,
+            'style_profile_used': task != 'tags',
         })
 
+    def fulfill_style(route):
+        if route.request.url.endswith('/analyze'):
+            route.fulfill(json={
+                'result': {'profile': '## AI 总结\n克制、直接'},
+                'usage': {'prompt_tokens': 5, 'completion_tokens': 3},
+                'style_reference_count': 4,
+            })
+        elif route.request.method == 'PUT':
+            profile = route.request.post_data_json['profile']
+            style_writes.append(profile)
+            route.fulfill(json={'profile': profile, 'updated_at': '2026-07-31T00:00:00Z'})
+        else:
+            route.fulfill(json={
+                'profile': '## 已确认\n保留口语',
+                'updated_at': '2026-07-31T00:00:00Z',
+            })
+
     page.route('**/api/ai/essay-assist', fulfill_ai)
+    page.route('**/api/ai/writing-style', fulfill_style)
+    page.route('**/api/ai/writing-style/analyze', fulfill_style)
     page.on('request', lambda request: essay_writes.append(request.url) if (
         request.method == 'PUT' and '/api/essays/' in request.url
     ) else None)
@@ -135,12 +156,24 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
           textarea.value = '原始正文';
           updateEssayAiAvailability('essay-demo');
         """)
+        page.wait_for_timeout(100)
+        assert '保留口语' in page.locator('#essay-ai-style-profile').input_value()
+        page.locator('#essay-ai-style-profile').fill('手动修改')
+        assert '未保存' in page.locator('#essay-ai-style-status').inner_text()
+        page.locator('#essay-ai-style-analyze').click()
+        page.wait_for_timeout(100)
+        assert 'AI 总结' in page.locator('#essay-ai-style-profile').input_value()
+        page.locator('#essay-ai-style-save').click()
+        page.wait_for_timeout(100)
+        assert '已保存' in page.locator('#essay-ai-style-status').inner_text()
+        assert style_writes == ['## AI 总结\n克制、直接']
 
         page.locator('[data-ai-task="summary"]').click()
         page.locator('#essay-ai-result').wait_for(state='visible')
         assert '<img src=x onerror=alert(1)>摘要' in page.locator('#essay-ai-result').inner_text()
         assert page.locator('#essay-ai-result img').count() == 0
         assert '已参考 3 篇公开随笔' in page.locator('#essay-ai-status').inner_text()
+        assert '已引用文风画像' in page.locator('#essay-ai-status').inner_text()
         page.locator('.essay-ai-apply').click()
         assert page.locator('#essay-excerpt').input_value() == '<img src=x onerror=alert(1)>摘要'
         assert essay_writes == []

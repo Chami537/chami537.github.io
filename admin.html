@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/css/admin-foundation.css?v=1785482984">
 <link rel="stylesheet" href="assets/css/admin-photo.css?v=1785482984">
 <link rel="stylesheet" href="assets/css/admin-git.css?v=1785482984">
-<link rel="stylesheet" href="assets/css/admin-essay.css?v=1785505702">
+<link rel="stylesheet" href="assets/css/admin-essay.css?v=1785506326">
 <link rel="stylesheet" href="assets/css/admin-health.css?v=1785482984">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github.min.css">
 <script>
@@ -277,6 +277,18 @@
             <span class="essay-ai-provider">DeepSeek</span>
           </div>
           <span id="essay-ai-status" role="status" aria-live="polite">选择一项操作，结果不会自动保存</span>
+        </div>
+        <div class="essay-ai-style-profile">
+          <div class="essay-ai-style-heading">
+            <strong>我的文风</strong>
+            <span id="essay-ai-style-status">正在读取…</span>
+          </div>
+          <textarea id="essay-ai-style-profile" rows="7" maxlength="4000"
+                    placeholder="先总结文风，再让 AI 润色"></textarea>
+          <div class="essay-ai-style-actions">
+            <button type="button" class="btn btn-sm" id="essay-ai-style-analyze">重新总结文风</button>
+            <button type="button" class="btn btn-primary btn-sm" id="essay-ai-style-save">保存文风画像</button>
+          </div>
         </div>
         <div id="essay-ai-actions" class="essay-ai-actions">
           <button type="button" class="btn btn-sm" data-ai-task="summary">生成摘要</button>
@@ -564,7 +576,7 @@
 <script src="assets/js/admin-essay-content.js?v=1785482984"></script>
 <script src="assets/js/admin-essay-formatting.js?v=1785482984"></script>
 <script src="assets/js/admin-essay-media.js?v=1785482984"></script>
-<script src="assets/js/admin-ai.js?v=1785505702"></script>
+<script src="assets/js/admin-ai.js?v=1785506326"></script>
 <script src="assets/js/admin-essays-view.js?v=1785482984"></script>
 <script src="assets/js/admin-photo-list.js?v=1785482984"></script>
 <script src="assets/js/admin-photo-tags.js?v=1785482984"></script>

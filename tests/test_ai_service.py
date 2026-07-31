@@ -396,3 +396,47 @@ def test_assist_essay_bounds_polish_input_for_complete_output(monkeypatch):
 
     with pytest.raises(ValueError, match='单次润色'):
         assist_essay('polish', '字' * 3001)
+
+
+def test_assist_essay_uses_confirmed_style_profile_before_samples(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    seen = {}
+
+    def opener(request, timeout):
+        seen['body'] = json.loads(request.data)
+        return FakeResponse(_deepseek_response('{"content":"润色"}'))
+
+    assist_essay(
+        'polish',
+        '正文',
+        style_profile='已确认：保留对照句',
+        style_samples=[{'title': '旧文', 'content': '样本'}],
+        opener=opener,
+    )
+
+    system = seen['body']['messages'][0]['content']
+    context = json.loads(seen['body']['messages'][1]['content'])
+    assert '已确认文风画像' in system
+    assert context['confirmed_style_profile'] == '已确认：保留对照句'
+    assert context['style_samples'][0]['title'] == '旧文'
+
+
+def test_assist_essay_returns_generated_style_profile(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    seen = {}
+
+    def opener(request, timeout):
+        seen['body'] = json.loads(request.data)
+        return FakeResponse(_deepseek_response('{"profile":"## 语气\\n克制直接"}'))
+
+    response = assist_essay(
+        'style',
+        '总结文风',
+        style_samples=[{'title': '旧文', 'content': '样本正文'}],
+        opener=opener,
+    )
+
+    assert response['result'] == {'profile': '## 语气\n克制直接'}
+    system = seen['body']['messages'][0]['content']
+    assert '不得预设作者' in system
+    assert '保持作者克制' not in system
