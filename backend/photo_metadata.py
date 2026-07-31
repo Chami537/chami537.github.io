@@ -17,12 +17,15 @@ def set_gps(filename, lat, lng):
         print(f"文件不存在: {path}")
         return
 
+    gps = {'lat': round(lat, 6), 'lng': round(lng, 6)}
+    lat_ref = 'N' if lat >= 0 else 'S'
+    lng_ref = 'E' if lng >= 0 else 'W'
     with Image.open(path) as img:
         exif = img.getexif()
         exif[34853] = {
-            1: 'N' if lat >= 0 else 'S',
+            1: lat_ref,
             2: decimal_to_dms(lat),
-            3: 'E' if lng >= 0 else 'W',
+            3: lng_ref,
             4: decimal_to_dms(lng),
         }
         if img.mode == 'RGBA':
@@ -31,16 +34,13 @@ def set_gps(filename, lat, lng):
 
     updated = PHOTO_REPOSITORY.update(
         filename,
-        lambda photo: photo.setdefault('exif', {}).update(
-            gps={'lat': round(lat, 6), 'lng': round(lng, 6)},
-        ),
+        lambda photo: photo.setdefault('exif', {}).update(gps=gps),
     )
     if updated is None:
-        PHOTO_REPOSITORY.append({
-            'filename': filename,
-            'exif': {'gps': {'lat': round(lat, 6), 'lng': round(lng, 6)}},
-        })
+        PHOTO_REPOSITORY.append(
+            {'filename': filename, 'exif': {'gps': gps}},
+        )
     print(f"GPS 已写入: {filename}")
-    print(f"  纬度: {lat} ({'N' if lat >= 0 else 'S'})")
-    print(f"  经度: {lng} ({'E' if lng >= 0 else 'W'})")
+    print(f"  纬度: {lat} ({lat_ref})")
+    print(f"  经度: {lng} ({lng_ref})")
     print("  photos.json 已同步更新")

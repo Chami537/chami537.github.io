@@ -52,20 +52,21 @@ def update_photo_gps():
     required = isinstance(data, dict) and all(key in data for key in ('filename', 'lat', 'lng'))
     if not required:
         return jsonify({'error': 'Expected {filename, lat, lng}'}), 400
-    if not isinstance(data['lat'], (int, float)) or not isinstance(data['lng'], (int, float)):
+    coordinates = data['lat'], data['lng']
+    if any(type(value) not in (int, float) for value in coordinates):
         return jsonify({'error': 'lat and lng must be numbers'}), 400
-    if not (-90 <= data['lat'] <= 90) or not (-180 <= data['lng'] <= 180):
+
+    lat, lng = map(float, coordinates)
+    if not (-90 <= lat <= 90) or not (-180 <= lng <= 180):
         return jsonify({'error': 'lat must be -90..90, lng must be -180..180'}), 400
 
-    lat, lng = float(data['lat']), float(data['lng'])
     photo, _photos = _find_photo(data['filename'])
     if not photo:
         return jsonify({'error': 'Photo not found'}), 404
+    gps = {'lat': round(lat, 6), 'lng': round(lng, 6)}
     photo_context.PHOTO_REPOSITORY.update(
         data['filename'],
-        lambda item: item.setdefault('exif', {}).update(
-            gps={'lat': round(lat, 6), 'lng': round(lng, 6)},
-        ),
+        lambda item: item.setdefault('exif', {}).update(gps=gps),
     )
 
     safe_name = os.path.basename(data['filename'])

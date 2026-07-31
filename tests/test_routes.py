@@ -336,6 +336,11 @@ def test_photo_gps_not_found(client):
     r = client.put('/api/photo-gps', json={'filename': '__nonexistent__.jpg', 'lat': 0, 'lng': 0})
     assert r.status_code == 404
 
+@pytest.mark.parametrize('field', ['lat', 'lng'])
+def test_photo_gps_rejects_boolean_coordinates(client, field):
+    payload = {'filename': '__nonexistent__.jpg', 'lat': 0, 'lng': 0, field: True}
+    assert client.put('/api/photo-gps', json=payload).status_code == 400
+
 
 # ── Git API ──
 
