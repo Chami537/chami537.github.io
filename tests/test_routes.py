@@ -11,11 +11,21 @@ from backend.data import DATA_DIR
 def test_ai_essay_assist_returns_structured_result(client, monkeypatch):
     import backend.routes.ai as ai
 
+    captured = {}
     monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
-    monkeypatch.setattr(ai, 'assist_essay', lambda **_kwargs: {
-        'result': {'excerpt': '摘要'},
-        'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+    monkeypatch.setattr(ai, 'load_style_reference', lambda _slug: {
+        'samples': [{'title': '旧文', 'content': '历史片段'}],
+        'count': 1,
     })
+
+    def fake_assist(**kwargs):
+        captured.update(kwargs)
+        return {
+            'result': {'excerpt': '摘要'},
+            'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+        }
+
+    monkeypatch.setattr(ai, 'assist_essay', fake_assist)
 
     response = client.post('/api/ai/essay-assist', json={
         'slug': 'essay-demo',
@@ -30,7 +40,10 @@ def test_ai_essay_assist_returns_structured_result(client, monkeypatch):
         'task': 'summary',
         'result': {'excerpt': '摘要'},
         'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+        'style_reference_count': 1,
     }
+    assert captured['style_samples'] == [{'title': '旧文', 'content': '历史片段'}]
+    assert '历史片段' not in response.get_data(as_text=True)
 
 
 @pytest.mark.parametrize(
@@ -56,6 +69,9 @@ def test_ai_essay_assist_rejects_invalid_payload(client, monkeypatch, payload):
     import backend.routes.ai as ai
 
     monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
+    monkeypatch.setattr(
+        ai, 'load_style_reference', lambda _slug: {'samples': [], 'count': 0},
+    )
     response = client.post('/api/ai/essay-assist', json=payload)
 
     assert response.status_code == 400
@@ -65,6 +81,13 @@ def test_ai_essay_assist_rejects_password_protected_essay(client, monkeypatch):
     import backend.routes.ai as ai
 
     monkeypatch.setattr(ai, 'has_essay_password', lambda slug: slug == 'essay-secret')
+    monkeypatch.setattr(
+        ai,
+        'load_style_reference',
+        lambda _slug: (_ for _ in ()).throw(
+            AssertionError('protected essay attempted to load style samples')
+        ),
+    )
 
     def unexpected_call(**_kwargs):
         raise AssertionError('password-protected content reached DeepSeek')
@@ -85,6 +108,9 @@ def test_ai_essay_assist_maps_service_failure_to_safe_error(client, monkeypatch)
     from backend.ai_service import AIServiceError
 
     monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
+    monkeypatch.setattr(
+        ai, 'load_style_reference', lambda _slug: {'samples': [], 'count': 0},
+    )
     monkeypatch.setattr(
         ai,
         'assist_essay',
@@ -107,6 +133,69 @@ def test_ai_essay_assist_requires_auth(client_no_auth):
         'content': '正文',
     })
     assert response.status_code == 401
+
+
+def test_ai_essay_assist_tags_skip_style_samples(client, monkeypatch):
+    import backend.routes.ai as ai
+
+    captured = {}
+    monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
+    monkeypatch.setattr(
+        ai,
+        'load_style_reference',
+        lambda _slug: (_ for _ in ()).throw(
+            AssertionError('tags should not load prose samples')
+        ),
+    )
+
+    def fake_assist(**kwargs):
+        captured.update(kwargs)
+        return {
+            'result': {'tags': ['技术']},
+            'usage': {'prompt_tokens': 2, 'completion_tokens': 1},
+        }
+
+    monkeypatch.setattr(ai, 'assist_essay', fake_assist)
+    response = client.post('/api/ai/essay-assist', json={
+        'slug': 'essay-demo',
+        'task': 'tags',
+        'content': '正文',
+    })
+
+    assert response.status_code == 200
+    assert captured['style_samples'] == []
+    assert response.get_json()['style_reference_count'] == 0
+
+
+@pytest.mark.parametrize(
+    ('task', 'result'),
+    [
+        ('title', {'titles': ['一', '二', '三']}),
+        ('continue', {'content': '续写'}),
+    ],
+)
+def test_ai_essay_assist_accepts_new_style_tasks(client, monkeypatch, task, result):
+    import backend.routes.ai as ai
+
+    monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
+    monkeypatch.setattr(ai, 'load_style_reference', lambda _slug: {
+        'samples': [{'title': '旧文', 'content': '片段'}],
+        'count': 1,
+    })
+    monkeypatch.setattr(ai, 'assist_essay', lambda **_kwargs: {
+        'result': result,
+        'usage': {'prompt_tokens': 2, 'completion_tokens': 1},
+    })
+
+    response = client.post('/api/ai/essay-assist', json={
+        'slug': 'essay-demo',
+        'task': task,
+        'content': '正文',
+    })
+
+    assert response.status_code == 200
+    assert response.get_json()['result'] == result
+    assert response.get_json()['style_reference_count'] == 1
 
 
 def test_tracks_upload_list_and_delete(client, monkeypatch, tmp_path):

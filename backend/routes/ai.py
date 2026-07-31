@@ -7,10 +7,12 @@ from flask import Blueprint, jsonify, request
 from backend.ai_service import AIServiceError, assist_essay
 from backend.crud import require_json
 from backend.data import has_essay_password
+from backend.writing_style import load_style_reference
 
 
 bp = Blueprint('ai', __name__)
 _SLUG_PATTERN = re.compile(r'^[a-z0-9-]+$')
+_STYLE_TASKS = {'summary', 'polish', 'review', 'title', 'continue'}
 
 
 @bp.route('/api/ai/essay-assist', methods=['POST'])
@@ -24,15 +26,25 @@ def essay_assist():
     if has_essay_password(slug):
         return jsonify({'error': '密码保护文章不能发送给 AI'}), 403
 
+    style_reference = (
+        load_style_reference(slug)
+        if data.get('task') in _STYLE_TASKS
+        else {'samples': [], 'count': 0}
+    )
     try:
         response = assist_essay(
             task=data.get('task'),
             content=data.get('content'),
             title=data.get('title', ''),
             existing_tags=data.get('existing_tags', []),
+            style_samples=style_reference['samples'],
         )
     except ValueError as error:
         return jsonify({'error': str(error)}), 400
     except AIServiceError as error:
         return jsonify({'error': str(error)}), 503
-    return jsonify({'task': data['task'], **response})
+    return jsonify({
+        'task': data['task'],
+        **response,
+        'style_reference_count': style_reference['count'],
+    })
