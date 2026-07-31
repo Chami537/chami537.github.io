@@ -1,6 +1,7 @@
 """Versioned encryption helpers for protected essay sources."""
 
 import base64
+import binascii
 import os
 
 from cryptography.fernet import Fernet, InvalidToken
@@ -8,6 +9,17 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 _ENCRYPT_V3 = b'\x02'
+
+
+def is_encrypted_content(content):
+    """Return whether text is a complete v3 encrypted essay payload."""
+    if not isinstance(content, str):
+        return False
+    try:
+        raw = base64.b64decode(content, validate=True)
+    except (binascii.Error, ValueError):
+        return False
+    return len(raw) > 17 and raw[0] == _ENCRYPT_V3[0]
 
 
 def _derive_fernet(password, salt):

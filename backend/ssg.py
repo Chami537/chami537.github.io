@@ -13,6 +13,7 @@ from backend.markdown_utils import render_markdown
 from backend.essay_crypto import (
     _derive_fernet, decrypt_content as _decrypt_content,
     encrypt_content as _encrypt_content,
+    is_encrypted_content as _is_encrypted_v3,
 )
 
 from backend.data import get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_DIR, IMAGES_DIR, STORE
@@ -177,16 +178,6 @@ def _generate_feeds():
 
 
 
-
-
-def _is_encrypted_v3(content):
-    """Detect v3 Fernet encrypted content by inspecting the first-line base64."""
-    try:
-        import base64
-        raw = base64.b64decode(content.split('\n')[0])
-        return raw and raw[0] == 2
-    except (ValueError, IndexError):
-        return False
 
 
 def _persist_essay_source(slug, content):

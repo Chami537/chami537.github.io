@@ -14,6 +14,7 @@ from backend.ssg import (
     _generate_public_essays, _sync_essay_html,
     ESSAYS_DIR, MD_DIR,
 )
+from backend.essay_crypto import is_encrypted_content
 from backend.data import load_json
 from backend.markdown_utils import render_markdown
 
@@ -634,6 +635,11 @@ def test_is_encrypted_v3_plaintext():
 def test_is_encrypted_v3_empty():
     from backend.ssg import _is_encrypted_v3
     assert not _is_encrypted_v3("")
+
+
+def test_shared_encrypted_content_detector_rejects_truncated_payload():
+    assert is_encrypted_content(_encrypt_content('正文', 'pw')) is True
+    assert is_encrypted_content('Ag==') is False
 
 
 # ── SSG pass-through for encrypted essays ──

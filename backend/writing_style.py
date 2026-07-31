@@ -1,12 +1,11 @@
 """Bounded public essay samples for personal writing-style prompts."""
 
-import base64
-import binascii
 import re
 from datetime import datetime
 from pathlib import Path
 
 from backend.data import MD_DIR, has_essay_password, load_json
+from backend.essay_crypto import is_encrypted_content
 
 
 MAX_STYLE_ESSAYS = 4
@@ -25,14 +24,6 @@ def _date_key(value):
         return datetime.fromisoformat(value.replace('Z', '+00:00')).replace(tzinfo=None)
     except ValueError:
         return datetime.min
-
-
-def _is_encrypted_v3(content):
-    try:
-        raw = base64.b64decode(content, validate=True)
-    except (binascii.Error, ValueError):
-        return False
-    return len(raw) > 17 and raw[0] == 2
 
 
 def _clean_markdown(content):
@@ -101,7 +92,7 @@ def load_style_reference(
             content = (md_dir / f'{slug}.md').read_text(encoding='utf-8')
         except (OSError, TypeError, ValueError):
             continue
-        if _is_encrypted_v3(content):
+        if is_encrypted_content(content):
             continue
 
         cleaned = _clean_markdown(content)
