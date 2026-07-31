@@ -8,6 +8,107 @@ import pytest
 from backend.data import DATA_DIR
 
 
+def test_ai_essay_assist_returns_structured_result(client, monkeypatch):
+    import backend.routes.ai as ai
+
+    monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
+    monkeypatch.setattr(ai, 'assist_essay', lambda **_kwargs: {
+        'result': {'excerpt': '摘要'},
+        'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+    })
+
+    response = client.post('/api/ai/essay-assist', json={
+        'slug': 'essay-demo',
+        'task': 'summary',
+        'content': '正文',
+        'title': '标题',
+        'existing_tags': ['技术'],
+    })
+
+    assert response.status_code == 200
+    assert response.get_json() == {
+        'task': 'summary',
+        'result': {'excerpt': '摘要'},
+        'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+    }
+
+
+@pytest.mark.parametrize(
+    'payload',
+    [
+        {},
+        {'slug': None, 'task': 'summary', 'content': '正文'},
+        {'slug': True, 'task': 'summary', 'content': '正文'},
+        {'slug': '../secret', 'task': 'summary', 'content': '正文'},
+        {'slug': 'Essay-Demo', 'task': 'summary', 'content': '正文'},
+        {'slug': 'essay-demo', 'task': 'translate', 'content': '正文'},
+        {'slug': 'essay-demo', 'task': 'summary', 'content': ''},
+        {'slug': 'essay-demo', 'task': 'summary', 'content': 123},
+        {'slug': 'essay-demo', 'task': 'summary', 'content': '正文', 'title': None},
+        {'slug': 'essay-demo', 'task': 'summary', 'content': '正文', 'existing_tags': '技术'},
+    ],
+    ids=[
+        'missing', 'null-slug', 'boolean-slug', 'path-slug', 'uppercase-slug',
+        'unknown-task', 'empty-content', 'numeric-content', 'null-title', 'string-tags',
+    ],
+)
+def test_ai_essay_assist_rejects_invalid_payload(client, monkeypatch, payload):
+    import backend.routes.ai as ai
+
+    monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
+    response = client.post('/api/ai/essay-assist', json=payload)
+
+    assert response.status_code == 400
+
+
+def test_ai_essay_assist_rejects_password_protected_essay(client, monkeypatch):
+    import backend.routes.ai as ai
+
+    monkeypatch.setattr(ai, 'has_essay_password', lambda slug: slug == 'essay-secret')
+
+    def unexpected_call(**_kwargs):
+        raise AssertionError('password-protected content reached DeepSeek')
+
+    monkeypatch.setattr(ai, 'assist_essay', unexpected_call)
+    response = client.post('/api/ai/essay-assist', json={
+        'slug': 'essay-secret',
+        'task': 'summary',
+        'content': '秘密正文',
+    })
+
+    assert response.status_code == 403
+    assert response.get_json() == {'error': '密码保护文章不能发送给 AI'}
+
+
+def test_ai_essay_assist_maps_service_failure_to_safe_error(client, monkeypatch):
+    import backend.routes.ai as ai
+    from backend.ai_service import AIServiceError
+
+    monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
+    monkeypatch.setattr(
+        ai,
+        'assist_essay',
+        lambda **_kwargs: (_ for _ in ()).throw(AIServiceError('DeepSeek 暂时不可用，请稍后重试')),
+    )
+    response = client.post('/api/ai/essay-assist', json={
+        'slug': 'essay-demo',
+        'task': 'summary',
+        'content': '正文',
+    })
+
+    assert response.status_code == 503
+    assert response.get_json() == {'error': 'DeepSeek 暂时不可用，请稍后重试'}
+
+
+def test_ai_essay_assist_requires_auth(client_no_auth):
+    response = client_no_auth.post('/api/ai/essay-assist', json={
+        'slug': 'essay-demo',
+        'task': 'summary',
+        'content': '正文',
+    })
+    assert response.status_code == 401
+
+
 def test_tracks_upload_list_and_delete(client, monkeypatch, tmp_path):
     import backend.routes.tracks as tracks
 
