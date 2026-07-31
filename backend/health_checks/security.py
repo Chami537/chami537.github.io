@@ -16,6 +16,8 @@ def check_security(root, essays, has_password, slug_re):
     if 'essay-gate' not in template_html or 'essay-giscus.js' not in template_html:
         details.append('templates/essay.html: 密码门或 Giscus 入口缺失')
     for essay in essays or []:
+        if not isinstance(essay, dict):
+            continue
         slug = str(essay.get('slug', ''))
         if not slug_re.fullmatch(slug) or not has_password(slug):
             continue

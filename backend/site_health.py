@@ -86,44 +86,60 @@ def _valid_http_url(value):
     return not value or str(value).strip().lower().startswith(('http://', 'https://'))
 
 
+def _essay_source_issues(root, essay, has_password):
+    slug = str(essay.get('slug', ''))
+    if not _SLUG_RE.fullmatch(slug):
+        return None, False, [f'{slug or "<empty>"}: slug 不合法']
+
+    md_path = root / 'md' / f'{slug}.md'
+    if not md_path.is_file():
+        return None, False, [f'md/{slug}.md: 文件缺失']
+    try:
+        source = md_path.read_text(encoding='utf-8')
+    except (OSError, UnicodeDecodeError):
+        return None, False, [f'md/{slug}.md: 文件无法读取']
+
+    # CI lacks the gitignored password store, so only a known password
+    # requires the source to be encrypted.
+    protected = bool(has_password(slug))
+    details = []
+    if protected and not _encrypted_source(source):
+        details.append(f'md/{slug}.md: 密码状态与密文状态不一致')
+    return slug, protected, details
+
+
+def _generated_essay_issue(essays_dir, slug, protected, has_generated_essays):
+    html_path = essays_dir / f'{slug}.html'
+    if has_generated_essays and not html_path.is_file():
+        return f'essays/{slug}.html: 生成文件缺失'
+    if not protected or not html_path.is_file():
+        return None
+    try:
+        html = html_path.read_text(encoding='utf-8')
+    except (OSError, UnicodeDecodeError):
+        return f'essays/{slug}.html: 文件无法读取'
+    if 'class="essay-gate"' not in html and "class='essay-gate'" not in html:
+        return f'essays/{slug}.html: 缺少密码门'
+    return None
+
+
 def _check_essays(root, essays, has_password):
     if essays is None:
         return _unavailable('essays.sources', '随笔源文件')
     details = []
     essays_dir = root / 'essays'
     has_generated_essays = essays_dir.is_dir() and any(essays_dir.glob('*.html'))
-    for essay in essays:
-        slug = str(essay.get('slug', ''))
-        if not _SLUG_RE.fullmatch(slug):
-            details.append(f'{slug or "<empty>"}: slug 不合法')
+    for index, essay in enumerate(essays):
+        if not isinstance(essay, dict):
+            details.append(f'essays.json[{index}]: 应为对象')
             continue
-        md_path = root / 'md' / f'{slug}.md'
-        if not md_path.is_file():
-            details.append(f'md/{slug}.md: 文件缺失')
+        slug, protected, source_issues = _essay_source_issues(root, essay, has_password)
+        details.extend(source_issues)
+        if slug is None:
             continue
-        try:
-            source = md_path.read_text(encoding='utf-8')
-        except (OSError, UnicodeDecodeError):
-            details.append(f'md/{slug}.md: 文件无法读取')
-            continue
-        protected = bool(has_password(slug))
-        encrypted = _encrypted_source(source)
-        # CI does not have the gitignored password store, so an encrypted
-        # source is valid even when the local password lookup is unavailable.
-        # A known password still requires an encrypted source.
-        if protected and not encrypted:
-            details.append(f'md/{slug}.md: 密码状态与密文状态不一致')
-        html_path = essays_dir / f'{slug}.html'
-        if has_generated_essays and not html_path.is_file():
-            details.append(f'essays/{slug}.html: 生成文件缺失')
-        elif protected and html_path.is_file():
-            try:
-                html = html_path.read_text(encoding='utf-8')
-            except (OSError, UnicodeDecodeError):
-                details.append(f'essays/{slug}.html: 文件无法读取')
-            else:
-                if 'class="essay-gate"' not in html and "class='essay-gate'" not in html:
-                    details.append(f'essays/{slug}.html: 缺少密码门')
+        html_issue = _generated_essay_issue(essays_dir, slug, protected, has_generated_essays)
+        if html_issue:
+            details.append(html_issue)
     return _problem_check(
         'essays.sources', '随笔源文件', details,
         '随笔文件存在不一致' if details else '随笔源文件正常',

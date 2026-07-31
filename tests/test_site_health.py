@@ -56,6 +56,17 @@ def test_json_check_reports_missing_wrong_type_and_invalid_json(tmp_path):
     assert any('photos.json' in detail for detail in by_id['data.json']['details'])
 
 
+def test_health_reports_non_object_essay_entries(tmp_path):
+    _make_minimal_site(tmp_path)
+    _write_json(tmp_path / 'data' / 'essays.json', '[null]')
+
+    report = run_site_health(str(tmp_path), lambda _slug: False)
+    check = next(item for item in report['checks'] if item['id'] == 'essays.sources')
+
+    assert check['status'] == 'error'
+    assert check['details'] == ['essays.json[0]: 应为对象']
+
+
 def test_health_detects_referenced_files_stories_links_and_orphans(tmp_path):
     _make_minimal_site(tmp_path)
     _write_json(tmp_path / 'data' / 'photos.json', json.dumps([
