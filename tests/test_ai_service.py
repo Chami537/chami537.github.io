@@ -69,6 +69,19 @@ def test_assist_essay_sends_json_mode_request_and_returns_summary(monkeypatch):
     assert seen['headers']['Authorization'] == 'Bearer test-secret'
 
 
+def test_assist_essay_passes_timeout_as_keyword(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    seen = {}
+
+    def opener(_request, *, timeout):
+        seen['timeout'] = timeout
+        return FakeResponse(_deepseek_response('{"excerpt":"摘要"}'))
+
+    assist_essay('summary', '正文', opener=opener)
+
+    assert seen == {'timeout': 30}
+
+
 @pytest.mark.parametrize(
     ('task', 'content', 'expected'),
     [
@@ -92,7 +105,7 @@ def test_assist_essay_sends_json_mode_request_and_returns_summary(monkeypatch):
 def test_assist_essay_returns_task_specific_result(monkeypatch, task, content, expected):
     monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
 
-    def opener(_request, _timeout):
+    def opener(_request, timeout):
         return FakeResponse(_deepseek_response(content))
 
     assert assist_essay(task, '正文', opener=opener)['result'] == expected
@@ -156,7 +169,7 @@ def test_assist_essay_rejects_invalid_context(monkeypatch, title, tags):
 def test_assist_essay_rejects_malformed_upstream_payload(monkeypatch, upstream):
     monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
 
-    def opener(_request, _timeout):
+    def opener(_request, timeout):
         return FakeResponse(upstream)
 
     with pytest.raises(AIServiceError, match='返回格式异常'):
@@ -179,7 +192,7 @@ def test_assist_essay_rejects_malformed_upstream_payload(monkeypatch, upstream):
 def test_assist_essay_rejects_invalid_task_result(monkeypatch, task, content):
     monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
 
-    def opener(_request, _timeout):
+    def opener(_request, timeout):
         return FakeResponse(_deepseek_response(content))
 
     with pytest.raises(AIServiceError, match='返回格式异常'):
@@ -204,7 +217,7 @@ def test_assist_essay_rejects_invalid_task_result(monkeypatch, task, content):
 def test_assist_essay_hides_upstream_failures(monkeypatch, error):
     monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
 
-    def opener(_request, _timeout):
+    def opener(_request, timeout):
         raise error
 
     with pytest.raises(AIServiceError, match='DeepSeek 暂时不可用') as caught:
@@ -218,7 +231,7 @@ def test_assist_essay_normalizes_invalid_usage_counts(monkeypatch):
     upstream = _deepseek_response('{"excerpt":"摘要"}')
     upstream['usage'] = {'prompt_tokens': '10', 'completion_tokens': True}
 
-    def opener(_request, _timeout):
+    def opener(_request, timeout):
         return FakeResponse(upstream)
 
     assert assist_essay('summary', '正文', opener=opener)['usage'] == {

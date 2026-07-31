@@ -154,7 +154,7 @@ def assist_essay(task, content, title='', existing_tags=None, *, opener=urlopen)
         method='POST',
     )
     try:
-        with opener(request, DEEPSEEK_TIMEOUT) as response:
+        with opener(request, timeout=DEEPSEEK_TIMEOUT) as response:
             upstream = json.load(response)
     except (HTTPError, URLError, TimeoutError, OSError, ValueError) as error:
         raise AIServiceError('DeepSeek 暂时不可用，请稍后重试') from error
