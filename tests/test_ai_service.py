@@ -1,0 +1,227 @@
+"""DeepSeek editorial service contract tests."""
+
+import json
+from io import BytesIO
+from urllib.error import HTTPError, URLError
+
+import pytest
+
+from backend.ai_service import AIServiceError, assist_essay
+
+
+class FakeResponse:
+    def __init__(self, payload):
+        self._stream = BytesIO(json.dumps(payload).encode('utf-8'))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *_args):
+        return False
+
+    def read(self, size=-1):
+        return self._stream.read(size)
+
+
+def _deepseek_response(content):
+    return {
+        'id': 'chat-test',
+        'choices': [{
+            'index': 0,
+            'message': {'role': 'assistant', 'content': content},
+            'finish_reason': 'stop',
+        }],
+        'usage': {
+            'prompt_tokens': 10,
+            'completion_tokens': 4,
+            'total_tokens': 14,
+        },
+    }
+
+
+def test_assist_essay_sends_json_mode_request_and_returns_summary(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    seen = {}
+
+    def opener(request, timeout):
+        seen['headers'] = dict(request.header_items())
+        seen['body'] = json.loads(request.data)
+        seen['timeout'] = timeout
+        return FakeResponse(_deepseek_response('{"excerpt":"精炼摘要"}'))
+
+    result = assist_essay(
+        'summary',
+        '正文',
+        title='标题',
+        existing_tags=['技术'],
+        opener=opener,
+    )
+
+    assert result == {
+        'result': {'excerpt': '精炼摘要'},
+        'usage': {'prompt_tokens': 10, 'completion_tokens': 4},
+    }
+    assert seen['body']['model'] == 'deepseek-chat'
+    assert seen['body']['response_format'] == {'type': 'json_object'}
+    assert seen['body']['max_tokens'] == 1500
+    assert seen['body']['stream'] is False
+    assert seen['timeout'] == 30
+    assert seen['headers']['Authorization'] == 'Bearer test-secret'
+
+
+@pytest.mark.parametrize(
+    ('task', 'content', 'expected'),
+    [
+        (
+            'tags',
+            '{"tags":["技术","Python","教程"]}',
+            {'tags': ['技术', 'Python', '教程']},
+        ),
+        (
+            'polish',
+            '{"content":"润色正文"}',
+            {'content': '润色正文'},
+        ),
+        (
+            'review',
+            '{"issues":[{"type":"文字","message":"重复","suggestion":"删除"}]}',
+            {'issues': [{'type': '文字', 'message': '重复', 'suggestion': '删除'}]},
+        ),
+    ],
+)
+def test_assist_essay_returns_task_specific_result(monkeypatch, task, content, expected):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    def opener(_request, _timeout):
+        return FakeResponse(_deepseek_response(content))
+
+    assert assist_essay(task, '正文', opener=opener)['result'] == expected
+
+
+def test_assist_essay_requires_api_key(monkeypatch):
+    monkeypatch.delenv('DEEPSEEK_API_KEY', raising=False)
+
+    with pytest.raises(AIServiceError, match='DeepSeek API 密钥未配置'):
+        assist_essay('summary', '正文')
+
+
+@pytest.mark.parametrize('task', ['', 'translate', None, True])
+def test_assist_essay_rejects_unknown_tasks(monkeypatch, task):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    with pytest.raises(ValueError, match='不支持的 AI 任务'):
+        assist_essay(task, '正文')
+
+
+@pytest.mark.parametrize(
+    'content',
+    ['', '  ', None, 123, True, '字' * 20001],
+    ids=['empty', 'spaces', 'none', 'number', 'boolean', 'too-long'],
+)
+def test_assist_essay_rejects_invalid_content(monkeypatch, content):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    with pytest.raises(ValueError, match='正文'):
+        assist_essay('summary', content)
+
+
+@pytest.mark.parametrize(
+    ('title', 'tags'),
+    [
+        (None, []),
+        (123, []),
+        ('标题', '技术'),
+        ('标题', [True]),
+        ('标题', ['技术', '']),
+    ],
+)
+def test_assist_essay_rejects_invalid_context(monkeypatch, title, tags):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    with pytest.raises(ValueError):
+        assist_essay('summary', '正文', title=title, existing_tags=tags)
+
+
+@pytest.mark.parametrize(
+    'upstream',
+    [
+        {},
+        {'choices': []},
+        {'choices': [{'message': {}}]},
+        _deepseek_response(''),
+        _deepseek_response('not json'),
+        _deepseek_response('```json\n{"excerpt":"摘要"}\n```'),
+    ],
+)
+def test_assist_essay_rejects_malformed_upstream_payload(monkeypatch, upstream):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    def opener(_request, _timeout):
+        return FakeResponse(upstream)
+
+    with pytest.raises(AIServiceError, match='返回格式异常'):
+        assist_essay('summary', '正文', opener=opener)
+
+
+@pytest.mark.parametrize(
+    ('task', 'content'),
+    [
+        ('summary', '{"excerpt":123}'),
+        ('summary', '{"excerpt":"' + ('字' * 161) + '"}'),
+        ('tags', '{"tags":"技术"}'),
+        ('tags', '{"tags":["技术",""]}'),
+        ('polish', '{"content":false}'),
+        ('review', '{"issues":"无"}'),
+        ('review', '{"issues":[{"type":"文字","message":"问题"}]}'),
+        ('review', '{"issues":[{"type":"文字","message":"问题","suggestion":1}]}'),
+    ],
+)
+def test_assist_essay_rejects_invalid_task_result(monkeypatch, task, content):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    def opener(_request, _timeout):
+        return FakeResponse(_deepseek_response(content))
+
+    with pytest.raises(AIServiceError, match='返回格式异常'):
+        assist_essay(task, '正文', opener=opener)
+
+
+@pytest.mark.parametrize(
+    'error',
+    [
+        URLError('offline'),
+        TimeoutError(),
+        OSError('network down'),
+        HTTPError(
+            'https://api.deepseek.com/chat/completions',
+            401,
+            'Unauthorized',
+            {},
+            BytesIO(b'{"error":"test-secret"}'),
+        ),
+    ],
+)
+def test_assist_essay_hides_upstream_failures(monkeypatch, error):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    def opener(_request, _timeout):
+        raise error
+
+    with pytest.raises(AIServiceError, match='DeepSeek 暂时不可用') as caught:
+        assist_essay('summary', '正文', opener=opener)
+
+    assert 'test-secret' not in str(caught.value)
+
+
+def test_assist_essay_normalizes_invalid_usage_counts(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    upstream = _deepseek_response('{"excerpt":"摘要"}')
+    upstream['usage'] = {'prompt_tokens': '10', 'completion_tokens': True}
+
+    def opener(_request, _timeout):
+        return FakeResponse(upstream)
+
+    assert assist_essay('summary', '正文', opener=opener)['usage'] == {
+        'prompt_tokens': 0,
+        'completion_tokens': 0,
+    }
