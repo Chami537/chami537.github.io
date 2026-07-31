@@ -48,16 +48,38 @@ function _essayAiSnapshot(task) {
   var markdown = textarea.value;
   var start = 0;
   var end = markdown.length;
-  if (task === 'polish' && textarea.selectionEnd > textarea.selectionStart) {
-    start = textarea.selectionStart;
-    end = textarea.selectionEnd;
+  var scope = '全文';
+  if (task === 'polish') {
+    if (textarea.selectionEnd > textarea.selectionStart) {
+      start = textarea.selectionStart;
+      end = textarea.selectionEnd;
+      scope = '选中文字';
+    } else {
+      var cursor = textarea.selectionStart;
+      start = markdown.lastIndexOf('\n\n', Math.max(0, cursor - 1));
+      start = start < 0 ? 0 : start + 2;
+      end = markdown.indexOf('\n\n', cursor);
+      end = end < 0 ? markdown.length : end;
+      if (!markdown.slice(start, end).trim()) {
+        start = 0;
+        end = markdown.length;
+        scope = '全文';
+      } else {
+        scope = '光标所在段落';
+      }
+    }
   }
   return {
     slug: editor.dataset.slug,
     markdown: markdown,
     start: start,
     end: end,
-    content: markdown.slice(start, end)
+    content: markdown.slice(start, end),
+    scope: scope,
+    surroundingContext: task === 'polish' ? {
+      before: markdown.slice(Math.max(0, start - 1250), start),
+      after: markdown.slice(end, Math.min(markdown.length, end + 1250))
+    } : null
   };
 }
 
@@ -70,7 +92,7 @@ function _appendEssayAiApply(result, label) {
   result.appendChild(button);
 }
 
-function _renderEssayAiResult(task, suggestion) {
+function _renderEssayAiResult(task, suggestion, snapshot) {
   var container = document.getElementById('essay-ai-result');
   container.textContent = '';
 
@@ -129,15 +151,43 @@ function _renderEssayAiResult(task, suggestion) {
     });
     container.appendChild(list);
   } else {
+    if (task === 'polish') {
+      var original = document.createElement('details');
+      original.className = 'essay-ai-original';
+      var originalLabel = document.createElement('summary');
+      originalLabel.textContent = '查看润色前原文';
+      var originalText = document.createElement('pre');
+      originalText.textContent = snapshot.content;
+      original.appendChild(originalLabel);
+      original.appendChild(originalText);
+      container.appendChild(original);
+    }
     var text = document.createElement('p');
     text.className = 'essay-ai-result-text';
     text.textContent = task === 'summary' ? suggestion.excerpt : suggestion.content;
     container.appendChild(text);
-    _appendEssayAiApply(container, {
-      summary: '应用到摘要',
-      polish: '替换原文',
-      continue: '追加到正文'
-    }[task]);
+    if (task === 'polish' && suggestion.changes && suggestion.changes.length) {
+      var changes = document.createElement('ul');
+      changes.className = 'essay-ai-change-list';
+      suggestion.changes.forEach(function(change) {
+        var changeItem = document.createElement('li');
+        changeItem.textContent = change;
+        changes.appendChild(changeItem);
+      });
+      container.appendChild(changes);
+    }
+    if (task === 'polish' && suggestion.content === snapshot.content) {
+      var unchanged = document.createElement('div');
+      unchanged.className = 'essay-ai-unchanged';
+      unchanged.textContent = '原文已经够顺，不建议为了润色而改。';
+      container.appendChild(unchanged);
+    } else {
+      _appendEssayAiApply(container, {
+        summary: '应用到摘要',
+        polish: '替换原文',
+        continue: '追加到正文'
+      }[task]);
+    }
   }
   container.hidden = false;
 }
@@ -160,26 +210,37 @@ async function requestEssayAi(task) {
   _setEssayAiBusy(true, 'DeepSeek 正在处理…');
 
   try {
-    var response = await api('POST', '/api/ai/essay-assist', {
+    var payload = {
       slug: snapshot.slug,
       task: task,
       content: snapshot.content,
       title: essay.title || '',
       existing_tags: _essayTagParts(essay.tag || '')
-    }, {signal: controller.signal});
+    };
+    if (task === 'polish') {
+      payload.polish_mode = document.getElementById('essay-ai-polish-mode').value;
+      payload.instruction = document.getElementById('essay-ai-instruction').value.trim();
+      payload.surrounding_context = snapshot.surroundingContext;
+    }
+    var response = await api(
+      'POST', '/api/ai/essay-assist', payload, {signal: controller.signal}
+    );
     if (_essayAiController !== controller) return;
     _essayAiSuggestion = {
       task: task,
       result: response.result,
       snapshot: snapshot
     };
-    _renderEssayAiResult(task, response.result);
+    _renderEssayAiResult(task, response.result, snapshot);
     var usage = response.usage || {};
     var styleCount = response.style_reference_count || 0;
     var styleStatus = task !== 'tags' && styleCount
       ? '已参考 ' + styleCount + ' 篇公开随笔'
       : '通用编辑模式';
-    _setEssayAiBusy(false, styleStatus + ' · ' +
+    var unchangedStatus = task === 'polish' &&
+      response.result.content === snapshot.content ? '无需修改 · ' : '';
+    var scopeStatus = task === 'polish' ? snapshot.scope + ' · ' : '';
+    _setEssayAiBusy(false, unchangedStatus + scopeStatus + styleStatus + ' · ' +
       (usage.prompt_tokens || 0) + ' 输入 / ' +
       (usage.completion_tokens || 0) + ' 输出 tokens');
   } catch (error) {

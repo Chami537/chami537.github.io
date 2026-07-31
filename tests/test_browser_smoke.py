@@ -83,9 +83,12 @@ def test_admin_shell_loads_shared_modules_and_switches_tabs(live_server, browser
 def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
     page = browser.new_page()
     essay_writes = []
+    ai_requests = []
 
     def fulfill_ai(route):
-        task = route.request.post_data_json['task']
+        request_data = route.request.post_data_json
+        ai_requests.append(request_data)
+        task = request_data['task']
         results = {
             'summary': {'excerpt': '<img src=x onerror=alert(1)>摘要'},
             'tags': {'tags': ['技术', 'Python', '教程']},
@@ -151,9 +154,26 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
           textarea.focus();
           textarea.setSelectionRange(0, 2);
         """)
+        assert page.locator('#essay-ai-polish-mode').input_value() == 'light'
+        page.locator('#essay-ai-polish-mode').select_option('rewrite')
+        page.locator('#essay-ai-instruction').fill('保留口语')
         page.locator('[data-ai-task="polish"]').click()
+        assert ai_requests[-1]['polish_mode'] == 'rewrite'
+        assert ai_requests[-1]['instruction'] == '保留口语'
+        assert ai_requests[-1]['surrounding_context']['after'] == '正文'
         page.locator('.essay-ai-apply').click()
         assert page.locator('#essay-content-md').input_value() == '润色正文'
+
+        page.locator('#essay-ai-instruction').fill('无需修改测试')
+        page.evaluate("""
+          var textarea = document.getElementById('essay-content-md');
+          textarea.focus();
+          textarea.setSelectionRange(0, 2);
+        """)
+        page.locator('[data-ai-task="polish"]').click()
+        page.locator('#essay-ai-result').wait_for(state='visible')
+        assert '不建议为了润色而改' in page.locator('#essay-ai-result').inner_text()
+        assert page.locator('.essay-ai-apply').count() == 0
 
         page.locator('[data-ai-task="review"]').click()
         assert '存在重复' in page.locator('#essay-ai-result').inner_text()

@@ -118,3 +118,25 @@ def test_load_style_reference_degrades_when_metadata_cannot_load(tmp_path):
         password_checker=lambda _slug: False,
         md_dir=tmp_path,
     ) == {'samples': [], 'count': 0}
+
+
+def test_load_style_reference_prefers_matching_tags_and_skips_tiny_drafts(tmp_path):
+    essays = [
+        {'slug': 'tiny', 'title': 'Tiny', 'date': '2026-07-30', 'tag': '生活'},
+        {'slug': 'tech', 'title': 'Tech', 'date': '2026-07-01', 'tag': '技术, Python'},
+        {'slug': 'life', 'title': 'Life', 'date': '2026-07-29', 'tag': '生活'},
+    ]
+    _write(tmp_path, 'tiny', '短稿')
+    _write(tmp_path, 'tech', '技' * 400)
+    _write(tmp_path, 'life', '生' * 400)
+
+    result = load_style_reference(
+        'current',
+        current_tags=['技术'],
+        metadata_loader=lambda _name: essays,
+        password_checker=lambda _slug: False,
+        md_dir=tmp_path,
+    )
+
+    assert [sample['title'] for sample in result['samples']] == ['Tech', 'Life']
+    assert 'Tiny' not in [sample['title'] for sample in result['samples']]

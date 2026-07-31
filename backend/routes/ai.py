@@ -27,7 +27,7 @@ def essay_assist():
         return jsonify({'error': '密码保护文章不能发送给 AI'}), 403
 
     style_reference = (
-        load_style_reference(slug)
+        load_style_reference(slug, current_tags=data.get('existing_tags', []))
         if data.get('task') in _STYLE_TASKS
         else {'samples': [], 'count': 0}
     )
@@ -38,6 +38,9 @@ def essay_assist():
             title=data.get('title', ''),
             existing_tags=data.get('existing_tags', []),
             style_samples=style_reference['samples'],
+            polish_mode=data.get('polish_mode', 'light'),
+            instruction=data.get('instruction', ''),
+            surrounding_context=data.get('surrounding_context'),
         )
     except ValueError as error:
         return jsonify({'error': str(error)}), 400

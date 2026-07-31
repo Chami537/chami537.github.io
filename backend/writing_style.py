@@ -11,6 +11,7 @@ from backend.essay_crypto import is_encrypted_content
 MAX_STYLE_ESSAYS = 4
 MAX_SAMPLE_CHARS = 1_500
 MAX_TOTAL_CHARS = 5_000
+MIN_USEFUL_SAMPLE_CHARS = 300
 
 _SLUG_PATTERN = re.compile(r'^[a-z0-9-]+$')
 _IMAGE_LINE = re.compile(r'^\s*!\[[^\]]*\]\([^)]*\)\s*$')
@@ -50,9 +51,18 @@ def _clean_markdown(content):
     return '\n'.join(output).strip()
 
 
+def _tag_parts(value):
+    if isinstance(value, str):
+        return {part.strip().casefold() for part in value.split(',') if part.strip()}
+    if isinstance(value, list):
+        return {part.strip().casefold() for part in value if isinstance(part, str) and part.strip()}
+    return set()
+
+
 def load_style_reference(
     current_slug,
     *,
+    current_tags=None,
     metadata_loader=None,
     password_checker=None,
     md_dir=None,
@@ -78,13 +88,9 @@ def load_style_reference(
             and essay['slug'] != current_slug
         )
     ]
-    candidates.sort(key=lambda essay: _date_key(essay.get('date')), reverse=True)
-
-    samples = []
-    remaining = MAX_TOTAL_CHARS
+    current_tag_set = _tag_parts(current_tags)
+    prepared = []
     for essay in candidates:
-        if len(samples) >= MAX_STYLE_ESSAYS or remaining <= 0:
-            break
         slug = essay['slug']
         try:
             if password_checker(slug):
@@ -98,6 +104,23 @@ def load_style_reference(
         cleaned = _clean_markdown(content)
         if not cleaned:
             continue
+        prepared.append((
+            len(current_tag_set & _tag_parts(essay.get('tag'))),
+            _date_key(essay.get('date')),
+            essay,
+            cleaned,
+        ))
+
+    useful = [item for item in prepared if len(item[3]) >= MIN_USEFUL_SAMPLE_CHARS]
+    if useful:
+        prepared = useful
+    prepared.sort(key=lambda item: (item[0], item[1]), reverse=True)
+
+    samples = []
+    remaining = MAX_TOTAL_CHARS
+    for _overlap, _date, essay, cleaned in prepared:
+        if len(samples) >= MAX_STYLE_ESSAYS or remaining <= 0:
+            break
         cleaned = cleaned[:min(MAX_SAMPLE_CHARS, remaining)].rstrip()
         if not cleaned:
             continue

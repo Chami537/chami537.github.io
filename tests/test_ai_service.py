@@ -342,3 +342,57 @@ def test_assist_essay_normalizes_and_deduplicates_tags(monkeypatch):
     assert assist_essay('tags', '正文', opener=opener)['result'] == {
         'tags': ['技术', 'Python'],
     }
+
+
+def test_polish_uses_mode_instruction_and_surrounding_context(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    seen = {}
+
+    def opener(request, timeout):
+        seen['body'] = json.loads(request.data)
+        return FakeResponse(_deepseek_response(
+            '{"content":"改写结果","changes":["收紧句子"]}'
+        ))
+
+    response = assist_essay(
+        'polish',
+        '待润色段落',
+        polish_mode='rewrite',
+        instruction='保留口语',
+        surrounding_context={'before': '上一段', 'after': '下一段'},
+        opener=opener,
+    )
+
+    assert response['result'] == {
+        'content': '改写结果',
+        'changes': ['收紧句子'],
+    }
+    system = seen['body']['messages'][0]['content']
+    context = json.loads(seen['body']['messages'][1]['content'])
+    assert '深度改写' in system
+    assert '保留口语' in system
+    assert '通用 AI 腔' in system
+    assert context['surrounding_context'] == {'before': '上一段', 'after': '下一段'}
+
+
+@pytest.mark.parametrize(
+    ('kwargs', 'message'),
+    [
+        ({'polish_mode': 'wild'}, '润色强度'),
+        ({'instruction': '字' * 301}, '润色要求'),
+        ({'surrounding_context': {'before': '字' * 2501}}, '上下文'),
+        ({'surrounding_context': {'unknown': '正文'}}, '上下文'),
+    ],
+)
+def test_assist_essay_rejects_invalid_polish_options(monkeypatch, kwargs, message):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    with pytest.raises(ValueError, match=message):
+        assist_essay('polish', '正文', **kwargs)
+
+
+def test_assist_essay_bounds_polish_input_for_complete_output(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    with pytest.raises(ValueError, match='单次润色'):
+        assist_essay('polish', '字' * 3001)

@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="assets/css/admin-foundation.css?v=1785482984">
 <link rel="stylesheet" href="assets/css/admin-photo.css?v=1785482984">
 <link rel="stylesheet" href="assets/css/admin-git.css?v=1785482984">
-<link rel="stylesheet" href="assets/css/admin-essay.css?v=1785482984">
+<link rel="stylesheet" href="assets/css/admin-essay.css?v=1785505702">
 <link rel="stylesheet" href="assets/css/admin-health.css?v=1785482984">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github.min.css">
 <script>
@@ -286,6 +286,21 @@
           <button type="button" class="btn btn-sm" data-ai-task="continue">续写</button>
           <button type="button" class="btn btn-sm" data-ai-task="review">检查问题</button>
         </div>
+        <div class="essay-ai-polish-controls">
+          <label>
+            <span>润色强度</span>
+            <select id="essay-ai-polish-mode">
+              <option value="light">克制微调</option>
+              <option value="rewrite">深度改写</option>
+            </select>
+          </label>
+          <label class="essay-ai-instruction-field">
+            <span>额外要求</span>
+            <input id="essay-ai-instruction" type="text" maxlength="300"
+                   placeholder="例如：保留这句口语，只改节奏">
+          </label>
+        </div>
+        <p class="essay-ai-scope-hint">选中文字时只润色选区；未选中时只润色光标所在段落。</p>
         <div id="essay-ai-result" class="essay-ai-result" hidden></div>
       </section>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
@@ -549,7 +564,7 @@
 <script src="assets/js/admin-essay-content.js?v=1785482984"></script>
 <script src="assets/js/admin-essay-formatting.js?v=1785482984"></script>
 <script src="assets/js/admin-essay-media.js?v=1785482984"></script>
-<script src="assets/js/admin-ai.js?v=1785482984"></script>
+<script src="assets/js/admin-ai.js?v=1785505702"></script>
 <script src="assets/js/admin-essays-view.js?v=1785482984"></script>
 <script src="assets/js/admin-photo-list.js?v=1785482984"></script>
 <script src="assets/js/admin-photo-tags.js?v=1785482984"></script>

@@ -13,7 +13,7 @@ def test_ai_essay_assist_returns_structured_result(client, monkeypatch):
 
     captured = {}
     monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
-    monkeypatch.setattr(ai, 'load_style_reference', lambda _slug: {
+    monkeypatch.setattr(ai, 'load_style_reference', lambda _slug, **_kwargs: {
         'samples': [{'title': '旧文', 'content': '历史片段'}],
         'count': 1,
     })
@@ -70,7 +70,7 @@ def test_ai_essay_assist_rejects_invalid_payload(client, monkeypatch, payload):
 
     monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
     monkeypatch.setattr(
-        ai, 'load_style_reference', lambda _slug: {'samples': [], 'count': 0},
+        ai, 'load_style_reference', lambda _slug, **_kwargs: {'samples': [], 'count': 0},
     )
     response = client.post('/api/ai/essay-assist', json=payload)
 
@@ -84,7 +84,7 @@ def test_ai_essay_assist_rejects_password_protected_essay(client, monkeypatch):
     monkeypatch.setattr(
         ai,
         'load_style_reference',
-        lambda _slug: (_ for _ in ()).throw(
+        lambda _slug, **_kwargs: (_ for _ in ()).throw(
             AssertionError('protected essay attempted to load style samples')
         ),
     )
@@ -109,7 +109,7 @@ def test_ai_essay_assist_maps_service_failure_to_safe_error(client, monkeypatch)
 
     monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
     monkeypatch.setattr(
-        ai, 'load_style_reference', lambda _slug: {'samples': [], 'count': 0},
+        ai, 'load_style_reference', lambda _slug, **_kwargs: {'samples': [], 'count': 0},
     )
     monkeypatch.setattr(
         ai,
@@ -143,7 +143,7 @@ def test_ai_essay_assist_tags_skip_style_samples(client, monkeypatch):
     monkeypatch.setattr(
         ai,
         'load_style_reference',
-        lambda _slug: (_ for _ in ()).throw(
+        lambda _slug, **_kwargs: (_ for _ in ()).throw(
             AssertionError('tags should not load prose samples')
         ),
     )
@@ -178,7 +178,7 @@ def test_ai_essay_assist_accepts_new_style_tasks(client, monkeypatch, task, resu
     import backend.routes.ai as ai
 
     monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
-    monkeypatch.setattr(ai, 'load_style_reference', lambda _slug: {
+    monkeypatch.setattr(ai, 'load_style_reference', lambda _slug, **_kwargs: {
         'samples': [{'title': '旧文', 'content': '片段'}],
         'count': 1,
     })
@@ -196,6 +196,43 @@ def test_ai_essay_assist_accepts_new_style_tasks(client, monkeypatch, task, resu
     assert response.status_code == 200
     assert response.get_json()['result'] == result
     assert response.get_json()['style_reference_count'] == 1
+
+
+def test_ai_essay_assist_forwards_polish_controls(client, monkeypatch):
+    import backend.routes.ai as ai
+
+    captured = {}
+    style_call = {}
+    monkeypatch.setattr(ai, 'has_essay_password', lambda _slug: False)
+
+    def fake_style(slug, **kwargs):
+        style_call.update(slug=slug, **kwargs)
+        return {'samples': [], 'count': 0}
+
+    def fake_assist(**kwargs):
+        captured.update(kwargs)
+        return {
+            'result': {'content': '润色结果'},
+            'usage': {'prompt_tokens': 2, 'completion_tokens': 1},
+        }
+
+    monkeypatch.setattr(ai, 'load_style_reference', fake_style)
+    monkeypatch.setattr(ai, 'assist_essay', fake_assist)
+    response = client.post('/api/ai/essay-assist', json={
+        'slug': 'essay-demo',
+        'task': 'polish',
+        'content': '待润色段落',
+        'existing_tags': ['生活'],
+        'polish_mode': 'rewrite',
+        'instruction': '保留口语',
+        'surrounding_context': {'before': '上文', 'after': '下文'},
+    })
+
+    assert response.status_code == 200
+    assert style_call == {'slug': 'essay-demo', 'current_tags': ['生活']}
+    assert captured['polish_mode'] == 'rewrite'
+    assert captured['instruction'] == '保留口语'
+    assert captured['surrounding_context'] == {'before': '上文', 'after': '下文'}
 
 
 def test_tracks_upload_list_and_delete(client, monkeypatch, tmp_path):
