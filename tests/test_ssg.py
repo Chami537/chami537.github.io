@@ -199,6 +199,7 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
             'assets/js/admin-essay-content.js',
             'assets/js/admin-essay-formatting.js',
             'assets/js/admin-essay-media.js',
+            'assets/js/admin-ai.js',
             'assets/js/admin-photo-list.js',
             'assets/js/admin-photo-tags.js',
             'assets/js/admin-photo-metadata.js',

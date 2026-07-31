@@ -9,5 +9,6 @@ function toast(msg, err) {
 }
 
 function markClean() { isDirty = false; }
+function markDirty() { isDirty = true; }
 function hidePanel(id) { document.getElementById(id).style.display = 'none'; }
 function onAdminDataReset(handler) { document.addEventListener('admin:data-reset', handler); }

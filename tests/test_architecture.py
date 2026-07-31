@@ -172,8 +172,16 @@ def test_code_rendering_is_shared_by_admin_and_essay_pages():
 
 def test_essay_editor_is_split_by_responsibility():
     html = (ROOT / 'admin.html').read_text(encoding='utf-8')
-    for module in ('admin-essay-meta.js', 'admin-essay-content.js', 'admin-essay-formatting.js', 'admin-essay-media.js'):
+    for module in (
+        'admin-essay-meta.js',
+        'admin-essay-content.js',
+        'admin-essay-formatting.js',
+        'admin-essay-media.js',
+        'admin-ai.js',
+    ):
         assert f'assets/js/{module}' in html
+    assert html.index('assets/js/admin-essay-content.js') < html.index('assets/js/admin-ai.js')
+    assert html.index('assets/js/admin-ai.js') < html.index('assets/js/admin-tabs.js')
     assert 'assets/js/admin-essay-editor.js' not in html
 
 

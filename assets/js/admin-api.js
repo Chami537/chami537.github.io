@@ -1,7 +1,11 @@
 // Shared admin API transport. Domain modules only provide paths and payloads.
 
-async function api(method, path, body) {
-  const opts = { method, headers: {} };
+async function api(method, path, body, requestOptions) {
+  const opts = {
+    method,
+    headers: {},
+    signal: requestOptions && requestOptions.signal
+  };
   if (body && !(body instanceof FormData)) {
     opts.headers['Content-Type'] = 'application/json';
     opts.body = JSON.stringify(body);

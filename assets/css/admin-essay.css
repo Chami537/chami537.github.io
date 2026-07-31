@@ -33,11 +33,97 @@
 .card-password { opacity: 0.72; transition: opacity .2s; }
 .card-password:hover { opacity: 0.92; }
 
+.essay-ai-panel {
+  margin-bottom: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+}
+.essay-ai-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.essay-ai-heading strong { font-size: 13px; color: var(--fg); }
+.essay-ai-provider {
+  margin-left: 8px;
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+#essay-ai-status {
+  max-width: 55%;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: right;
+}
+.essay-ai-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.essay-ai-actions .btn {
+  min-height: 38px;
+}
+.essay-ai-actions .btn:focus-visible,
+.essay-ai-apply:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.essay-ai-actions .btn:disabled {
+  cursor: not-allowed;
+  opacity: .45;
+}
+.essay-ai-result {
+  margin-top: 12px;
+  padding: 12px;
+  border-left: 3px solid var(--c2);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--fg);
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+}
+.essay-ai-result-title {
+  margin-bottom: 6px;
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+.essay-ai-result-text {
+  margin: 0 0 10px;
+  white-space: pre-wrap;
+}
+.essay-ai-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+.essay-ai-issue-list {
+  margin: 0;
+  padding-left: 20px;
+}
+.essay-ai-issue-list li + li { margin-top: 8px; }
+
 @media (max-width: 760px) {
   .card-header { flex-direction: column; }
   .card-actions { width: 100%; flex-wrap: wrap; }
   .dashboard-count-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .dashboard-columns { grid-template-columns: 1fr; gap: 0; }
+  .essay-ai-heading { flex-direction: column; }
+  #essay-ai-status { max-width: none; text-align: left; }
+  .essay-ai-actions .btn { flex: 1 1 calc(50% - 4px); min-height: 44px; }
 }
 
 /* Misc */

@@ -24,7 +24,12 @@ async function editEssayMeta(slug) {
   var data = await api('GET', '/api/essays');
   var essay = data.find(function(item) { return item.slug === slug; });
   if (!essay) return;
-  document.getElementById('essay-edit-slug').value = slug;
+  _fillEssayMetaForm(essay);
+}
+
+function _fillEssayMetaForm(essay) {
+  var form = document.getElementById('essay-form');
+  document.getElementById('essay-edit-slug').value = essay.slug;
   document.getElementById('essay-title').value = essay.title;
   document.getElementById('essay-tag').value = essay.tag || '';
   document.getElementById('essay-date').value = essay.date || '';

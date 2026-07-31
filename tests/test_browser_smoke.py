@@ -64,8 +64,11 @@ def test_admin_shell_loads_shared_modules_and_switches_tabs(live_server, browser
         for name in (
             'saveEssay', 'editEssayContent', '_wrapSelection', 'previewEssayContent',
             '_essayTagParts', 'renderEssayTaxonomy', 'saveTagOrder', 'switchEssayTag',
+            'markDirty', 'requestEssayAi', 'applyEssayAiResult', 'updateEssayAiAvailability',
         ):
             assert page.evaluate('typeof ' + name) == 'function'
+        assert page.locator('#essay-ai-panel').count() == 1
+        assert page.locator('#essay-ai-actions button').count() == 4
         page.locator('#essay-list button', has_text='元数据').first.click()
         page.locator('#essay-form').wait_for(state='visible')
         page.evaluate("renderEssayTaxonomy('技术, Python, 教程, 复盘')")
@@ -73,6 +76,91 @@ def test_admin_shell_loads_shared_modules_and_switches_tabs(live_server, browser
         assert page.locator('#essay-form .taxonomy-grid.is-tech').count() == 1
         page.locator('#essay-list button', has_text='编辑正文').first.click()
         page.locator('#essay-content-editor').wait_for(state='visible')
+    finally:
+        page.close()
+
+
+def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
+    page = browser.new_page()
+    essay_writes = []
+
+    def fulfill_ai(route):
+        task = route.request.post_data_json['task']
+        results = {
+            'summary': {'excerpt': '<img src=x onerror=alert(1)>摘要'},
+            'tags': {'tags': ['技术', 'Python', '教程']},
+            'polish': {'content': '润色'},
+            'review': {
+                'issues': [{
+                    'type': '文字',
+                    'message': '存在重复',
+                    'suggestion': '删除重复内容',
+                }],
+            },
+        }
+        route.fulfill(json={
+            'task': task,
+            'result': results[task],
+            'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+        })
+
+    page.route('**/api/ai/essay-assist', fulfill_ai)
+    page.on('request', lambda request: essay_writes.append(request.url) if (
+        request.method == 'PUT' and '/api/essays/' in request.url
+    ) else None)
+    try:
+        page.goto(live_server + '/', wait_until='domcontentloaded')
+        page.locator('.tab-btn[data-tab="essays"]').click()
+        page.wait_for_timeout(150)
+        page.evaluate("""
+          _essayAllData = [{
+            slug: 'essay-demo',
+            title: '演示文章',
+            tag: '技术',
+            date: '2026-07-31',
+            epigraph: '',
+            excerpt: '',
+            password_set: false
+          }];
+          var editor = document.getElementById('essay-content-editor');
+          editor.style.display = 'block';
+          editor.dataset.slug = 'essay-demo';
+          var textarea = document.getElementById('essay-content-md');
+          textarea.value = '原始正文';
+          updateEssayAiAvailability('essay-demo');
+        """)
+
+        page.locator('[data-ai-task="summary"]').click()
+        page.locator('#essay-ai-result').wait_for(state='visible')
+        assert '<img src=x onerror=alert(1)>摘要' in page.locator('#essay-ai-result').inner_text()
+        assert page.locator('#essay-ai-result img').count() == 0
+        page.locator('.essay-ai-apply').click()
+        assert page.locator('#essay-excerpt').input_value() == '<img src=x onerror=alert(1)>摘要'
+        assert essay_writes == []
+
+        page.locator('[data-ai-task="tags"]').click()
+        page.locator('.essay-ai-apply').click()
+        assert page.locator('#essay-tag').input_value() == '技术, Python, 教程'
+
+        page.evaluate("""
+          var textarea = document.getElementById('essay-content-md');
+          textarea.focus();
+          textarea.setSelectionRange(0, 2);
+        """)
+        page.locator('[data-ai-task="polish"]').click()
+        page.locator('.essay-ai-apply').click()
+        assert page.locator('#essay-content-md').input_value() == '润色正文'
+
+        page.locator('[data-ai-task="review"]').click()
+        assert '存在重复' in page.locator('#essay-ai-result').inner_text()
+        assert page.locator('.essay-ai-apply').count() == 0
+
+        page.evaluate("""
+          _essayAllData[0].password_set = true;
+          updateEssayAiAvailability('essay-demo');
+        """)
+        assert page.locator('#essay-ai-actions button:disabled').count() == 4
+        assert '密码保护文章' in page.locator('#essay-ai-status').inner_text()
     finally:
         page.close()
 

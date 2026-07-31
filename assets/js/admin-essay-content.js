@@ -16,6 +16,7 @@ async function editEssayContent(slug) {
   clearInterval(_autosaveInterval);
   editor.style.display = 'block';
   editor.dataset.slug = slug;
+  updateEssayAiAvailability(slug);
   document.getElementById('essay-content-title').textContent = '— ' + slug;
   try {
     var data = await api('GET', '/api/essays/' + slug + '/content');
@@ -36,6 +37,7 @@ function hideEssayContentEditor() {
   if (slug) localStorage.setItem('draft-time:' + slug, Date.now());
   clearInterval(_autosaveInterval);
   editor.style.display = 'none';
+  updateEssayAiAvailability('');
   document.getElementById('essay-preview').style.display = 'none';
 }
 

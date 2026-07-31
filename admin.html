@@ -270,6 +270,22 @@
         <code>1. item</code> 有序列表 <span style="color:#888;">Ctrl+Shift+7</span>
         <code>Tab</code> 缩进
       </div>
+      <section id="essay-ai-panel" class="essay-ai-panel" aria-labelledby="essay-ai-title">
+        <div class="essay-ai-heading">
+          <div>
+            <strong id="essay-ai-title">AI 编辑副驾驶</strong>
+            <span class="essay-ai-provider">DeepSeek</span>
+          </div>
+          <span id="essay-ai-status" role="status" aria-live="polite">选择一项操作，结果不会自动保存</span>
+        </div>
+        <div id="essay-ai-actions" class="essay-ai-actions">
+          <button type="button" class="btn btn-sm" data-ai-task="summary">生成摘要</button>
+          <button type="button" class="btn btn-sm" data-ai-task="tags">推荐标签</button>
+          <button type="button" class="btn btn-sm" data-ai-task="polish">润色</button>
+          <button type="button" class="btn btn-sm" data-ai-task="review">检查问题</button>
+        </div>
+        <div id="essay-ai-result" class="essay-ai-result" hidden></div>
+      </section>
       <div style="display:flex;gap:8px;margin-bottom:12px;">
         <button class="btn btn-primary" onclick="saveEssayContent()">保存内容</button>
         <button class="btn" onclick="previewEssayContent()">预览</button>
@@ -531,6 +547,7 @@
 <script src="assets/js/admin-essay-content.js?v=1784123678"></script>
 <script src="assets/js/admin-essay-formatting.js?v=1784123678"></script>
 <script src="assets/js/admin-essay-media.js?v=1784123678"></script>
+<script src="assets/js/admin-ai.js?v=1784123678"></script>
 <script src="assets/js/admin-essays-view.js?v=1784123678"></script>
 <script src="assets/js/admin-photo-list.js?v=1784123678"></script>
 <script src="assets/js/admin-photo-tags.js?v=1784123678"></script>
