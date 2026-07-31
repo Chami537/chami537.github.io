@@ -293,6 +293,95 @@ def test_admin_dashboard_photo_story_and_music_tabs_render(live_server, browser)
         page.close()
 
 
+def test_admin_ai_tools_preview_before_applying_to_forms(live_server, browser):
+    page = browser.new_page()
+    writes = []
+
+    def fulfill_copy(route):
+        task = route.request.post_data_json['task']
+        counts = {'about': 2, 'project': 3, 'photo_story': 3}
+        suggestions = [{
+            'title': ('故事名' if task == 'photo_story' else '方案') + str(index + 1),
+            'content': task + '候选文案' + str(index + 1),
+        } for index in range(counts[task])]
+        route.fulfill(json={
+            'task': task,
+            'result': {'suggestions': suggestions},
+            'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+            'style_profile_used': True,
+        })
+
+    def fulfill_audit(route):
+        route.fulfill(json={
+            'result': {'findings': [{
+                'priority': 'high',
+                'area': '项目',
+                'issue': '<img src=x onerror=alert(1)>描述缺失',
+                'suggestion': '补充已知功能',
+            }]},
+            'usage': {'prompt_tokens': 8, 'completion_tokens': 4},
+        })
+
+    page.route('**/api/ai/admin-assist', fulfill_copy)
+    page.route('**/api/ai/site-content-audit', fulfill_audit)
+    page.on('request', lambda request: writes.append(request.url) if (
+        request.method in ('PUT', 'POST') and
+        request.url.endswith(('/api/about', '/api/work', '/api/photo-stories'))
+    ) else None)
+    try:
+        page.goto(live_server + '/', wait_until='domcontentloaded')
+
+        page.locator('.tab-btn[data-tab="about"]').click()
+        page.locator('#about-content').wait_for(state='visible')
+        page.locator('#about-content').fill('原始简介')
+        page.locator('button', has_text='AI 优化简介').click()
+        page.locator('#admin-ai-copy-dialog').wait_for(state='visible')
+        assert page.locator('.admin-ai-copy-option').count() == 2
+        page.locator('.admin-ai-copy-option .btn').first.click()
+        assert page.locator('#about-content').input_value() == 'about候选文案1'
+        assert writes == []
+
+        page.locator('.tab-btn[data-tab="work"]').click()
+        page.locator('button', has_text='+ 添加项目').click()
+        page.locator('#work-title').fill('项目')
+        page.locator('#work-desc').fill('原始描述')
+        page.locator('button', has_text='AI 优化描述').click()
+        assert page.locator('.admin-ai-copy-option').count() == 3
+        page.locator('.admin-ai-copy-option .btn').nth(1).click()
+        assert page.locator('#work-desc').input_value() == 'project候选文案2'
+        assert writes == []
+
+        page.locator('.tab-btn[data-tab="photos"]').click()
+        page.locator('#story-editor-list .story-edit-card').first.wait_for(state='visible')
+        page.evaluate("""
+          _photoData = [{filename: 'one.jpg', date: 'Jul 2026', tags: ['City']}];
+          _storyData = [{
+            id: 'demo', name: '原名', date: 'Jul 2026', caption: '原文',
+            cover: 'one.jpg', photos: ['one.jpg']
+          }];
+          renderStoryEditor();
+        """)
+        page.locator('#story-editor-list button', has_text='AI 润色').click()
+        assert page.locator('.admin-ai-copy-option').count() == 3
+        page.locator('.admin-ai-copy-option .btn').nth(2).click()
+        assert page.evaluate("_storyData[0].name") == '原名'
+        assert page.evaluate("_storyData[0].caption") == 'photo_story候选文案3'
+        assert writes == []
+
+        page.locator('.tab-btn[data-tab="dashboard"]').click()
+        page.locator('#admin-ai-audit-button').click()
+        page.locator('.admin-ai-finding').wait_for(state='visible')
+        assert '<img src=x onerror=alert(1)>描述缺失' in page.locator(
+            '.admin-ai-finding'
+        ).inner_text()
+        assert page.locator('.admin-ai-finding img').count() == 0
+        assert '8输入 / 4输出 tokens' in page.locator(
+            '#admin-ai-audit-status'
+        ).inner_text()
+    finally:
+        page.close()
+
+
 def test_admin_health_tab_renders_checks_and_filters(live_server, browser):
     page = browser.new_page()
     try:

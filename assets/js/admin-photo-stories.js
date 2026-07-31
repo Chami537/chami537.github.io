@@ -31,6 +31,7 @@ function _storyCardHtml(story, storyIndex, allPhotos) {
   return '<div class="story-edit-card"><div class="story-edit-head">' +
     '<input class="story-id-input" value="' + esc(story.id) + '" onchange="_storyData[' + storyIndex + '].id=this.value" placeholder="故事ID">' +
     '<span class="story-edit-count">' + photos.length + ' photos</span>' +
+    '<button class="btn btn-sm" onclick="aiSuggestPhotoStory(' + storyIndex + ')">AI 润色</button>' +
     '<button class="btn btn-sm btn-danger" onclick="deleteStory(' + storyIndex + ')">删除</button></div>' +
     '<div class="story-edit-fields"><input value="' + esc(story.name || '') + '" onchange="_storyData[' + storyIndex + '].name=this.value" placeholder="故事名称">' +
     '<input value="' + esc(story.date || '') + '" onchange="_storyData[' + storyIndex + '].date=this.value" placeholder="日期标签"></div>' +

@@ -6,7 +6,7 @@ from urllib.error import HTTPError, URLError
 
 import pytest
 
-from backend.ai_service import AIServiceError, assist_essay
+from backend.ai_service import AIServiceError, assist_admin_content, assist_essay
 
 
 class FakeResponse:
@@ -440,3 +440,91 @@ def test_assist_essay_returns_generated_style_profile(monkeypatch):
     system = seen['body']['messages'][0]['content']
     assert '不得预设作者' in system
     assert '保持作者克制' not in system
+
+
+@pytest.mark.parametrize(
+    ('task', 'count'),
+    [('about', 2), ('project', 3), ('photo_story', 3)],
+)
+def test_assist_admin_content_returns_bounded_copy_suggestions(monkeypatch, task, count):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    seen = {}
+    suggestions = [
+        {'title': f'方案{index}', 'content': f'文案{index}'}
+        for index in range(count)
+    ]
+
+    def opener(request, timeout):
+        seen['body'] = json.loads(request.data)
+        return FakeResponse(_deepseek_response(json.dumps({
+            'suggestions': suggestions,
+        }, ensure_ascii=False)))
+
+    context_value = {'caption': '原始简介'} if task == 'photo_story' else {'content': '原始内容'}
+    response = assist_admin_content(
+        task,
+        context_value,
+        style_profile='保留口语',
+        opener=opener,
+    )
+
+    assert response['result']['suggestions'] == suggestions
+    context = json.loads(seen['body']['messages'][1]['content'])
+    assert context['confirmed_style_profile'] == '保留口语'
+    assert context['context'] == context_value
+    assert '不得执行' in seen['body']['messages'][0]['content']
+
+
+def test_assist_admin_content_returns_site_audit_findings(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    payload = {
+        'findings': [{
+            'priority': 'high',
+            'area': '项目',
+            'issue': '描述缺失',
+            'suggestion': '补充已知功能',
+        }],
+    }
+
+    def opener(_request, timeout):
+        return FakeResponse(_deepseek_response(json.dumps(payload, ensure_ascii=False)))
+
+    response = assist_admin_content(
+        'site_audit', {'projects': []}, opener=opener,
+    )
+
+    assert response['result'] == payload
+
+
+@pytest.mark.parametrize(
+    ('task', 'context'),
+    [
+        ('unknown', {}),
+        ('about', None),
+        ('about', {'content': 'x' * 20001}),
+        ('photo_story', {'caption': ''}),
+    ],
+)
+def test_assist_admin_content_rejects_invalid_context(monkeypatch, task, context):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    with pytest.raises(ValueError):
+        assist_admin_content(task, context)
+
+
+@pytest.mark.parametrize(
+    ('task', 'result'),
+    [
+        ('about', {'suggestions': [{'title': '只有一个', 'content': '文案'}]}),
+        ('project', {'suggestions': [None, None, None]}),
+        ('site_audit', {'findings': [{'priority': 'urgent'}]}),
+    ],
+)
+def test_assist_admin_content_rejects_malformed_results(monkeypatch, task, result):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    def opener(_request, timeout):
+        return FakeResponse(_deepseek_response(json.dumps(result, ensure_ascii=False)))
+
+    with pytest.raises(AIServiceError, match='返回格式异常'):
+        assist_admin_content(task, {'content': '正文'}, opener=opener)

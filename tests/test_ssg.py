@@ -180,9 +180,11 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
             'assets/css/admin-photo.css',
             'assets/css/admin-git.css',
             'assets/css/admin-essay.css',
+            'assets/css/admin-ai.css',
         ), (
             'assets/js/theme.js',
             'assets/js/admin-editor-rendering.js',
+            'assets/js/admin-ai-tools.js',
             'assets/js/admin-work.js',
             'assets/js/admin-social.js',
             'assets/js/admin-music.js',

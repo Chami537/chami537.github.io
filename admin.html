@@ -10,6 +10,7 @@
 <link rel="stylesheet" href="assets/css/admin-git.css?v=1785482984">
 <link rel="stylesheet" href="assets/css/admin-essay.css?v=1785506326">
 <link rel="stylesheet" href="assets/css/admin-health.css?v=1785482984">
+<link rel="stylesheet" href="assets/css/admin-ai.css?v=1785507991">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github.min.css">
 <script>
   var _saved = localStorage.getItem('theme');
@@ -81,6 +82,17 @@
         </div>
         <div id="dashboard-health" class="dashboard-stat-list"></div>
       </section>
+      <section class="dashboard-section admin-ai-audit">
+        <div class="dashboard-section-heading">
+          <div>
+            <h3>AI 内容巡检</h3>
+            <p>检查公开内容的缺失、占位词和表达不一致</p>
+          </div>
+          <button class="btn btn-sm" id="admin-ai-audit-button" onclick="runSiteContentAudit()">开始巡检</button>
+        </div>
+        <div id="admin-ai-audit-status" class="text-muted">只读取公开元数据，不发送加密随笔正文。</div>
+        <div id="admin-ai-audit-results"></div>
+      </section>
       <div class="dashboard-columns">
         <section class="dashboard-section">
           <h3>标签分布</h3>
@@ -128,7 +140,10 @@
         <label>简介内容</label>
         <textarea id="about-content" rows="4" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;font-size:14px;font-family:inherit;resize:vertical;"></textarea>
       </div>
-      <button class="btn btn-primary" onclick="saveAbout()">保存</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-primary" onclick="saveAbout()">保存</button>
+        <button class="btn" onclick="aiImproveAbout()">AI 优化简介</button>
+      </div>
     </div>
   </div>
 
@@ -148,6 +163,7 @@
       <div class="form-group"><label>技术标签 (逗号分隔)</label><input id="work-tags" placeholder="Python, Flask, SQLite"></div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-primary" onclick="saveWork()">保存</button>
+        <button class="btn" onclick="aiImproveWork()">AI 优化描述</button>
         <button class="btn" onclick="hidePanel('work-form')">取消</button>
       </div>
     </div>
@@ -549,12 +565,24 @@
   </form>
 </dialog>
 
+<dialog id="admin-ai-copy-dialog" class="admin-ai-copy-dialog">
+  <div class="admin-ai-dialog-heading">
+    <div>
+      <h3 id="admin-ai-copy-title">AI 文案建议</h3>
+      <p id="admin-ai-copy-status">结果不会自动保存</p>
+    </div>
+    <button class="btn btn-sm" onclick="closeAdminAiDialog()">关闭</button>
+  </div>
+  <div id="admin-ai-copy-options" class="admin-ai-copy-options"></div>
+</dialog>
+
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
 <script src="assets/js/theme.js?v=1785482984"></script>
 <script src="assets/js/admin-core.js?v=1785482984"></script>
 <script src="assets/js/admin-api.js?v=1785482984"></script>
 <script src="assets/js/admin-ui.js?v=1785482984"></script>
+<script src="assets/js/admin-ai-tools.js?v=1785507991"></script>
 <script src="assets/js/admin-dashboard.js?v=1785482984"></script>
 <script src="assets/js/admin-health.js?v=1785482984"></script>
 <script src="assets/js/code-rendering.js?v=1785482984"></script>
@@ -582,7 +610,7 @@
 <script src="assets/js/admin-photo-tags.js?v=1785482984"></script>
 <script src="assets/js/admin-photo-metadata.js?v=1785482984"></script>
 <script src="assets/js/admin-photo-files.js?v=1785482984"></script>
-<script src="assets/js/admin-photo-stories.js?v=1785482984"></script>
+<script src="assets/js/admin-photo-stories.js?v=1785507991"></script>
 <script src="assets/js/admin-upload.js?v=1785482984"></script>
 <script src="assets/js/admin-tabs.js?v=1785482984"></script>
 <script>refreshGitStatus();loadDashboard();</script>

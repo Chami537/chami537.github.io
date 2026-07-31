@@ -126,9 +126,11 @@ def test_admin_shared_modules_load_before_domain_modules():
     html = (ROOT / 'admin.html').read_text(encoding='utf-8')
     api_pos = html.index('assets/js/admin-api.js')
     ui_pos = html.index('assets/js/admin-ui.js')
+    ai_tools_pos = html.index('assets/js/admin-ai-tools.js')
     domain_pos = html.index('assets/js/admin-dashboard.js')
     assert api_pos < domain_pos
     assert ui_pos < domain_pos
+    assert ui_pos < ai_tools_pos < domain_pos
 
 
 def test_health_route_and_admin_module_are_registered():

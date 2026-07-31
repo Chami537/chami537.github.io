@@ -144,6 +144,8 @@ def test_ai_essay_assist_requires_auth(client_no_auth):
     assert client_no_auth.put(
         '/api/ai/writing-style', json={'profile': '画像'},
     ).status_code == 401
+    assert client_no_auth.post('/api/ai/admin-assist', json={}).status_code == 401
+    assert client_no_auth.post('/api/ai/site-content-audit', json={}).status_code == 401
 
 
 def test_ai_essay_assist_tags_skip_style_samples(client, monkeypatch):
@@ -277,6 +279,112 @@ def test_writing_style_profile_get_analyze_and_update(client, monkeypatch):
     updated = client.put('/api/ai/writing-style', json={'profile': '用户确认画像'})
     assert updated.status_code == 200
     assert captured['profile'] == '用户确认画像'
+
+
+def test_admin_ai_copy_assist_uses_confirmed_style_without_persisting(client, monkeypatch):
+    import backend.routes.ai as ai
+
+    captured = {}
+    monkeypatch.setattr(ai, 'load_style_profile', lambda: {
+        'profile': '已确认画像', 'updated_at': None,
+    })
+
+    def fake_assist(**kwargs):
+        captured.update(kwargs)
+        return {
+            'result': {'suggestions': [
+                {'title': '简洁', 'content': '候选一'},
+                {'title': '口语', 'content': '候选二'},
+            ]},
+            'usage': {'prompt_tokens': 4, 'completion_tokens': 3},
+        }
+
+    monkeypatch.setattr(ai, 'assist_admin_content', fake_assist)
+    response = client.post('/api/ai/admin-assist', json={
+        'task': 'about',
+        'context': {'content': '原始简介'},
+    })
+
+    assert response.status_code == 200
+    assert response.get_json()['style_profile_used'] is True
+    assert captured == {
+        'task': 'about',
+        'context': {'content': '原始简介'},
+        'style_profile': '已确认画像',
+    }
+
+
+@pytest.mark.parametrize('task', [None, 'essay', 'site_audit'])
+def test_admin_ai_copy_assist_rejects_unsupported_tasks(client, task):
+    response = client.post('/api/ai/admin-assist', json={
+        'task': task, 'context': {},
+    })
+    assert response.status_code == 400
+
+
+def test_site_content_audit_excludes_protected_essay_content(client, monkeypatch):
+    import backend.routes.ai as ai
+
+    datasets = {
+        'essays.json': [
+            {'slug': 'public', 'title': '公开', 'excerpt': '公开摘要', 'tag': '生活'},
+            {'slug': 'secret', 'title': '秘密', 'excerpt': '秘密摘要', 'tag': '秘密'},
+        ],
+        'work.json': [{'title': '项目', 'description': '描述', 'tags': ['Python']}],
+        'photo_stories.json': [{'name': '故事', 'caption': '简介', 'photo_count': 2}],
+        'about.json': {'content': '自我介绍', 'tags': ['CS']},
+    }
+    captured = {}
+    monkeypatch.setattr(ai, 'load_json', lambda name: datasets[name])
+    monkeypatch.setattr(ai, 'has_essay_password', lambda slug: slug == 'secret')
+
+    def fake_assist(**kwargs):
+        captured.update(kwargs)
+        return {
+            'result': {'findings': []},
+            'usage': {'prompt_tokens': 5, 'completion_tokens': 1},
+        }
+
+    monkeypatch.setattr(ai, 'assist_admin_content', fake_assist)
+    response = client.post('/api/ai/site-content-audit', json={})
+
+    assert response.status_code == 200
+    assert captured['task'] == 'site_audit'
+    assert [essay['slug'] for essay in captured['context']['essays']] == ['public']
+    assert '秘密摘要' not in response.get_data(as_text=True)
+
+
+def test_site_content_audit_combines_deterministic_findings(client, monkeypatch):
+    import backend.routes.ai as ai
+
+    context = {
+        'about': {'content': '简介'},
+        'essays': [{'slug': 'draft', 'title': '草稿', 'excerpt': ''}],
+        'projects': [{
+            'title': '本站',
+            'description': ' HTML/CSS/JS · panel',
+        }],
+        'photo_stories': [],
+    }
+    monkeypatch.setattr(ai, '_public_site_audit_context', lambda: context)
+    monkeypatch.setattr(ai, 'assist_admin_content', lambda **_kwargs: {
+        'result': {'findings': [{
+            'priority': 'low',
+            'area': 'About',
+            'issue': '一句表达可以更清楚',
+            'suggestion': '收紧句子',
+        }]},
+        'usage': {'prompt_tokens': 4, 'completion_tokens': 2},
+    })
+
+    response = client.post('/api/ai/site-content-audit', json={})
+    findings = response.get_json()['result']['findings']
+
+    assert response.status_code == 200
+    assert findings[0]['priority'] == 'high'
+    assert any('首尾空格' in item['issue'] for item in findings)
+    assert any('含混占位词' in item['issue'] for item in findings)
+    assert any(item['issue'] == '一句表达可以更清楚' for item in findings)
 
 
 def test_tracks_upload_list_and_delete(client, monkeypatch, tmp_path):
