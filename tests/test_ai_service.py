@@ -100,6 +100,16 @@ def test_assist_essay_passes_timeout_as_keyword(monkeypatch):
             '{"issues":[{"type":"文字","message":"重复","suggestion":"删除"}]}',
             {'issues': [{'type': '文字', 'message': '重复', 'suggestion': '删除'}]},
         ),
+        (
+            'title',
+            '{"titles":["标题一","标题二","标题三"]}',
+            {'titles': ['标题一', '标题二', '标题三']},
+        ),
+        (
+            'continue',
+            '{"content":"自然续写"}',
+            {'content': '自然续写'},
+        ),
     ],
 )
 def test_assist_essay_returns_task_specific_result(monkeypatch, task, content, expected):
@@ -237,4 +247,98 @@ def test_assist_essay_normalizes_invalid_usage_counts(monkeypatch):
     assert assist_essay('summary', '正文', opener=opener)['usage'] == {
         'prompt_tokens': 0,
         'completion_tokens': 0,
+    }
+
+
+@pytest.mark.parametrize(
+    ('task', 'response_content', 'expects_samples'),
+    [
+        ('summary', '{"excerpt":"摘要"}', True),
+        ('polish', '{"content":"润色"}', True),
+        ('review', '{"issues":[]}', True),
+        ('title', '{"titles":["一","二","三"]}', True),
+        ('continue', '{"content":"续写"}', True),
+        ('tags', '{"tags":["技术"]}', False),
+    ],
+)
+def test_assist_essay_uses_style_samples_only_for_prose_tasks(
+    monkeypatch, task, response_content, expects_samples,
+):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    seen = {}
+
+    def opener(request, timeout):
+        seen['body'] = json.loads(request.data)
+        return FakeResponse(_deepseek_response(response_content))
+
+    assist_essay(
+        task,
+        '当前正文',
+        style_samples=[{'title': '旧文', 'content': '旧文片段'}],
+        opener=opener,
+    )
+
+    context = json.loads(seen['body']['messages'][1]['content'])
+    assert ('style_samples' in context) is expects_samples
+    system = seen['body']['messages'][0]['content']
+    assert '不可信数据' in system
+    assert '不得复用样本中的事实' in system
+
+
+@pytest.mark.parametrize(
+    'style_samples',
+    [
+        '旧文',
+        [None],
+        [{'title': '', 'content': '正文'}],
+        [{'title': '旧文', 'content': 123}],
+    ],
+)
+def test_assist_essay_rejects_invalid_style_samples(monkeypatch, style_samples):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    with pytest.raises(ValueError, match='文风样本'):
+        assist_essay('summary', '正文', style_samples=style_samples)
+
+
+@pytest.mark.parametrize(
+    ('task', 'response_content'),
+    [
+        ('title', '{"titles":["一","二"]}'),
+        ('title', '{"titles":["重复","重复","第三条"]}'),
+        ('title', '{"titles":["' + ('长' * 41) + '","二","三"]}'),
+        ('continue', '{"content":"' + ('续' * 4001) + '"}'),
+        ('tags', '{"tags":["一","二","三","四","五","六","七"]}'),
+        ('tags', '{"tags":["' + ('长' * 31) + '"]}'),
+        (
+            'review',
+            '{"issues":[' + ','.join(
+                '{"type":"文字","message":"问题","suggestion":"建议"}' for _ in range(13)
+            ) + ']}',
+        ),
+        (
+            'review',
+            '{"issues":[{"type":"文字","message":"' + ('长' * 501) + '","suggestion":"建议"}]}',
+        ),
+        ('polish', '{"content":"' + ('长' * 4001) + '"}'),
+    ],
+)
+def test_assist_essay_rejects_bounded_task_results(monkeypatch, task, response_content):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    def opener(_request, timeout):
+        return FakeResponse(_deepseek_response(response_content))
+
+    with pytest.raises(AIServiceError, match='返回格式异常'):
+        assist_essay(task, '短正文', opener=opener)
+
+
+def test_assist_essay_normalizes_and_deduplicates_tags(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+
+    def opener(_request, timeout):
+        return FakeResponse(_deepseek_response('{"tags":[" 技术 ","Python","技术"]}'))
+
+    assert assist_essay('tags', '正文', opener=opener)['result'] == {
+        'tags': ['技术', 'Python'],
     }
