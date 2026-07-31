@@ -183,6 +183,9 @@ def test_essay_editor_is_split_by_responsibility():
     assert html.index('assets/js/admin-essay-content.js') < html.index('assets/js/admin-ai.js')
     assert html.index('assets/js/admin-ai.js') < html.index('assets/js/admin-tabs.js')
     assert 'assets/js/admin-essay-editor.js' not in html
+    assert html.count('data-ai-task=') == 6
+    assert 'data-ai-task="title"' in html
+    assert 'data-ai-task="continue"' in html
 
 
 def test_essay_tags_are_split_by_responsibility():

@@ -73,7 +73,8 @@
   min-height: 38px;
 }
 .essay-ai-actions .btn:focus-visible,
-.essay-ai-apply:focus-visible {
+.essay-ai-apply:focus-visible,
+.essay-ai-title-choice:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
@@ -109,6 +110,15 @@
   flex-wrap: wrap;
   gap: 6px;
   margin-bottom: 10px;
+}
+.essay-ai-title-options {
+  display: grid;
+  gap: 8px;
+}
+.essay-ai-title-choice {
+  min-height: 38px;
+  text-align: left;
+  white-space: normal;
 }
 .essay-ai-issue-list {
   margin: 0;

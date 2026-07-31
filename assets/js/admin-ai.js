@@ -79,12 +79,28 @@ function _renderEssayAiResult(task, suggestion) {
   title.textContent = {
     summary: '摘要建议',
     tags: '标签建议',
+    title: '标题建议',
     polish: '润色建议',
+    continue: '续写建议',
     review: '检查结果'
   }[task];
   container.appendChild(title);
 
-  if (task === 'tags') {
+  if (task === 'title') {
+    var choices = document.createElement('div');
+    choices.className = 'essay-ai-title-options';
+    suggestion.titles.forEach(function(candidate) {
+      var choice = document.createElement('button');
+      choice.type = 'button';
+      choice.className = 'btn essay-ai-title-choice';
+      choice.textContent = candidate;
+      choice.addEventListener('click', function() {
+        applyEssayAiResult(candidate);
+      });
+      choices.appendChild(choice);
+    });
+    container.appendChild(choices);
+  } else if (task === 'tags') {
     var tags = document.createElement('div');
     tags.className = 'essay-ai-tags';
     suggestion.tags.forEach(function(tag) {
@@ -117,7 +133,11 @@ function _renderEssayAiResult(task, suggestion) {
     text.className = 'essay-ai-result-text';
     text.textContent = task === 'summary' ? suggestion.excerpt : suggestion.content;
     container.appendChild(text);
-    _appendEssayAiApply(container, task === 'summary' ? '应用到摘要' : '替换原文');
+    _appendEssayAiApply(container, {
+      summary: '应用到摘要',
+      polish: '替换原文',
+      continue: '追加到正文'
+    }[task]);
   }
   container.hidden = false;
 }
@@ -155,7 +175,11 @@ async function requestEssayAi(task) {
     };
     _renderEssayAiResult(task, response.result);
     var usage = response.usage || {};
-    _setEssayAiBusy(false, '建议已生成 · ' +
+    var styleCount = response.style_reference_count || 0;
+    var styleStatus = task !== 'tags' && styleCount
+      ? '已参考 ' + styleCount + ' 篇公开随笔'
+      : '通用编辑模式';
+    _setEssayAiBusy(false, styleStatus + ' · ' +
       (usage.prompt_tokens || 0) + ' 输入 / ' +
       (usage.completion_tokens || 0) + ' 输出 tokens');
   } catch (error) {
@@ -176,7 +200,7 @@ function _openEssayMetaForAi(slug) {
   return true;
 }
 
-function applyEssayAiResult() {
+function applyEssayAiResult(titleChoice) {
   if (!_essayAiSuggestion) return;
   var task = _essayAiSuggestion.task;
   var suggestion = _essayAiSuggestion.result;
@@ -187,7 +211,7 @@ function applyEssayAiResult() {
     toast('当前文章已变化，请重新请求 AI', true);
     return;
   }
-  if (task === 'summary' || task === 'tags') {
+  if (task === 'summary' || task === 'tags' || task === 'title') {
     if (!_openEssayMetaForAi(snapshot.slug)) {
       toast('找不到文章元数据', true);
       return;
@@ -195,7 +219,13 @@ function applyEssayAiResult() {
     if (task === 'summary') {
       document.getElementById('essay-excerpt').value = suggestion.excerpt;
     } else {
-      renderEssayTaxonomy(suggestion.tags.join(', '));
+      if (task === 'tags') {
+        renderEssayTaxonomy(suggestion.tags.join(', '));
+      } else if (typeof titleChoice === 'string') {
+        document.getElementById('essay-title').value = titleChoice;
+      } else {
+        return;
+      }
     }
   } else if (task === 'polish') {
     var textarea = document.getElementById('essay-content-md');
@@ -208,15 +238,37 @@ function applyEssayAiResult() {
     textarea.focus();
     textarea.selectionStart = textarea.selectionEnd = snapshot.start + suggestion.content.length;
     _updateWordCount();
+  } else if (task === 'continue') {
+    var continueTextarea = document.getElementById('essay-content-md');
+    if (continueTextarea.value !== snapshot.markdown) {
+      toast('正文已变化，请重新请求 AI', true);
+      return;
+    }
+    var separator = continueTextarea.value.endsWith('\n\n')
+      ? ''
+      : (continueTextarea.value.endsWith('\n') ? '\n' : '\n\n');
+    continueTextarea.value += separator + suggestion.content;
+    continueTextarea.focus();
+    continueTextarea.selectionStart = continueTextarea.selectionEnd = continueTextarea.value.length;
+    _updateWordCount();
   } else {
     return;
   }
 
   markDirty();
-  var applyButton = document.querySelector('.essay-ai-apply');
-  if (applyButton) {
-    applyButton.disabled = true;
-    applyButton.textContent = '已应用，尚未保存';
+  if (task === 'title') {
+    document.querySelectorAll('.essay-ai-title-choice').forEach(function(button) {
+      button.disabled = true;
+      if (button.textContent === titleChoice) {
+        button.textContent = '已应用 · ' + titleChoice;
+      }
+    });
+  } else {
+    var applyButton = document.querySelector('.essay-ai-apply');
+    if (applyButton) {
+      applyButton.disabled = true;
+      applyButton.textContent = '已应用，尚未保存';
+    }
   }
   document.getElementById('essay-ai-status').textContent = '已应用到编辑器，请检查后手动保存';
 }

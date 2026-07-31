@@ -68,7 +68,7 @@ def test_admin_shell_loads_shared_modules_and_switches_tabs(live_server, browser
         ):
             assert page.evaluate('typeof ' + name) == 'function'
         assert page.locator('#essay-ai-panel').count() == 1
-        assert page.locator('#essay-ai-actions button').count() == 4
+        assert page.locator('#essay-ai-actions button').count() == 6
         page.locator('#essay-list button', has_text='元数据').first.click()
         page.locator('#essay-form').wait_for(state='visible')
         page.evaluate("renderEssayTaxonomy('技术, Python, 教程, 复盘')")
@@ -90,6 +90,8 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
             'summary': {'excerpt': '<img src=x onerror=alert(1)>摘要'},
             'tags': {'tags': ['技术', 'Python', '教程']},
             'polish': {'content': '润色'},
+            'title': {'titles': ['<img src=x>标题', '克制的标题', '第三个标题']},
+            'continue': {'content': '续写内容'},
             'review': {
                 'issues': [{
                     'type': '文字',
@@ -102,6 +104,7 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
             'task': task,
             'result': results[task],
             'usage': {'prompt_tokens': 3, 'completion_tokens': 2},
+            'style_reference_count': 0 if task == 'tags' else 3,
         })
 
     page.route('**/api/ai/essay-assist', fulfill_ai)
@@ -134,6 +137,7 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
         page.locator('#essay-ai-result').wait_for(state='visible')
         assert '<img src=x onerror=alert(1)>摘要' in page.locator('#essay-ai-result').inner_text()
         assert page.locator('#essay-ai-result img').count() == 0
+        assert '已参考 3 篇公开随笔' in page.locator('#essay-ai-status').inner_text()
         page.locator('.essay-ai-apply').click()
         assert page.locator('#essay-excerpt').input_value() == '<img src=x onerror=alert(1)>摘要'
         assert essay_writes == []
@@ -155,11 +159,29 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
         assert '存在重复' in page.locator('#essay-ai-result').inner_text()
         assert page.locator('.essay-ai-apply').count() == 0
 
+        page.locator('[data-ai-task="title"]').click()
+        assert page.locator('.essay-ai-title-choice').count() == 3
+        assert page.locator('#essay-ai-result img').count() == 0
+        page.locator('.essay-ai-title-choice').nth(1).click()
+        assert page.locator('#essay-title').input_value() == '克制的标题'
+        assert page.locator('.essay-ai-title-choice:disabled').count() == 3
+        assert essay_writes == []
+
+        page.locator('[data-ai-task="continue"]').click()
+        page.locator('.essay-ai-apply').click()
+        assert page.locator('#essay-content-md').input_value() == '润色正文\n\n续写内容'
+
+        page.locator('[data-ai-task="continue"]').click()
+        page.evaluate("document.getElementById('essay-content-md').value += '\\n用户新写'")
+        page.locator('.essay-ai-apply').click()
+        assert page.locator('#essay-content-md').input_value().endswith('用户新写')
+        assert not page.locator('#essay-content-md').input_value().endswith('续写内容')
+
         page.evaluate("""
           _essayAllData[0].password_set = true;
           updateEssayAiAvailability('essay-demo');
         """)
-        assert page.locator('#essay-ai-actions button:disabled').count() == 4
+        assert page.locator('#essay-ai-actions button:disabled').count() == 6
         assert '密码保护文章' in page.locator('#essay-ai-status').inner_text()
     finally:
         page.close()
