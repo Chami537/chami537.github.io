@@ -2,10 +2,10 @@
   {
     "filename": "0bafcdb21b37a78577502401bbf9be97.jpg",
     "exif": {
-      "focal": "6mm",
-      "aperture": "f/1.6",
       "shutter": "1/100s",
+      "aperture": "f/1.6",
       "iso": "200",
+      "focal": "6mm",
       "gps": {
         "lat": 22.284808,
         "lng": 114.148178
@@ -20,10 +20,10 @@
   {
     "filename": "15a70814318ed74d5ec2448532f7fab5.jpg",
     "exif": {
-      "focal": "13mm",
-      "aperture": "f/2.6",
       "shutter": "1/100s",
+      "aperture": "f/2.6",
       "iso": "200",
+      "focal": "13mm",
       "gps": {
         "lat": 22.480478,
         "lng": 113.951567
@@ -38,10 +38,10 @@
   {
     "filename": "68b93d07a342daef4f8483cdb249c4f7.jpg",
     "exif": {
-      "focal": "6mm",
-      "aperture": "f/1.6",
       "shutter": "1/100s",
+      "aperture": "f/1.6",
       "iso": "320",
+      "focal": "6mm",
       "gps": {
         "lat": 22.587326,
         "lng": 113.96572
@@ -56,10 +56,10 @@
   {
     "filename": "d799f0dd4097ac45c2680798af20b457.jpg",
     "exif": {
-      "focal": "6mm",
-      "aperture": "f/1.6",
       "shutter": "1/309s",
+      "aperture": "f/1.6",
       "iso": "50",
+      "focal": "6mm",
       "gps": {
         "lat": 22.604025,
         "lng": 113.825442
@@ -73,349 +73,272 @@
   },
   {
     "filename": "11f6710f.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/33s",
-      "aperture": "f/2.6",
-      "iso": "500",
-      "focal": "13mm",
       "gps": {
         "lat": 29.54285,
         "lng": 106.557125
       }
     },
     "date": "Jul 8, 2025",
+    "size": "sm",
     "tags": [
       "City"
     ]
   },
   {
     "filename": "4b54eb6f.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/11236s",
-      "aperture": "f/1.88",
-      "iso": "91",
-      "focal": "5mm",
       "gps": {
         "lat": 32.074068,
         "lng": 118.788728
       }
     },
     "date": "Feb 10, 2024",
+    "size": "sm",
     "tags": [
       "Nature"
     ]
   },
   {
     "filename": "0bd452bc.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/539s",
-      "aperture": "f/1.6",
-      "iso": "64",
-      "focal": "6mm",
       "gps": {
         "lat": 29.553077,
         "lng": 106.56425
       }
     },
     "date": "Jul 7, 2025",
+    "size": "sm",
     "tags": [
       "City"
     ]
   },
   {
     "filename": "6e864336.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/518s",
-      "aperture": "f/2.6",
-      "iso": "50",
-      "focal": "13mm",
       "gps": {
         "lat": 28.18715,
         "lng": 112.929026
       }
     },
     "date": "Jul 10, 2025",
+    "size": "sm",
     "tags": [
       "Nature"
     ]
   },
   {
     "filename": "0abd098d.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/518s",
-      "aperture": "f/2.6",
-      "iso": "50",
-      "focal": "13mm",
       "gps": {
         "lat": 30.252888,
         "lng": 120.157031
       }
     },
     "date": "Jul 13, 2025",
+    "size": "sm",
     "tags": [
       "Nature"
     ]
   },
   {
     "filename": "3a8a4acc.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/100s",
-      "aperture": "f/2.6",
-      "iso": "400",
-      "focal": "13mm",
       "gps": {
         "lat": 31.224285,
         "lng": 121.441465
       }
     },
     "date": "May 3, 2026",
+    "size": "sm",
     "tags": [
       "InMyFeelings"
     ]
   },
   {
     "filename": "6643f269.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/25s",
-      "aperture": "f/2.6",
-      "iso": "2000",
-      "focal": "13mm",
       "gps": {
         "lat": 23.11384,
         "lng": 113.318006
       }
     },
     "date": "Aug 26, 2025",
+    "size": "sm",
     "tags": [
       "City"
     ]
   },
   {
     "filename": "82f73d67.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/959s",
-      "aperture": "f/2.6",
-      "iso": "64",
-      "focal": "13mm",
       "gps": {
         "lat": 22.295584,
         "lng": 114.172406
       }
     },
     "date": "Oct 1, 2025",
+    "size": "sm",
     "tags": [
       "City"
     ]
   },
   {
     "filename": "ced657a4.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/1672s",
-      "aperture": "f/2.6",
-      "iso": "64",
-      "focal": "13mm",
       "gps": {
         "lat": 22.263245,
         "lng": 113.581617
       }
     },
     "date": "Nov 16, 2025",
+    "size": "sm",
     "tags": [
       "Sea"
     ]
   },
   {
     "filename": "15b50392.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/1737s",
-      "aperture": "f/1.6",
-      "iso": "50",
-      "focal": "6mm",
       "gps": {
         "lat": 22.145399,
         "lng": 113.565887
       }
     },
     "date": "Nov 29, 2025",
+    "size": "sm",
     "tags": [
       "City"
     ]
   },
   {
     "filename": "a8358e54.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/408s",
-      "aperture": "f/1.6",
-      "iso": "64",
-      "focal": "6mm",
       "gps": {
         "lat": 22.283349,
         "lng": 114.17299
       }
     },
     "date": "Mar 27, 2026",
+    "size": "sm",
     "tags": [
       "InMyFeelings"
     ]
   },
   {
     "filename": "736e3c65.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/2018s",
-      "aperture": "f/2.6",
-      "iso": "250",
-      "focal": "13mm",
       "gps": {
         "lat": 31.152225,
         "lng": 121.805157
       }
     },
     "date": "May 5, 2026",
+    "size": "sm",
     "tags": [
       "InMyFeelings"
     ]
   },
   {
     "filename": "aa5e7984.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/239s",
-      "aperture": "f/2.6",
-      "iso": "50",
-      "focal": "13mm",
       "gps": {
         "lat": 22.281167,
         "lng": 114.127108
       }
     },
     "date": "Dec 25, 2025",
+    "size": "sm",
     "tags": [
       "Sea"
     ]
   },
   {
     "filename": "fd28121d.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/129s",
-      "aperture": "f/1.6",
-      "iso": "50",
-      "focal": "6mm",
       "gps": {
         "lat": 34.262313,
         "lng": 108.942142
       }
     },
     "date": "Jan 20, 2026",
+    "size": "sm",
     "tags": [
       "City"
     ]
   },
   {
     "filename": "49fb2cf3.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/885s",
-      "aperture": "f/1.6",
-      "iso": "50",
-      "focal": "6mm",
       "gps": {
         "lat": 22.474176,
         "lng": 113.910788
       }
     },
     "date": "Nov 2, 2025",
+    "size": "sm",
     "tags": [
       "Sea"
     ]
   },
   {
     "filename": "68cc0cc3.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/15s",
-      "aperture": "f/2.6",
-      "iso": "3200",
-      "focal": "13mm",
       "gps": {
         "lat": 22.592941,
         "lng": 113.965846
       }
     },
     "date": "Jun 28, 2026",
+    "size": "sm",
     "tags": [
       "InMyFeelings"
     ]
   },
   {
     "filename": "836578f1.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/6502s",
-      "aperture": "f/2.6",
-      "iso": "64",
-      "focal": "13mm",
       "gps": {
         "lat": 22.50227,
         "lng": 113.947931
       }
     },
     "date": "Oct 7, 2025",
+    "size": "sm",
     "tags": [
       "Sea"
     ]
   },
   {
     "filename": "d2f4c482.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/126s",
-      "aperture": "f/1.6",
-      "iso": "50",
-      "focal": "6mm",
       "gps": {
         "lat": 22.316077,
         "lng": 113.938071
       }
     },
     "date": "May 5, 2026",
+    "size": "sm",
     "tags": [
       "InMyFeelings"
     ]
   },
   {
     "filename": "48d7b8ca.jpg",
-    "size": "sm",
     "exif": {
-      "shutter": "1/50s",
-      "aperture": "f/2.6",
-      "iso": "640",
-      "focal": "13mm",
       "gps": {
         "lat": 30.671084,
         "lng": 104.120768
       }
     },
     "date": "Jul 4, 2025",
+    "size": "sm",
     "tags": [
       "InMyFeelings"
     ]
   },
   {
     "filename": "fb6ec8a7.jpg",
-    "size": "sm",
     "exif": {
       "shutter": "1/50s",
       "aperture": "f/2.6",
@@ -427,11 +350,11 @@
         "lng": 113.965181
       }
     },
-    "date": "Jul 11, 2026"
+    "date": "Jul 11, 2026",
+    "size": "sm"
   },
   {
     "filename": "bdefc00a.jpg",
-    "size": "sm",
     "exif": {
       "shutter": "1/100s",
       "aperture": "f/1.6",
@@ -443,6 +366,157 @@
         "lng": 114.019518
       }
     },
-    "date": "Jun 26, 2026"
+    "date": "Jun 26, 2026",
+    "size": "sm"
+  },
+  {
+    "filename": "03c4c220.jpg",
+    "exif": {
+      "shutter": "1/20s",
+      "aperture": "f/2.6",
+      "iso": "640",
+      "focal": "13mm",
+      "date": "2026-07-22 17:22",
+      "gps": {
+        "lat": 35.658608,
+        "lng": 139.702292
+      }
+    },
+    "date": "Jul 22, 2026"
+  },
+  {
+    "filename": "19d8fc39.jpg",
+    "exif": {
+      "shutter": "1/889s",
+      "aperture": "f/2.6",
+      "iso": "50",
+      "focal": "13mm",
+      "date": "2026-07-21 08:20",
+      "gps": {
+        "lat": 25.071981,
+        "lng": 121.222972
+      }
+    },
+    "date": "Jul 21, 2026"
+  },
+  {
+    "filename": "39c15660.jpg",
+    "exif": {
+      "shutter": "1/411s",
+      "aperture": "f/2.6",
+      "iso": "125",
+      "focal": "13mm",
+      "date": "2026-07-21 12:41",
+      "gps": {
+        "lat": 35.762025,
+        "lng": 140.384011
+      }
+    },
+    "date": "Jul 21, 2026"
+  },
+  {
+    "filename": "4ddc9b21.jpg",
+    "exif": {
+      "shutter": "1/50s",
+      "aperture": "f/2.6",
+      "iso": "640",
+      "focal": "13mm",
+      "date": "2026-07-23 11:43",
+      "gps": {
+        "lat": 35.300392,
+        "lng": 139.479886
+      }
+    },
+    "date": "Jul 23, 2026"
+  },
+  {
+    "filename": "513590e6.jpg",
+    "exif": {
+      "shutter": "1/1793s",
+      "aperture": "f/1.6",
+      "iso": "50",
+      "focal": "6mm",
+      "date": "2026-07-22 14:32",
+      "gps": {
+        "lat": 35.685078,
+        "lng": 139.723247
+      }
+    },
+    "date": "Jul 22, 2026"
+  },
+  {
+    "filename": "5ecc4f49.jpg",
+    "exif": {
+      "shutter": "1/889s",
+      "aperture": "f/2.6",
+      "iso": "50",
+      "focal": "13mm",
+      "date": "2026-07-21 08:20",
+      "gps": {
+        "lat": 25.071981,
+        "lng": 121.222972
+      }
+    },
+    "date": "Jul 21, 2026"
+  },
+  {
+    "filename": "a760ae7d.jpg",
+    "exif": {
+      "shutter": "1/33s",
+      "aperture": "f/1.6",
+      "iso": "250",
+      "focal": "6mm",
+      "date": "2026-07-21 20:58",
+      "gps": {
+        "lat": 35.658528,
+        "lng": 139.746903
+      }
+    },
+    "date": "Jul 21, 2026"
+  },
+  {
+    "filename": "c35b665d.jpg",
+    "exif": {
+      "shutter": "1/33s",
+      "aperture": "f/1.6",
+      "iso": "250",
+      "focal": "6mm",
+      "date": "2026-07-21 20:58",
+      "gps": {
+        "lat": 35.658528,
+        "lng": 139.746903
+      }
+    },
+    "date": "Jul 21, 2026"
+  },
+  {
+    "filename": "c39d54d3.jpg",
+    "exif": {
+      "shutter": "1/605s",
+      "aperture": "f/2.6",
+      "iso": "50",
+      "focal": "13mm",
+      "date": "2026-07-22 14:56",
+      "gps": {
+        "lat": 35.685794,
+        "lng": 139.723392
+      }
+    },
+    "date": "Jul 22, 2026"
+  },
+  {
+    "filename": "ff276147.jpg",
+    "exif": {
+      "shutter": "1/23s",
+      "aperture": "f/2.6",
+      "iso": "800",
+      "focal": "13mm",
+      "date": "2026-07-22 19:45",
+      "gps": {
+        "lat": 35.658258,
+        "lng": 139.701975
+      }
+    },
+    "date": "Jul 22, 2026"
   }
 ]
