@@ -145,6 +145,44 @@ function _appendEssayAiApply(result, label) {
   result.appendChild(button);
 }
 
+async function _refineEssayAiCandidate() {
+  if (!_essayAiSuggestion || !['polish', 'continue', 'summary'].includes(_essayAiSuggestion.task)) return;
+  var feedback = document.getElementById('essay-ai-feedback-input').value.trim();
+  if (!feedback) return toast('请先写一句具体调整要求', true);
+  var session = _essayAiSuggestion.session;
+  if (session && !AdminAiWorkflow.isSnapshotCurrent(session)) {
+    return toast('正文已变化，请重新请求 AI', true);
+  }
+  if (_essayAiController) _essayAiController.abort();
+  var controller = new AbortController();
+  _essayAiController = controller;
+  _setEssayAiBusy(true, 'DeepSeek 正在继续调整…');
+  try {
+    var response = await api('POST', '/api/ai/essay-assist', {
+      slug: _essayAiSuggestion.snapshot.slug,
+      task: 'refine',
+      source_task: _essayAiSuggestion.task,
+      source_content: _essayAiSuggestion.snapshot.content,
+      content: _essayAiSuggestion.result.content || _essayAiSuggestion.result.excerpt,
+      instruction: feedback,
+      title: (_essayAiFindEssay(_essayAiSuggestion.snapshot.slug) || {}).title || '',
+      existing_tags: _essayTagParts((_essayAiFindEssay(_essayAiSuggestion.snapshot.slug) || {}).tag || '')
+    }, {signal: controller.signal});
+    if (_essayAiController !== controller) return;
+    _essayAiSuggestion.result = response.result;
+    _essayAiSuggestion.refined = true;
+    _renderEssayAiResult(_essayAiSuggestion.task, response.result, _essayAiSuggestion.snapshot);
+    _setEssayAiBusy(false, '已根据反馈调整 · 仍需检查并手动保存');
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      _setEssayAiBusy(false, '调整失败');
+      toast(error.message, true);
+    }
+  } finally {
+    if (_essayAiController === controller) _essayAiController = null;
+  }
+}
+
 function _renderEssayAiResult(task, suggestion, snapshot) {
   var container = document.getElementById('essay-ai-result');
   container.textContent = '';
@@ -219,6 +257,12 @@ function _renderEssayAiResult(task, suggestion, snapshot) {
     text.className = 'essay-ai-result-text';
     text.textContent = task === 'summary' ? suggestion.excerpt : suggestion.content;
     container.appendChild(text);
+    if (['polish', 'continue'].includes(task)) {
+      var diffWrap = document.createElement('div');
+      diffWrap.className = 'admin-ai-diff-wrap';
+      AdminAiWorkflow.renderDiff(diffWrap, snapshot.content, suggestion.content);
+      container.appendChild(diffWrap);
+    }
     if (task === 'polish' && suggestion.changes && suggestion.changes.length) {
       var changes = document.createElement('ul');
       changes.className = 'essay-ai-change-list';
@@ -240,6 +284,24 @@ function _renderEssayAiResult(task, suggestion, snapshot) {
         polish: '替换原文',
         continue: '追加到正文'
       }[task]);
+      if (['polish', 'continue'].includes(task)) {
+        var feedback = document.createElement('div');
+        feedback.className = 'admin-ai-feedback';
+        var label = document.createElement('label');
+        label.textContent = '继续调整';
+        var input = document.createElement('input');
+        input.id = 'essay-ai-feedback-input';
+        input.maxLength = 500;
+        input.placeholder = '例如：更短一点，保留原来的语气';
+        label.appendChild(input);
+        var refine = document.createElement('button');
+        refine.type = 'button';
+        refine.className = 'btn btn-sm';
+        refine.textContent = '继续调整';
+        refine.addEventListener('click', _refineEssayAiCandidate);
+        feedback.append(label, refine);
+        container.appendChild(feedback);
+      }
     }
   }
   container.hidden = false;
@@ -282,7 +344,13 @@ async function requestEssayAi(task) {
     _essayAiSuggestion = {
       task: task,
       result: response.result,
-      snapshot: snapshot
+      snapshot: snapshot,
+      session: AdminAiWorkflow.createSession({
+        domain: 'essay', task: task, recordId: snapshot.slug,
+        original: snapshot.content, candidate: response.result.content || '',
+        snapshot: snapshot.markdown,
+        getCurrent: function() { return document.getElementById('essay-content-md').value; }
+      })
     };
     _renderEssayAiResult(task, response.result, snapshot);
     var usage = response.usage || {};
@@ -326,21 +394,19 @@ function applyEssayAiResult(titleChoice) {
     toast('当前文章已变化，请重新请求 AI', true);
     return;
   }
-  if (task === 'summary' || task === 'tags' || task === 'title') {
+  if (task === 'summary') {
+    document.getElementById('essay-excerpt').value = suggestion.excerpt;
+  } else if (task === 'tags' || task === 'title') {
     if (!_openEssayMetaForAi(snapshot.slug)) {
       toast('找不到文章元数据', true);
       return;
     }
-    if (task === 'summary') {
-      document.getElementById('essay-excerpt').value = suggestion.excerpt;
+    if (task === 'tags') {
+      renderEssayTaxonomy(suggestion.tags.join(', '));
+    } else if (typeof titleChoice === 'string') {
+      document.getElementById('essay-title').value = titleChoice;
     } else {
-      if (task === 'tags') {
-        renderEssayTaxonomy(suggestion.tags.join(', '));
-      } else if (typeof titleChoice === 'string') {
-        document.getElementById('essay-title').value = titleChoice;
-      } else {
-        return;
-      }
+      return;
     }
   } else if (task === 'polish') {
     var textarea = document.getElementById('essay-content-md');

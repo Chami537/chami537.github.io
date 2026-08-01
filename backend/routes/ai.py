@@ -32,14 +32,18 @@ def essay_assist():
     if has_essay_password(slug):
         return jsonify({'error': '密码保护文章不能发送给 AI'}), 403
 
+    task = data.get('task')
+    style_task = task in _STYLE_TASKS or (
+        task == 'refine' and data.get('source_task') in _STYLE_TASKS
+    )
     style_reference = (
         load_style_reference(slug, current_tags=data.get('existing_tags', []))
-        if data.get('task') in _STYLE_TASKS
+        if style_task
         else {'samples': [], 'count': 0}
     )
     style_profile = (
         load_style_profile()['profile']
-        if data.get('task') in _STYLE_TASKS
+        if style_task
         else ''
     )
     try:
@@ -53,6 +57,8 @@ def essay_assist():
             instruction=data.get('instruction', ''),
             surrounding_context=data.get('surrounding_context'),
             style_profile=style_profile,
+            source_task=data.get('source_task', ''),
+            source_content=data.get('source_content', ''),
         )
     except ValueError as error:
         return jsonify({'error': str(error)}), 400
@@ -110,13 +116,17 @@ def update_writing_style():
 def admin_assist():
     """Suggest copy for a supported admin surface without persisting it."""
     data = request.json
-    if data.get('task') not in _ADMIN_COPY_TASKS:
+    if data.get('task') not in _ADMIN_COPY_TASKS and data.get('task') != 'refine':
         return jsonify({'error': '不支持的管理面板 AI 任务'}), 400
+    context = data.get('context')
+    if data.get('task') == 'refine' and isinstance(context, dict):
+        if context.get('domain') not in _ADMIN_COPY_TASKS:
+            return jsonify({'error': '不支持的管理面板 AI 领域'}), 400
     style_profile = load_style_profile()['profile']
     try:
         response = assist_admin_content(
             task=data['task'],
-            context=data.get('context'),
+            context=context,
             style_profile=style_profile,
         )
     except ValueError as error:
@@ -146,7 +156,7 @@ def _public_site_audit_context():
     work = [
         {
             key: item.get(key, '')
-            for key in ('title', 'description', 'url', 'repo', 'tags')
+            for key in ('id', 'title', 'description', 'url', 'repo', 'tags')
         }
         for item in load_json('work.json')
         if isinstance(item, dict)
@@ -182,17 +192,20 @@ def _public_site_audit_context():
 def _deterministic_content_findings(context):
     findings = []
 
-    def add(priority, area, issue, suggestion):
+    def add(priority, area, issue, suggestion, locator=None):
         findings.append({
             'priority': priority,
             'area': area,
             'issue': issue,
             'suggestion': suggestion,
+            'locator': locator,
+            'can_suggest': bool(locator and locator.get('field') in {'content', 'description'}),
         })
 
     about_content = context.get('about', {}).get('content')
     if not isinstance(about_content, str) or not about_content.strip():
-        add('high', 'About', '个人简介为空', '补充一段可公开的个人简介')
+        add('high', 'About', '个人简介为空', '补充一段可公开的个人简介',
+            {'domain': 'about', 'record_id': 'about', 'field': 'content', 'task': 'about'})
 
     seen_titles = set()
     for project in context.get('projects', []):
@@ -200,27 +213,34 @@ def _deterministic_content_findings(context):
         description = project.get('description')
         label = title.strip() if isinstance(title, str) and title.strip() else '未命名项目'
         if not isinstance(title, str) or not title.strip():
-            add('high', 'Work', '存在未命名项目', '为项目补充标题')
+            add('high', 'Work', '存在未命名项目', '为项目补充标题',
+                {'domain': 'project', 'record_id': project.get('id', ''), 'field': 'title', 'task': 'project'})
         elif title.strip().casefold() in seen_titles:
-            add('medium', 'Work', f'项目标题重复：{label}', '合并重复项目或区分名称')
+            add('medium', 'Work', f'项目标题重复：{label}', '合并重复项目或区分名称',
+                {'domain': 'project', 'record_id': project.get('id', ''), 'field': 'title', 'task': 'project'})
         else:
             seen_titles.add(title.strip().casefold())
         if not isinstance(description, str) or not description.strip():
-            add('high', 'Work', f'项目“{label}”缺少描述', '补充已实现的核心功能')
+            add('high', 'Work', f'项目“{label}”缺少描述', '补充已实现的核心功能',
+                {'domain': 'project', 'record_id': project.get('id', ''), 'field': 'description', 'task': 'project'})
             continue
         if description != description.strip():
-            add('medium', 'Work', f'项目“{label}”描述存在首尾空格', '删除多余空格')
+            add('medium', 'Work', f'项目“{label}”描述存在首尾空格', '删除多余空格',
+                {'domain': 'project', 'record_id': project.get('id', ''), 'field': 'description', 'task': 'project'})
         if re.search(r'\b(?:todo|tbd|none|panel)\b', description, re.IGNORECASE):
-            add('low', 'Work', f'项目“{label}”描述含有含混占位词', '改成明确的中文功能名称')
+            add('low', 'Work', f'项目“{label}”描述含有含混占位词', '改成明确的中文功能名称',
+                {'domain': 'project', 'record_id': project.get('id', ''), 'field': 'description', 'task': 'project'})
 
     for essay in context.get('essays', []):
         title = essay.get('title')
         excerpt = essay.get('excerpt')
         label = title.strip() if isinstance(title, str) and title.strip() else essay.get('slug', '未命名随笔')
         if not isinstance(title, str) or not title.strip():
-            add('high', 'Essays', f'随笔“{label}”缺少标题', '补充公开标题')
+            add('high', 'Essays', f'随笔“{label}”缺少标题', '补充公开标题',
+                {'domain': 'essay', 'record_id': essay.get('slug', ''), 'field': 'title', 'task': 'summary'})
         if not isinstance(excerpt, str) or not excerpt.strip():
-            add('high', 'Essays', f'随笔“{label}”缺少摘要', '补充一句可公开摘要')
+            add('high', 'Essays', f'随笔“{label}”缺少摘要', '补充一句可公开摘要',
+                {'domain': 'essay', 'record_id': essay.get('slug', ''), 'field': 'excerpt', 'task': 'summary'})
 
     priority_order = {'high': 0, 'medium': 1, 'low': 2}
     return sorted(findings, key=lambda item: priority_order[item['priority']])
@@ -243,6 +263,8 @@ def site_content_audit():
     combined = _deterministic_content_findings(context)
     seen = {(item['area'], item['issue']) for item in combined}
     for finding in response['result']['findings']:
+        finding.setdefault('locator', None)
+        finding.setdefault('can_suggest', False)
         key = (finding['area'], finding['issue'])
         if key not in seen:
             combined.append(finding)

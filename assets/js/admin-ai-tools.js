@@ -1,10 +1,12 @@
 // Shared AI suggestions for non-essay admin content. Nothing is persisted on apply.
 
 var _adminAiApplySuggestion = null;
+var _adminAiSession = null;
 
 function closeAdminAiDialog() {
   document.getElementById('admin-ai-copy-dialog').close();
   _adminAiApplySuggestion = null;
+  _adminAiSession = null;
 }
 
 function _renderAdminAiSuggestions(title, response, applySuggestion) {
@@ -14,19 +16,28 @@ function _renderAdminAiSuggestions(title, response, applySuggestion) {
   document.getElementById('admin-ai-copy-status').textContent =
     (response.style_profile_used ? '已引用文风画像 · ' : '') + '选择后只会改表单，仍需手动保存';
   options.replaceChildren();
+  document.getElementById('admin-ai-copy-feedback').hidden = true;
   _adminAiApplySuggestion = applySuggestion;
-  response.result.suggestions.forEach(function(suggestion) {
+  var suggestions = response.result.suggestions || [{title: '继续调整后的候选', content: response.result.content}];
+  suggestions.forEach(function(suggestion) {
     var card = document.createElement('article');
     card.className = 'admin-ai-copy-option';
     var heading = document.createElement('strong');
     heading.textContent = suggestion.title;
     var content = document.createElement('p');
     content.textContent = suggestion.content;
+    if (_adminAiSession && _adminAiSession.original) {
+      var diff = document.createElement('div');
+      diff.className = 'admin-ai-diff-wrap';
+      AdminAiWorkflow.renderDiff(diff, _adminAiSession.original, suggestion.content);
+      card.appendChild(diff);
+    }
     var apply = document.createElement('button');
     apply.type = 'button';
     apply.className = 'btn btn-primary btn-sm';
     apply.textContent = '应用这个版本';
     apply.addEventListener('click', function() {
+      if (_adminAiSession) _adminAiSession.candidate = suggestion.content;
       if (_adminAiApplySuggestion) _adminAiApplySuggestion(suggestion);
       markDirty();
       closeAdminAiDialog();
@@ -35,7 +46,41 @@ function _renderAdminAiSuggestions(title, response, applySuggestion) {
     card.append(heading, content, apply);
     options.appendChild(card);
   });
+  if (_adminAiSession) {
+    document.getElementById('admin-ai-copy-feedback').hidden = false;
+    document.getElementById('admin-ai-copy-feedback-input').value = '';
+  }
   if (!dialog.open) dialog.showModal();
+}
+
+async function refineAdminAiCopy() {
+  if (!_adminAiSession) return;
+  var feedback = document.getElementById('admin-ai-copy-feedback-input').value.trim();
+  if (!feedback) return toast('请先写一句具体调整要求', true);
+  if (!_adminAiSession.candidate) return toast('请先选择一个候选版本', true);
+  if (!AdminAiWorkflow.isSnapshotCurrent(_adminAiSession)) {
+    return toast('当前内容已变化，请重新请求 AI', true);
+  }
+  var button = document.getElementById('admin-ai-copy-refine');
+  button.disabled = true;
+  try {
+    var response = await api('POST', '/api/ai/admin-assist', {
+      task: 'refine',
+      context: {
+        domain: _adminAiSession.domain,
+        source_task: _adminAiSession.task,
+        source_content: _adminAiSession.original,
+        candidate: _adminAiSession.candidate,
+        feedback: feedback
+      }
+    });
+    _adminAiSession.candidate = response.result.content;
+    _renderAdminAiSuggestions('AI 继续调整', response, _adminAiApplySuggestion);
+  } catch (error) {
+    toast(error.message, true);
+  } finally {
+    button.disabled = false;
+  }
 }
 
 async function _requestAdminAiCopy(task, context, title, applySuggestion) {
@@ -43,12 +88,29 @@ async function _requestAdminAiCopy(task, context, title, applySuggestion) {
   document.getElementById('admin-ai-copy-title').textContent = title;
   document.getElementById('admin-ai-copy-status').textContent = 'DeepSeek 正在处理…';
   document.getElementById('admin-ai-copy-options').replaceChildren();
+  var original = context.content || context.description || context.caption || '';
+  _adminAiSession = AdminAiWorkflow.createSession({
+    domain: task,
+    task: task,
+    recordId: context.id || context.name || '',
+    original: original,
+    snapshot: original,
+    getCurrent: function() {
+      if (task === 'about') return document.getElementById('about-content').value;
+      if (task === 'project') return document.getElementById('work-desc').value;
+      return original;
+    }
+  });
+  document.getElementById('admin-ai-copy-refine').onclick = refineAdminAiCopy;
   if (!dialog.open) dialog.showModal();
   try {
     var response = await api('POST', '/api/ai/admin-assist', {
       task: task,
       context: context
     });
+    if (response.result.suggestions && response.result.suggestions[0]) {
+      _adminAiSession.candidate = response.result.suggestions[0].content;
+    }
     _renderAdminAiSuggestions(title, response, applySuggestion);
   } catch (error) {
     closeAdminAiDialog();
@@ -119,9 +181,54 @@ function _renderAdminAiAudit(findings) {
     var suggestion = document.createElement('span');
     suggestion.textContent = '建议：' + finding.suggestion;
     item.append(area, issue, suggestion);
+    if (finding.locator) {
+      var open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'btn btn-sm';
+      open.textContent = '去处理';
+      open.addEventListener('click', function() { openAdminFinding(finding); });
+      item.appendChild(open);
+    }
+    if (finding.can_suggest) {
+      var suggest = document.createElement('button');
+      suggest.type = 'button';
+      suggest.className = 'btn btn-sm';
+      suggest.textContent = '生成候选';
+      suggest.addEventListener('click', function() { suggestAdminFinding(finding); });
+      item.appendChild(suggest);
+    }
     results.appendChild(item);
   });
   if (!findings.length) results.appendChild(_dashboardEmpty('未发现明显的内容问题'));
+}
+
+function openAdminFinding(finding) {
+  var locator = finding && finding.locator;
+  if (!locator) return;
+  if (locator.domain === 'project') {
+    switchTab('work');
+    editWork(Number(locator.record_id));
+  } else if (locator.domain === 'essay') {
+    switchTab('essays');
+    editEssayMeta(locator.record_id);
+    setTimeout(function() {
+      var field = document.getElementById('essay-' + locator.field);
+      if (field) field.focus();
+    }, 300);
+  } else if (locator.domain === 'about') {
+    switchTab('about');
+    setTimeout(function() { document.getElementById('about-content').focus(); }, 150);
+  }
+}
+
+function suggestAdminFinding(finding) {
+  var locator = finding && finding.locator;
+  if (!locator || !finding.can_suggest) return;
+  openAdminFinding(finding);
+  setTimeout(function() {
+    if (locator.domain === 'project') aiImproveWork();
+    if (locator.domain === 'about') aiImproveAbout();
+  }, 450);
 }
 
 async function runSiteContentAudit() {

@@ -285,6 +285,42 @@ def test_assist_essay_uses_style_samples_only_for_prose_tasks(
     assert '不得复用样本中的事实' in system
 
 
+def test_assist_essay_refine_sends_source_candidate_and_feedback(monkeypatch):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    seen = {}
+
+    def opener(request, timeout):
+        seen['body'] = json.loads(request.data)
+        return FakeResponse(_deepseek_response(
+            '{"content":"更好的候选","changes":["压缩重复"]}'
+        ))
+
+    result = assist_essay(
+        'refine',
+        '当前候选',
+        source_task='polish',
+        source_content='原始正文',
+        instruction='更短，保留第一句',
+        opener=opener,
+    )
+
+    context = json.loads(seen['body']['messages'][1]['content'])
+    assert context['source_task'] == 'polish'
+    assert context['source_content'] == '原始正文'
+    assert context['feedback'] == '更短，保留第一句'
+    assert result['result']['content'] == '更好的候选'
+
+
+@pytest.mark.parametrize('feedback', ['', ' ', '字' * 501])
+def test_assist_essay_refine_rejects_invalid_feedback(monkeypatch, feedback):
+    monkeypatch.setenv('DEEPSEEK_API_KEY', 'test-secret')
+    with pytest.raises(ValueError, match='调整要求'):
+        assist_essay(
+            'refine', '候选', source_task='polish', source_content='原文',
+            instruction=feedback,
+        )
+
+
 @pytest.mark.parametrize(
     'style_samples',
     [

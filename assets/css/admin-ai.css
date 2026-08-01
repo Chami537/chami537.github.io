@@ -47,6 +47,25 @@
 .admin-ai-finding[data-priority="low"] { border-left-color: var(--c4); }
 .admin-ai-finding strong { margin-right: 6px; }
 .admin-ai-finding span { color: var(--muted); }
+.admin-ai-feedback {
+  display: flex;
+  align-items: end;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.admin-ai-feedback label { flex: 1; font-size: 11px; color: var(--muted); }
+.admin-ai-feedback input { width: 100%; margin-top: 5px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--fg); }
+.admin-ai-diff-wrap { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+.admin-ai-diff { min-width: 0; max-height: 260px; overflow: auto; padding: 10px; border: 1px solid var(--border); border-radius: 6px; white-space: pre-wrap; line-height: 1.7; font: inherit; }
+.admin-ai-diff-old { background: color-mix(in srgb, #d33 7%, var(--bg)); }
+.admin-ai-diff-new { background: color-mix(in srgb, var(--c4) 7%, var(--bg)); }
+.admin-ai-diff-removed { background: color-mix(in srgb, #d33 25%, transparent); text-decoration: line-through; }
+.admin-ai-diff-added { background: color-mix(in srgb, var(--c4) 25%, transparent); }
+@media (max-width: 760px) {
+  .admin-ai-feedback, .admin-ai-diff-wrap { display: flex; flex-direction: column; align-items: stretch; }
+}
 
 @media (max-width: 760px) {
   .admin-ai-dialog-heading,

@@ -314,6 +314,35 @@ def test_admin_ai_copy_assist_uses_confirmed_style_without_persisting(client, mo
     }
 
 
+def test_admin_ai_copy_refine_forwards_bounded_candidate_and_feedback(client, monkeypatch):
+    import backend.routes.ai as ai
+
+    captured = {}
+    monkeypatch.setattr(ai, 'load_style_profile', lambda: {'profile': '', 'updated_at': None})
+
+    def fake_assist(**kwargs):
+        captured.update(kwargs)
+        return {
+            'result': {'content': '更短候选', 'changes': ['删去重复']},
+            'usage': {'prompt_tokens': 4, 'completion_tokens': 3},
+        }
+
+    monkeypatch.setattr(ai, 'assist_admin_content', fake_assist)
+    response = client.post('/api/ai/admin-assist', json={
+        'task': 'refine',
+        'context': {
+            'domain': 'about', 'source_task': 'about',
+            'source_content': '原始简介', 'candidate': '候选简介',
+            'feedback': '更短一点',
+        },
+    })
+
+    assert response.status_code == 200
+    assert captured['task'] == 'refine'
+    assert captured['context']['candidate'] == '候选简介'
+    assert captured['context']['feedback'] == '更短一点'
+
+
 @pytest.mark.parametrize('task', [None, 'essay', 'site_audit'])
 def test_admin_ai_copy_assist_rejects_unsupported_tasks(client, task):
     response = client.post('/api/ai/admin-assist', json={
@@ -385,6 +414,10 @@ def test_site_content_audit_combines_deterministic_findings(client, monkeypatch)
     assert any('首尾空格' in item['issue'] for item in findings)
     assert any('含混占位词' in item['issue'] for item in findings)
     assert any(item['issue'] == '一句表达可以更清楚' for item in findings)
+    deterministic = next(item for item in findings if '首尾空格' in item['issue'])
+    assert deterministic['locator']['domain'] == 'project'
+    assert deterministic['locator']['field'] == 'description'
+    assert deterministic['can_suggest'] is True
 
 
 def test_tracks_upload_list_and_delete(client, monkeypatch, tmp_path):
