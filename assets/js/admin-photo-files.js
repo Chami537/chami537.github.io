@@ -1,6 +1,6 @@
 // Photo uploads and deletion.
 
-var MAX_PHOTO_UPLOAD_BYTES = 20 * 1024 * 1024;
+var MAX_PHOTO_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 function handlePhotoDrop(event) {
   if (event.dataTransfer.files.length) handlePhotoFiles(event.dataTransfer.files);
@@ -10,7 +10,7 @@ function handlePhotoFiles(files) {
   Array.from(files).forEach(function(file) {
     if (!file.type.startsWith('image/')) return;
     if (file.size > MAX_PHOTO_UPLOAD_BYTES) {
-      toast('单张照片不能超过 20MB', true);
+      toast('单张照片不能超过 25MB', true);
       return;
     }
     var form = new FormData();

@@ -6,7 +6,7 @@ from xml.etree import ElementTree
 
 from backend.data import get_image_ext
 
-MAX_IMAGE_UPLOAD_BYTES = 20 * 1024 * 1024
+MAX_IMAGE_UPLOAD_BYTES = 25 * 1024 * 1024
 MAX_MUSIC_UPLOAD_BYTES = 25 * 1024 * 1024
 MAX_GPX_UPLOAD_BYTES = 5 * 1024 * 1024
 
@@ -44,7 +44,7 @@ def validate_image_upload(file_storage):
     if not ext:
         raise UploadValidationError("不支持的文件类型")
     if _file_size(file_storage) > MAX_IMAGE_UPLOAD_BYTES:
-        raise UploadValidationError("图片不能超过 20MB", 413)
+        raise UploadValidationError("图片不能超过 25MB", 413)
 
     try:
         img = Image.open(file_storage.stream)

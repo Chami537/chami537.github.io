@@ -33,8 +33,8 @@ def test_admin_photo_cards_format_exif_date_without_camera_model():
 
 def test_admin_photo_upload_exposes_20mb_limit():
     source = Path('assets/js/admin-photo-files.js').read_text(encoding='utf-8')
-    assert 'var MAX_PHOTO_UPLOAD_BYTES = 20 * 1024 * 1024;' in source
-    assert '单张照片不能超过 20MB' in source
+    assert 'var MAX_PHOTO_UPLOAD_BYTES = 25 * 1024 * 1024;' in source
+    assert '单张照片不能超过 25MB' in source
 
 
 def test_admin_photo_editor_uses_exif_date_and_clears_stale_marker():
@@ -194,13 +194,13 @@ def test_photo_upload_no_file(client):
 def test_image_upload_limit_is_20mb(monkeypatch):
     from backend.upload_utils import MAX_IMAGE_UPLOAD_BYTES, validate_image_upload
 
-    assert MAX_IMAGE_UPLOAD_BYTES == 20 * 1024 * 1024
+    assert MAX_IMAGE_UPLOAD_BYTES == 25 * 1024 * 1024
     storage = FileStorage(
         stream=io.BytesIO(b'0' * (MAX_IMAGE_UPLOAD_BYTES + 1)),
         filename='large.jpg',
         content_type='image/jpeg',
     )
-    with pytest.raises(ValueError, match='20MB'):
+    with pytest.raises(ValueError, match='25MB'):
         validate_image_upload(storage)
 
 
