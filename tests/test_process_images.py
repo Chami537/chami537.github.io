@@ -45,7 +45,7 @@ def test_ordered_filenames_preserves_existing_order_and_sorts_new_files():
     assert ordered == ['second.jpg', 'first.jpg', 'new-a.jpg', 'new-b.jpg']
 
 
-def test_build_photo_entry_refreshes_exif_and_preserves_manual_fields():
+def test_build_photo_entry_preserves_existing_exif_and_fills_missing_fields():
     old_entry = {
         'filename': 'old.jpg',
         'exif': {'model': 'Old Camera'},
@@ -62,7 +62,7 @@ def test_build_photo_entry_refreshes_exif_and_preserves_manual_fields():
 
     assert entry == {
         'filename': 'old.jpg',
-        'exif': {'model': 'New Camera', 'date': '2026-07-15 12:34'},
+        'exif': {'model': 'Old Camera', 'date': '2026-07-15 12:34'},
         'date': 'Jul 1, 2026',
         'size': 'lg',
         'tags': ['保留'],

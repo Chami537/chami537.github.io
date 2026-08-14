@@ -26,7 +26,14 @@ def _ordered_filenames(existing, raw_files):
 
 
 def _build_photo_entry(filename, old_entry, exif_info):
-    entry = {'filename': filename, 'exif': exif_info}
+    # Existing metadata may include fields recovered or edited in the admin
+    # panel that are no longer present in a re-encoded raw file. Treat it as
+    # authoritative and only fill genuinely missing EXIF fields from source.
+    preserved_exif = dict((old_entry or {}).get('exif') or {})
+    for key, value in exif_info.items():
+        if key not in preserved_exif or preserved_exif[key] in (None, ''):
+            preserved_exif[key] = value
+    entry = {'filename': filename, 'exif': preserved_exif or exif_info}
     date = old_entry.get('date') if old_entry else None
     if not date and exif_info.get('date'):
         date = _parse_date(exif_info['date'])
