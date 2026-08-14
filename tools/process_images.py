@@ -126,7 +126,9 @@ def process_all_images():
         updated_count += int(old_entry is not None and not old_entry.get('exif'))
 
     orphaned = _preserve_orphans(existing, photos_data)
-    PHOTO_REPOSITORY.save(photos_data)
+    concurrent = PHOTO_REPOSITORY.replace_merging(photos_data)
+    if concurrent:
+        print(f"保留同步期间新增照片 {len(concurrent)} 张。")
 
     print(f"完成！总计 {len(photos_data)} 张照片，新增 {new_count}，补全 EXIF {updated_count}。" + (f" 清理孤儿条目 {orphaned}。" if orphaned else ""))
 

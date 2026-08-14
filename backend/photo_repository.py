@@ -57,3 +57,23 @@ class PhotoRepository:
             if not lost:
                 self.save(new_data)
             return lost
+
+    def replace_merging(self, new_data):
+        """Replace synced data while retaining entries added concurrently.
+
+        A long-running photo sync reads the collection before processing files.
+        Uploads that finish during that window must not disappear when the sync
+        writes its snapshot back. Existing entries in ``new_data`` keep their
+        sync result; only filenames absent from that snapshot are appended from
+        the latest store contents.
+        """
+        with self.lock:
+            existing = self.list()
+            synced_filenames = {item.get('filename', '') for item in new_data}
+            concurrent = [
+                item for item in existing
+                if item.get('filename', '') not in synced_filenames
+            ]
+            merged = list(new_data) + concurrent
+            self.save(merged)
+            return concurrent

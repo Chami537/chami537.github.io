@@ -55,3 +55,19 @@ def test_photo_repository_serializes_parallel_appends(tmp_path, monkeypatch):
     assert sorted(item['filename'] for item in repository.list()) == [
         f'{index}.jpg' for index in range(6)
     ]
+
+
+def test_photo_repository_merges_entries_added_during_sync(tmp_path):
+    repository = _repository(tmp_path)
+    repository.save([{'filename': 'existing.jpg', 'tags': ['kept']}])
+
+    repository.append({'filename': 'uploaded.jpg', 'exif': {'model': 'Camera'}})
+    concurrent = repository.replace_merging([
+        {'filename': 'existing.jpg', 'exif': {'date': '2026-08-14'}}
+    ])
+
+    assert concurrent == [{'filename': 'uploaded.jpg', 'exif': {'model': 'Camera'}}]
+    assert repository.list() == [
+        {'filename': 'existing.jpg', 'exif': {'date': '2026-08-14'}},
+        {'filename': 'uploaded.jpg', 'exif': {'model': 'Camera'}},
+    ]
