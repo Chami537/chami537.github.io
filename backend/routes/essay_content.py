@@ -15,6 +15,7 @@ from backend.data import (
     set_essay_password as store_password,
 )
 from backend.essay_crypto import decrypt_content, encrypt_content
+from backend.file_utils import atomic_write_text
 from backend.routes import essay_context
 
 MAX_ESSAY_PASSWORD_LENGTH = 256
@@ -29,8 +30,7 @@ def _rewrite_encrypted_essay(md_file, old_password, new_password):
         raw_md = decrypt_content(raw_md, old_password)
     except (ValueError, UnicodeDecodeError):
         return "旧密码错误，无法重新加密内容"
-    with open(md_file, 'w', encoding='utf-8') as file:
-        file.write(encrypt_content(raw_md, new_password))
+    atomic_write_text(md_file, encrypt_content(raw_md, new_password))
     return None
 
 
@@ -44,8 +44,7 @@ def _decrypt_essay_file(md_file, password):
         raw_md = decrypt_content(raw_md, password)
     except (ValueError, UnicodeDecodeError):
         return "旧密码错误，无法解密内容"
-    with open(md_file, 'w', encoding='utf-8') as file:
-        file.write(raw_md)
+    atomic_write_text(md_file, raw_md)
     return None
 
 

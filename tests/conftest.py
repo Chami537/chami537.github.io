@@ -4,6 +4,7 @@ import pytest
 
 from backend.app import app
 from backend.data import DATA_DIR
+from backend.file_utils import atomic_write_text
 
 
 @pytest.fixture
@@ -38,5 +39,4 @@ def data_backup():
 
     for name, content in backup.items():
         path = os.path.join(DATA_DIR, name)
-        with open(path, 'w', encoding='utf-8') as f:
-            f.write(content)
+        atomic_write_text(path, content)

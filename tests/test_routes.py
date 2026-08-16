@@ -1429,6 +1429,33 @@ def test_change_password_roundtrip(client, data_backup):
     client.delete(f'/api/essays/{slug}')
 
 
+def test_password_change_write_failure_keeps_existing_ciphertext(client, data_backup, monkeypatch):
+    import backend.routes.essay_content as content_route
+
+    created = client.post('/api/essays', json={
+        'slug': 'password-write-failure', 'title': 'Password Write Failure',
+    })
+    slug = created.json['slug']
+    client.put(f'/api/essays/{slug}/content', json={'content': '原始内容'})
+    client.post(f'/api/essays/{slug}/password', json={'password': 'oldpass'})
+    md_file = os.path.join(DATA_DIR, '..', 'md', f'{slug}.md')
+    with open(md_file, encoding='utf-8') as handle:
+        original = handle.read()
+
+    monkeypatch.setattr(
+        content_route,
+        'atomic_write_text',
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError('write failed')),
+    )
+    with pytest.raises(OSError, match='write failed'):
+        client.post(f'/api/essays/{slug}/password', json={'password': 'newpass'})
+    with open(md_file, encoding='utf-8') as handle:
+        assert handle.read() == original
+
+    monkeypatch.undo()
+    client.delete(f'/api/essays/{slug}')
+
+
 def test_change_password_wrong_old(client, data_backup):
     """Changing password returns 400 when running but old password unknown."""
     r = client.post('/api/essays', json={
