@@ -1,4 +1,6 @@
 import json
+import time
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -46,3 +48,21 @@ def test_json_repository_uses_an_explicit_store(tmp_path):
     repository.save([{'id': 1}])
 
     assert repository.list() == [{'id': 1}]
+
+
+def test_json_repository_serializes_read_modify_write_transactions(tmp_path):
+    store = JsonStore(tmp_path)
+    first = JsonRepository('items.json', store)
+    second = JsonRepository('items.json', store)
+
+    def append(repository, value):
+        def callback(items):
+            time.sleep(0.01)
+            items.append({'value': value})
+            return True
+        repository.mutate(callback)
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        list(pool.map(lambda args: append(*args), [(first, 'a'), (second, 'b')]))
+
+    assert sorted(item['value'] for item in first.list()) == ['a', 'b']

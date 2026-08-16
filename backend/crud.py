@@ -31,11 +31,12 @@ def create_item(filename, item, auto_id=False):
         return jsonify({"error": "Expected a JSON object"}), 400
     item = dict(item)
     repository = repository_for(filename)
-    data = repository.list()
-    if auto_id:
-        item['id'] = max((i['id'] for i in data if isinstance(i.get('id'), int)), default=0) + 1
-    data.append(item)
-    repository.save(data)
+    def append_item(data):
+        if auto_id:
+            item['id'] = max((i['id'] for i in data if isinstance(i.get('id'), int)), default=0) + 1
+        data.append(item)
+        return item
+    repository.mutate(append_item)
     return jsonify(item), 201
 
 
@@ -44,23 +45,28 @@ def update_item_by_id(filename, id_val, updates):
         return jsonify({"error": "Expected a JSON object"}), 400
     updates = dict(updates)
     repository = repository_for(filename)
-    data = repository.list()
-    for i, item in enumerate(data):
-        if 'id' not in item:
-            continue
-        if item['id'] == id_val:
-            updates['id'] = id_val
-            data[i].update(updates)
-            repository.save(data)
-            return jsonify(data[i])
-    return jsonify({"error": "Not found"}), 404
+    def update(data):
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            if item.get('id') == id_val:
+                updates['id'] = id_val
+                item.update(updates)
+                return item
+        return None
+    updated = repository.mutate(update)
+    return jsonify(updated) if updated is not None else (jsonify({"error": "Not found"}), 404)
 
 
 def delete_item_by_id(filename, id_val):
     repository = repository_for(filename)
-    data = repository.list()
-    new_data = [item for item in data if item.get('id') != id_val]
-    if len(new_data) == len(data):
-        return jsonify({"error": "Not found"}), 404
-    repository.save(new_data)
-    return jsonify({"status": "deleted"})
+    def remove(data):
+        for index, item in enumerate(data):
+            if not isinstance(item, dict):
+                continue
+            if item.get('id') == id_val:
+                data.pop(index)
+                return True
+        return None
+    deleted = repository.mutate(remove)
+    return jsonify({"status": "deleted"}) if deleted else (jsonify({"error": "Not found"}), 404)
