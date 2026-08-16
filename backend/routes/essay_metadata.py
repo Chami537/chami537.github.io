@@ -15,6 +15,7 @@ from backend.data import (
     rename_essay_password,
 )
 from backend.essay_navigation import parse_tags
+from backend.essay_file_ops import rename_sources, restore_sources
 from backend.routes import essay_context
 
 
@@ -32,15 +33,21 @@ def update_essay_meta(slug):
         return jsonify({"error": error}), 409 if error == 'slug 已存在' else 400
 
     _apply_meta_updates(target, request.json, new_slug)
+    moved_sources = []
+    password_renamed = False
     try:
         rename_essay_password(slug, new_slug)
+        password_renamed = slug != new_slug
+        moved_sources = rename_sources(
+            slug, new_slug, ((ESSAYS_DIR, 'html'), (MD_DIR, 'md')),
+        )
         essay_context.ESSAY_REPOSITORY.save(essays)
     except ValueError as exc:
+        _rollback_essay_rename(slug, new_slug, moved_sources, password_renamed)
         return jsonify({"error": str(exc)}), 409
     except Exception:
-        rename_essay_password(new_slug, slug)
+        _rollback_essay_rename(slug, new_slug, moved_sources, password_renamed)
         raise
-    _rename_essay_sources(slug, new_slug)
     _sync_related_essays(target, slug, essays)
     essay_context.ESSAY_WORKFLOW.regenerate_feeds()
     return jsonify(target)
@@ -60,15 +67,10 @@ def _apply_meta_updates(essay, updates, new_slug):
     essay['slug'] = new_slug
 
 
-def _rename_essay_sources(old_slug, new_slug):
-    if new_slug == old_slug:
-        return
-    for directory in (ESSAYS_DIR, MD_DIR):
-        suffix = 'html' if directory == ESSAYS_DIR else 'md'
-        old_path = os.path.join(directory, f'{old_slug}.{suffix}')
-        new_path = os.path.join(directory, f'{new_slug}.{suffix}')
-        if os.path.exists(old_path):
-            os.replace(old_path, new_path)
+def _rollback_essay_rename(old_slug, new_slug, moved_sources, password_renamed):
+    restore_sources(moved_sources)
+    if password_renamed:
+        rename_essay_password(new_slug, old_slug)
 
 
 def _sync_related_essays(updated, old_slug, essays):

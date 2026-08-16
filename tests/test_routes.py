@@ -725,6 +725,34 @@ def test_essay_password_follows_slug_rename_and_delete(client, data_backup, tmp_
     assert data_module.get_essay_password('lifecycle-new') == ''
 
 
+def test_essay_slug_rename_restores_files_when_metadata_save_fails(client, data_backup, tmp_path, monkeypatch):
+    import backend.routes.essay_context as essay_context
+    import backend.routes.essay_metadata as metadata_route
+
+    created = client.post('/api/essays', json={
+        'slug': 'rename-rollback-old', 'title': 'Rename Rollback',
+    })
+    assert created.status_code == 201
+    old_md = tmp_path / 'rename-rollback-old.md'
+    new_md = tmp_path / 'rename-rollback-new.md'
+    monkeypatch.setattr(metadata_route, 'MD_DIR', str(tmp_path))
+    old_md.write_text('content', encoding='utf-8')
+
+    original_save = essay_context.ESSAY_REPOSITORY.save
+    monkeypatch.setattr(
+        essay_context.ESSAY_REPOSITORY,
+        'save',
+        lambda _essays: (_ for _ in ()).throw(OSError('metadata save failed')),
+    )
+    with pytest.raises(OSError, match='metadata save failed'):
+        client.put('/api/essays/rename-rollback-old', json={'slug': 'rename-rollback-new'})
+
+    assert old_md.exists()
+    assert not new_md.exists()
+    monkeypatch.setattr(essay_context.ESSAY_REPOSITORY, 'save', original_save)
+    client.delete('/api/essays/rename-rollback-old')
+
+
 # ── Photos: reorder validation ──
 
 def test_photos_reorder_refuses_drop(client, data_backup):
