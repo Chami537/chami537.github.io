@@ -78,6 +78,8 @@ def test_essay_file_operations_are_isolated_from_routes():
     source = (ROOT / 'backend' / 'essay_file_ops.py').read_text(encoding='utf-8')
     assert 'def rename_sources' in source
     assert 'def restore_sources' in source
+    assert 'def stage_paths' in source
+    assert 'def purge_staged' in source
 
 
 def test_essay_routes_use_public_workflow_instead_of_private_ssg_helpers():

@@ -753,6 +753,34 @@ def test_essay_slug_rename_restores_files_when_metadata_save_fails(client, data_
     client.delete('/api/essays/rename-rollback-old')
 
 
+def test_essay_delete_restores_index_and_files_when_save_fails(client, data_backup, tmp_path, monkeypatch):
+    import backend.routes.essay_context as essay_context
+    import backend.routes.essay_metadata as metadata_route
+
+    created = client.post('/api/essays', json={
+        'slug': 'delete-rollback', 'title': 'Delete Rollback',
+    })
+    assert created.status_code == 201
+    monkeypatch.setattr(metadata_route, 'MD_DIR', str(tmp_path))
+    md_file = tmp_path / 'delete-rollback.md'
+    md_file.write_text('keep', encoding='utf-8')
+    original_save = essay_context.ESSAY_REPOSITORY.save
+    calls = {'count': 0}
+
+    def fail_once(essays):
+        calls['count'] += 1
+        if calls['count'] == 1:
+            raise OSError('metadata save failed')
+        return original_save(essays)
+
+    monkeypatch.setattr(essay_context.ESSAY_REPOSITORY, 'save', fail_once)
+    with pytest.raises(OSError, match='metadata save failed'):
+        client.delete('/api/essays/delete-rollback')
+
+    assert md_file.exists()
+    assert any(item['slug'] == 'delete-rollback' for item in essay_context.ESSAY_REPOSITORY.list())
+
+
 # ── Photos: reorder validation ──
 
 def test_photos_reorder_refuses_drop(client, data_backup):

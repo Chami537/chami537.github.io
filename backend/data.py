@@ -71,11 +71,12 @@ def rename_essay_password(old_slug, new_slug):
         return
     store = _read_password_store()
     if old_slug not in store:
-        return
+        return False
     if new_slug in store:
         raise ValueError(f'Password already exists for slug: {new_slug}')
     store[new_slug] = store.pop(old_slug)
     _write_password_store(store)
+    return True
 
 
 def delete_essay_password(slug):

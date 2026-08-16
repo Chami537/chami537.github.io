@@ -2,7 +2,6 @@
 
 import os
 import re
-import shutil
 
 from flask import jsonify, request
 
@@ -15,10 +14,8 @@ from backend.data import (
     rename_essay_password,
 )
 from backend.essay_navigation import parse_tags
-from backend.essay_file_ops import rename_sources, restore_sources
+from backend.essay_file_ops import purge_staged, rename_sources, restore_sources, stage_paths
 from backend.routes import essay_context
-
-
 @essay_context.bp.route('/api/essays/<slug>', methods=['PUT'])
 @require_json
 def update_essay_meta(slug):
@@ -51,8 +48,6 @@ def update_essay_meta(slug):
     _sync_related_essays(target, slug, essays)
     essay_context.ESSAY_WORKFLOW.regenerate_feeds()
     return jsonify(target)
-
-
 def _validate_meta_slug(old_slug, new_slug, essays):
     if not new_slug or not re.match(r'^[a-z0-9-]+$', new_slug):
         return 'slug 只能包含小写字母、数字和连字符'
@@ -65,14 +60,10 @@ def _apply_meta_updates(essay, updates, new_slug):
     essay.update(updates)
     essay.pop('password', None)
     essay['slug'] = new_slug
-
-
 def _rollback_essay_rename(old_slug, new_slug, moved_sources, password_renamed):
     restore_sources(moved_sources)
     if password_renamed:
         rename_essay_password(new_slug, old_slug)
-
-
 def _sync_related_essays(updated, old_slug, essays):
     essay_context.ESSAY_WORKFLOW.sync(updated, essays=essays)
     tags = parse_tags(updated.get('tag', ''), updated)
@@ -83,17 +74,32 @@ def _sync_related_essays(updated, old_slug, essays):
 
 @essay_context.bp.route('/api/essays/<slug>', methods=['DELETE'])
 def delete_essay(slug):
-    essays = essay_context.ESSAY_REPOSITORY.list()
-    target = next((essay for essay in essays if essay['slug'] == slug), None)
-    if not target:
-        return jsonify({"error": "Not found"}), 404
-    title_folder = _essay_title_folder(target['title'])
-    if title_folder is None:
-        return jsonify({"error": "Invalid title"}), 400
-    essays = [essay for essay in essays if essay['slug'] != slug]
-    essay_context.ESSAY_REPOSITORY.save(essays)
-    delete_essay_password(slug)
-    _remove_essay_files(slug, title_folder)
+    with essay_context.ESSAY_REPOSITORY.locked():
+        original_essays = essay_context.ESSAY_REPOSITORY.list()
+        target = next((essay for essay in original_essays if essay['slug'] == slug), None)
+        if not target:
+            return jsonify({"error": "Not found"}), 404
+        title_folder = _essay_title_folder(target['title'])
+        if title_folder is None:
+            return jsonify({"error": "Invalid title"}), 400
+        essays = [essay for essay in original_essays if essay['slug'] != slug]
+        staged = stage_paths(_essay_artifact_paths(slug, title_folder))
+        password_slug = f'__deleting__{slug}'
+        password_staged = False
+        metadata_saved = False
+        try:
+            password_staged = rename_essay_password(slug, password_slug)
+            essay_context.ESSAY_REPOSITORY.save(essays)
+            metadata_saved = True
+            delete_essay_password(password_slug)
+            purge_staged(staged)
+        except Exception:
+            if metadata_saved:
+                essay_context.ESSAY_REPOSITORY.save(original_essays)
+            restore_sources(staged)
+            if password_staged:
+                rename_essay_password(password_slug, slug)
+            raise
     _sync_after_essay_delete(target, essays)
     return jsonify({"status": "deleted"})
 
@@ -105,15 +111,16 @@ def _essay_title_folder(title):
     return title_folder
 
 
-def _remove_essay_files(slug, title_folder):
-    for directory, suffix in ((ESSAYS_DIR, 'html'), (MD_DIR, 'md')):
-        path = os.path.join(directory, f'{slug}.{suffix}')
-        if os.path.exists(path):
-            os.remove(path)
+def _essay_artifact_paths(slug, title_folder):
+    paths = [
+        os.path.join(directory, f'{slug}.{suffix}')
+        for directory, suffix in ((ESSAYS_DIR, 'html'), (MD_DIR, 'md'))
+    ]
     image_dir = os.path.join(IMAGES_DIR, 'essays', title_folder)
     essays_image_dir = os.path.realpath(os.path.join(IMAGES_DIR, 'essays'))
     if os.path.realpath(image_dir).startswith(essays_image_dir + os.sep) and os.path.exists(image_dir):
-        shutil.rmtree(image_dir)
+        paths.append(image_dir)
+    return paths
 
 
 def _sync_after_essay_delete(deleted, essays):
