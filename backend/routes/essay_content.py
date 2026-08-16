@@ -17,6 +17,7 @@ from backend.data import (
 from backend.essay_crypto import decrypt_content, encrypt_content
 from backend.routes import essay_context
 
+MAX_ESSAY_PASSWORD_LENGTH = 256
 
 def _rewrite_encrypted_essay(md_file, old_password, new_password):
     """Decrypt an existing Markdown file and encrypt it with a new password."""
@@ -63,6 +64,8 @@ def set_essay_password(slug):
         return jsonify({"error": "Not found"}), 404
 
     new_password = request.json.get('password', '')
+    if not isinstance(new_password, str) or len(new_password) > MAX_ESSAY_PASSWORD_LENGTH:
+        return jsonify({'error': 'password must be a string no longer than 256 characters'}), 400
     error = _change_essay_password(slug, new_password)
     if error:
         return jsonify({"error": error}), 400
@@ -116,6 +119,8 @@ def get_essay_content(slug):
 @require_json
 def update_essay_content(slug):
     md_content = request.json.get('content', '')
+    if not isinstance(md_content, str):
+        return jsonify({'error': 'content must be a string'}), 400
     read_time = essay_context.ESSAY_WORKFLOW.read_time(md_content)
     essays = essay_context.ESSAY_REPOSITORY.list()
     target = None

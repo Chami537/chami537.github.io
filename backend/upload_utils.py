@@ -1,5 +1,7 @@
 """Shared upload validation helpers for admin file endpoints."""
 
+import os
+
 from PIL import Image
 from flask import jsonify
 from xml.etree import ElementTree
@@ -19,6 +21,22 @@ class UploadValidationError(ValueError):
 
 def upload_error_response(exc):
     return jsonify({"error": str(exc)}), exc.status
+
+
+def save_upload_atomically(file_storage, destination):
+    """Persist an uploaded stream without exposing a partial destination file."""
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
+    temp_path = destination + '.uploading'
+    try:
+        file_storage.save(temp_path)
+        os.replace(temp_path, destination)
+    except Exception:
+        if os.path.exists(temp_path):
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
+        raise
 
 
 def _file_size(file_storage):

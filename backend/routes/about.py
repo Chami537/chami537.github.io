@@ -6,7 +6,12 @@ bp = Blueprint('about', __name__)
 from backend.data import BASE_DIR
 from backend.repositories import repository_for
 from backend.crud import require_json
-from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
+from backend.upload_utils import (
+    UploadValidationError,
+    save_upload_atomically,
+    upload_error_response,
+    validate_image_upload,
+)
 
 
 @bp.route('/api/about', methods=['GET'])
@@ -22,15 +27,7 @@ def upload_avatar():
         return upload_error_response(exc)
     filename = 'avatar.' + ext
     filepath = os.path.join(BASE_DIR, 'images', filename)
-    os.makedirs(os.path.dirname(filepath), exist_ok=True)
-    temp_path = filepath + '.uploading'
-    try:
-        file.save(temp_path)
-        os.replace(temp_path, filepath)
-    except Exception:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-        raise
+    save_upload_atomically(file, filepath)
     # The replacement is durable; obsolete variants can now be removed safely.
     for old_ext in ('jpg', 'jpeg', 'png', 'gif', 'webp'):
         if old_ext != ext:

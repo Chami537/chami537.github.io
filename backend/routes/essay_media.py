@@ -9,7 +9,12 @@ from flask import jsonify, request
 from backend.markdown_utils import render_markdown
 from backend.routes import essay_context
 from backend.data import IMAGES_DIR
-from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
+from backend.upload_utils import (
+    UploadValidationError,
+    save_upload_atomically,
+    upload_error_response,
+    validate_image_upload,
+)
 
 
 @essay_context.bp.route('/api/essays/upload-image', methods=['POST'])
@@ -35,8 +40,7 @@ def upload_essay_image():
     else:
         image_dir = os.path.join(IMAGES_DIR, 'essays')
         url = f'/images/essays/{filename}'
-    os.makedirs(image_dir, exist_ok=True)
-    file.save(os.path.join(image_dir, filename))
+    save_upload_atomically(file, os.path.join(image_dir, filename))
     return jsonify({"url": url, "status": "uploaded"}), 201
 
 

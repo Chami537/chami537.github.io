@@ -7,7 +7,12 @@ from flask import Blueprint, jsonify, request
 
 from backend.data import BASE_DIR
 from backend.repositories import repository_for
-from backend.upload_utils import UploadValidationError, upload_error_response, validate_gpx_upload
+from backend.upload_utils import (
+    UploadValidationError,
+    save_upload_atomically,
+    upload_error_response,
+    validate_gpx_upload,
+)
 
 
 bp = Blueprint('tracks', __name__)
@@ -32,11 +37,10 @@ def upload_track():
 
     filename = f'{uuid.uuid4().hex[:8]}.gpx'
     tracks_dir = os.path.join(BASE_DIR, 'tracks')
-    os.makedirs(tracks_dir, exist_ok=True)
     path = os.path.join(tracks_dir, filename)
     item = {'name': os.path.splitext(file.filename)[0][:120] or filename, 'file': filename}
     try:
-        file.save(path)
+        save_upload_atomically(file, path)
         repository = _repository()
         tracks = repository.list()
         tracks.append(item)

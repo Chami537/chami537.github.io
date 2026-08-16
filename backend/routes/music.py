@@ -7,7 +7,12 @@ bp = Blueprint('music', __name__)
 from backend.data import BASE_DIR
 from backend.repositories import repository_for
 from backend.crud import list_all, create_item, update_item_by_id, require_json
-from backend.upload_utils import UploadValidationError, upload_error_response, validate_music_upload
+from backend.upload_utils import (
+    UploadValidationError,
+    save_upload_atomically,
+    upload_error_response,
+    validate_music_upload,
+)
 
 
 @bp.route('/api/music', methods=['GET'])
@@ -37,8 +42,7 @@ def upload_music():
 
     filename = f"{uuid.uuid4().hex[:8]}.{ext}"
     music_dir = os.path.join(BASE_DIR, 'music')
-    os.makedirs(music_dir, exist_ok=True)
-    file.save(os.path.join(music_dir, filename))
+    save_upload_atomically(file, os.path.join(music_dir, filename))
     return jsonify({"filename": filename, "status": "uploaded"}), 201
 
 

@@ -1092,6 +1092,21 @@ def test_content_api_decrypts_encrypted_md(client, data_backup):
     client.delete(f'/api/essays/{slug}')
 
 
+@pytest.mark.parametrize('content', [123, None, []])
+def test_essay_content_rejects_non_string(client, content):
+    response = client.put('/api/essays/__missing__/content', json={'content': content})
+    assert response.status_code == 400
+
+
+def test_essay_password_rejects_non_string(client):
+    essays = client.get('/api/essays').json
+    if not essays:
+        return
+    slug = essays[0]['slug']
+    response = client.post(f'/api/essays/{slug}/password', json={'password': 123})
+    assert response.status_code == 400
+
+
 # ── Auth ──
 
 def test_login_success(client_no_auth):
