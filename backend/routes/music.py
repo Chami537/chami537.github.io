@@ -49,23 +49,24 @@ def upload_music():
 @bp.route('/api/music/<int:id>', methods=['DELETE'])
 def delete_music(id):
     repository = repository_for('music.json')
-    music = repository.list()
-    target = next((item for item in music if item.get('id') == id), None)
-    if not target:
-        return jsonify({"error": "Not found"}), 404
+    with repository.locked():
+        music = repository.list()
+        target = next((item for item in music if item.get('id') == id), None)
+        if not target:
+            return jsonify({"error": "Not found"}), 404
 
-    filename = os.path.basename(target.get('filename', ''))
-    shared = any(item.get('id') != id and os.path.basename(item.get('filename', '')) == filename for item in music)
-    mp3_path = os.path.join(BASE_DIR, 'music', filename) if filename and not shared else ''
-    staged_path = mp3_path + '.deleting' if mp3_path and os.path.exists(mp3_path) else ''
-    if staged_path:
-        os.replace(mp3_path, staged_path)
-    try:
-        repository.save([item for item in music if item.get('id') != id])
-    except Exception:
+        filename = os.path.basename(target.get('filename', ''))
+        shared = any(item.get('id') != id and os.path.basename(item.get('filename', '')) == filename for item in music)
+        mp3_path = os.path.join(BASE_DIR, 'music', filename) if filename and not shared else ''
+        staged_path = mp3_path + '.deleting' if mp3_path and os.path.exists(mp3_path) else ''
+        if staged_path:
+            os.replace(mp3_path, staged_path)
+        try:
+            repository.save([item for item in music if item.get('id') != id])
+        except Exception:
+            if staged_path and os.path.exists(staged_path):
+                os.replace(staged_path, mp3_path)
+            raise
         if staged_path and os.path.exists(staged_path):
-            os.replace(staged_path, mp3_path)
-        raise
-    if staged_path and os.path.exists(staged_path):
-        os.remove(staged_path)
-    return jsonify({"status": "deleted"})
+            os.remove(staged_path)
+        return jsonify({"status": "deleted"})

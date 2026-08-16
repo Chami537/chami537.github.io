@@ -1,6 +1,7 @@
 """Small domain-facing repository over the shared JSON store."""
 
 import threading
+from contextlib import contextmanager
 
 
 _LOCKS = {}
@@ -44,3 +45,9 @@ class JsonRepository:
             if result is not None:
                 self.save(value)
             return result
+
+    @contextmanager
+    def locked(self):
+        """Hold this resource lock across a multi-step file/data operation."""
+        with self._lock:
+            yield self

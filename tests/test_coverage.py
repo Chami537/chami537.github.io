@@ -2,6 +2,7 @@
 import io
 import os
 import time
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 from types import SimpleNamespace
 from pathlib import Path
@@ -393,6 +394,10 @@ def test_music_delete_restores_file_when_metadata_save_fails(client, tmp_path, m
 
         def save(self, _data):
             raise RuntimeError('metadata save failed')
+
+        @contextmanager
+        def locked(self):
+            yield self
 
     monkeypatch.setattr(music_route, 'BASE_DIR', str(tmp_path))
     monkeypatch.setattr(music_route, 'repository_for', lambda _name: FailingRepository())

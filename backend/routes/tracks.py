@@ -42,9 +42,10 @@ def upload_track():
     try:
         save_upload_atomically(file, path)
         repository = _repository()
-        tracks = repository.list()
-        tracks.append(item)
-        repository.save(tracks)
+        with repository.locked():
+            tracks = repository.list()
+            tracks.append(item)
+            repository.save(tracks)
     except Exception:
         if os.path.exists(path):
             os.remove(path)
@@ -55,21 +56,22 @@ def upload_track():
 @bp.route('/api/tracks/<int:index>', methods=['DELETE'])
 def delete_track(index):
     repository = _repository()
-    tracks = repository.list()
-    if index < 0 or index >= len(tracks):
-        return jsonify({'error': 'Index out of range'}), 404
-    item = tracks.pop(index)
-    filename = os.path.basename(str(item.get('file', '')))
-    path = os.path.join(BASE_DIR, 'tracks', filename) if filename else ''
-    staged = path + '.deleting' if path and os.path.exists(path) else ''
-    if staged:
-        os.replace(path, staged)
-    try:
-        repository.save(tracks)
-    except Exception:
+    with repository.locked():
+        tracks = repository.list()
+        if index < 0 or index >= len(tracks):
+            return jsonify({'error': 'Index out of range'}), 404
+        item = tracks.pop(index)
+        filename = os.path.basename(str(item.get('file', '')))
+        path = os.path.join(BASE_DIR, 'tracks', filename) if filename else ''
+        staged = path + '.deleting' if path and os.path.exists(path) else ''
+        if staged:
+            os.replace(path, staged)
+        try:
+            repository.save(tracks)
+        except Exception:
+            if staged and os.path.exists(staged):
+                os.replace(staged, path)
+            raise
         if staged and os.path.exists(staged):
-            os.replace(staged, path)
-        raise
-    if staged and os.path.exists(staged):
-        os.remove(staged)
-    return jsonify({'status': 'deleted'})
+            os.remove(staged)
+        return jsonify({'status': 'deleted'})

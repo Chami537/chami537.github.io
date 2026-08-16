@@ -1,6 +1,7 @@
 """Smoke tests for all API routes."""
 import json
 import os
+from contextlib import contextmanager
 from io import BytesIO
 
 import pytest
@@ -432,6 +433,10 @@ def test_tracks_upload_list_and_delete(client, monkeypatch, tmp_path):
 
         def save(self, items):
             self.items = [dict(item) for item in items]
+
+        @contextmanager
+        def locked(self):
+            yield self
 
     repository = MemoryRepository()
     monkeypatch.setattr(tracks, 'BASE_DIR', str(tmp_path))
