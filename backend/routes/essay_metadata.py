@@ -124,23 +124,24 @@ def _sync_after_essay_delete(deleted, essays):
 
 @essay_context.bp.route('/api/essays/<slug>/pin', methods=['POST'])
 def toggle_pin(slug):
-    essays = essay_context.ESSAY_REPOSITORY.list()
-    for essay in essays:
-        essay.setdefault('pinned', False)
+    with essay_context.ESSAY_REPOSITORY.locked():
+        essays = essay_context.ESSAY_REPOSITORY.list()
+        for essay in essays:
+            essay.setdefault('pinned', False)
 
-    target = next((essay for essay in essays if essay['slug'] == slug), None)
-    if not target:
-        return jsonify({"error": "Not found"}), 404
+        target = next((essay for essay in essays if essay['slug'] == slug), None)
+        if not target:
+            return jsonify({"error": "Not found"}), 404
 
-    if not target.get('pinned'):
-        pinned_count = sum(1 for essay in essays if essay.get('pinned'))
-        if pinned_count >= 5:
-            return jsonify({"error": "最多置顶 5 篇文章"}), 400
-        target['pinned'] = True
-    else:
-        target['pinned'] = False
+        if not target.get('pinned'):
+            pinned_count = sum(1 for essay in essays if essay.get('pinned'))
+            if pinned_count >= 5:
+                return jsonify({"error": "最多置顶 5 篇文章"}), 400
+            target['pinned'] = True
+        else:
+            target['pinned'] = False
 
-    essay_context.ESSAY_REPOSITORY.save(essays)
+        essay_context.ESSAY_REPOSITORY.save(essays)
     essay_context.ESSAY_WORKFLOW.regenerate_feeds()
     pinned_count = sum(1 for essay in essays if essay.get('pinned'))
     return jsonify({"pinned": target['pinned'], "count": pinned_count})

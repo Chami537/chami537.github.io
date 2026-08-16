@@ -36,15 +36,16 @@ def list_essays():
 @essay_context.bp.route('/api/essays', methods=['POST'])
 @require_json
 def create_essay():
-    essays = essay_context.ESSAY_REPOSITORY.list()
     item = request.json
-    error, status = _validate_new_essay(item, essays)
-    if error:
-        return jsonify({"error": error}), status
-    slug = item['slug']
-    body_md = _prepare_new_essay(item, slug)
-    essays.append(item)
-    essay_context.ESSAY_REPOSITORY.save(essays)
+    with essay_context.ESSAY_REPOSITORY.locked():
+        essays = essay_context.ESSAY_REPOSITORY.list()
+        error, status = _validate_new_essay(item, essays)
+        if error:
+            return jsonify({"error": error}), status
+        slug = item['slug']
+        body_md = _prepare_new_essay(item, slug)
+        essays.append(item)
+        essay_context.ESSAY_REPOSITORY.save(essays)
     _sync_created_essay(item, body_md, essays)
     return jsonify(item), 201
 

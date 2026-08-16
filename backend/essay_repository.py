@@ -1,17 +1,13 @@
 """Persistence boundary for essay metadata and tag ordering."""
 
+from backend.storage import JsonRepository
 
-class EssayRepository:
+
+class EssayRepository(JsonRepository):
     """Store-backed essay access without exposing file names to routes."""
 
     def __init__(self, store):
-        self.store = store
-
-    def list(self):
-        return self.store.read('essays.json')
-
-    def save(self, essays):
-        self.store.write('essays.json', essays)
+        super().__init__('essays.json', store)
 
     def read_tag_order(self):
         return self.store.read('tags_order.json')

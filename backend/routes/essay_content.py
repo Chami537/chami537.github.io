@@ -122,16 +122,17 @@ def update_essay_content(slug):
     if not isinstance(md_content, str):
         return jsonify({'error': 'content must be a string'}), 400
     read_time = essay_context.ESSAY_WORKFLOW.read_time(md_content)
-    essays = essay_context.ESSAY_REPOSITORY.list()
-    target = None
-    now = datetime.now().strftime('%Y-%m-%d %H:%M')
-    for essay in essays:
-        if essay['slug'] == slug:
-            essay['readTime'] = read_time
-            essay['date'] = now
-            target = essay
-            essay_context.ESSAY_REPOSITORY.save(essays)
-            break
+    with essay_context.ESSAY_REPOSITORY.locked():
+        essays = essay_context.ESSAY_REPOSITORY.list()
+        target = None
+        now = datetime.now().strftime('%Y-%m-%d %H:%M')
+        for essay in essays:
+            if essay['slug'] == slug:
+                essay['readTime'] = read_time
+                essay['date'] = now
+                target = essay
+                essay_context.ESSAY_REPOSITORY.save(essays)
+                break
 
     if not target:
         return jsonify({"error": "Essay not found"}), 404
