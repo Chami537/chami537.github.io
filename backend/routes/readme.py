@@ -5,6 +5,7 @@ from flask import Blueprint, request, jsonify
 bp = Blueprint('readme', __name__)
 from backend.data import BASE_DIR
 from backend.crud import require_json
+from backend.file_utils import atomic_write_text
 
 
 @bp.route('/api/readme', methods=['GET'])
@@ -24,13 +25,5 @@ def save_readme():
     if not isinstance(content, str):
         return jsonify({"error": "content must be a string"}), 400
     readme_path = os.path.join(BASE_DIR, 'README.md')
-    temp_path = readme_path + '.tmp'
-    try:
-        with open(temp_path, 'w', encoding='utf-8') as f:
-            f.write(content)
-        os.replace(temp_path, readme_path)
-    except Exception:
-        if os.path.exists(temp_path):
-            os.remove(temp_path)
-        raise
+    atomic_write_text(readme_path, content)
     return jsonify({"status": "saved"})

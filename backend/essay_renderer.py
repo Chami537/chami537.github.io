@@ -1,9 +1,9 @@
 """Pure HTML rendering and output helpers for generated essay pages."""
 
 import html as html_mod
-import os
 
 from markupsafe import Markup
+from backend.file_utils import atomic_write_text
 
 
 def render_essay_html(essay, body_data, essays, template, parse_date):
@@ -32,9 +32,7 @@ def render_essay_html(essay, body_data, essays, template, parse_date):
 
 
 def write_essay_html(path, html):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, 'w', encoding='utf-8') as output:
-        output.write(html)
+    atomic_write_text(path, html)
 
 
 def _navigation(essays, slug):

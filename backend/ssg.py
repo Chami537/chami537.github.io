@@ -22,6 +22,7 @@ from backend.essay_feed_data import strip_enrich
 from backend.essay_repository import EssayRepository
 from backend.essay_service import EssayService
 from backend.essay_renderer import render_essay_html, write_essay_html
+from backend.file_utils import atomic_write_text
 from backend.repositories import PHOTO_REPOSITORY, repository_for
 from jinja2 import Environment, FileSystemLoader
 
@@ -84,8 +85,7 @@ def _generate_rss():
     enriched = strip_enrich(essays, 'pub_date', '%a, %d %b %Y %H:%M:%S +0800', 20)
     last_build = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0800')
     html = _env.get_template('rss.xml').render(essays=enriched, last_build=last_build)
-    with open(os.path.join(BASE_DIR, 'rss.xml'), 'w', encoding='utf-8') as f:
-        f.write(html)
+    atomic_write_text(os.path.join(BASE_DIR, 'rss.xml'), html)
 
 
 def _generate_sitemap():
@@ -93,8 +93,7 @@ def _generate_sitemap():
     essays = ESSAY_REPOSITORY.list()
     enriched = strip_enrich(essays, 'lastmod', '%Y-%m-%d')
     html = _env.get_template('sitemap.xml').render(essays=enriched)
-    with open(os.path.join(BASE_DIR, 'sitemap.xml'), 'w', encoding='utf-8') as f:
-        f.write(html)
+    atomic_write_text(os.path.join(BASE_DIR, 'sitemap.xml'), html)
 
 
 def _prepare_archive_data(essays):
@@ -112,8 +111,7 @@ def _generate_archive():
     html = _env.get_template('archive.html').render(
         **context,
         build_ts=int(datetime.now().timestamp()))
-    with open(os.path.join(BASE_DIR, 'archive.html'), 'w', encoding='utf-8') as f:
-        f.write(html)
+    atomic_write_text(os.path.join(BASE_DIR, 'archive.html'), html)
 
 
 def _prepare_map_data(photos):
@@ -141,8 +139,7 @@ def _generate_map():
     html = _env.get_template('map.html').render(
         **context,
         build_ts=int(datetime.now().timestamp()))
-    with open(os.path.join(BASE_DIR, 'map.html'), 'w', encoding='utf-8') as f:
-        f.write(html)
+    atomic_write_text(os.path.join(BASE_DIR, 'map.html'), html)
 
 
 def _public_essay_data(essays):
@@ -164,8 +161,10 @@ def _generate_public_essays():
     visible, all_tags = _public_essay_data(load_json('essays.json'))
     public_data = {'_tags': _ordered_public_tags(all_tags), 'essays': visible}
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
-    with open(public_path, 'w', encoding='utf-8') as f:
-        json.dump(public_data, f, ensure_ascii=False, indent=2)
+    atomic_write_text(
+        public_path,
+        json.dumps(public_data, ensure_ascii=False, indent=2),
+    )
 
 
 def _generate_feeds():
@@ -184,8 +183,7 @@ def _persist_essay_source(slug, content):
     password = get_essay_password(slug)
     os.makedirs(MD_DIR, exist_ok=True)
     stored = _encrypt_content(content, password) if password and content.strip() else content
-    with open(os.path.join(MD_DIR, f'{slug}.md'), 'w', encoding='utf-8') as f:
-        f.write(stored)
+    atomic_write_text(os.path.join(MD_DIR, f'{slug}.md'), stored)
     return stored
 
 

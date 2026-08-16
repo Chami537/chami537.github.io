@@ -3,6 +3,8 @@
 import os
 import re
 
+from backend.file_utils import atomic_write_text
+
 
 _ASSET_REFERENCE_RE = re.compile(
     r'(?P<prefix>\b(?:href|src)\s*=\s*)'
@@ -42,5 +44,4 @@ def cache_bust_assets(base_dir):
             )
 
         updated = _ASSET_REFERENCE_RE.sub(add_version, html)
-        with open(html_path, 'w', encoding='utf-8') as handle:
-            handle.write(updated)
+        atomic_write_text(html_path, updated)
