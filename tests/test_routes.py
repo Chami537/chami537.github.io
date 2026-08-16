@@ -844,6 +844,31 @@ def test_photo_tags_not_found(client):
     assert r.status_code == 404
 
 
+@pytest.mark.parametrize('tags', [
+    'not-a-list',
+    [1],
+    [''],
+    ['x' * 81],
+    ['same', 'same'],
+])
+def test_photo_tags_reject_invalid_or_normalize_input(client, data_backup, tags):
+    photos = client.get('/api/photos').json
+    if not photos:
+        return
+    filename = photos[0]['filename']
+    response = client.put('/api/photo-tags', json={'filename': filename, 'tags': tags})
+    if tags == ['same', 'same']:
+        assert response.status_code == 200
+        assert response.json['tags'] == ['same']
+    else:
+        assert response.status_code == 400
+
+
+def test_photo_metadata_rejects_unsafe_filename(client):
+    response = client.put('/api/photo-date', json={'filename': '../photo.jpg', 'date': '2026'})
+    assert response.status_code == 400
+
+
 # ── toggle_pin ──
 
 def test_toggle_pin(client, data_backup):
