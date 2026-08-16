@@ -10,6 +10,7 @@ from backend.exif_utils import extract_exif, without_camera_model
 from backend.routes import photo_context
 from backend.ssg import _parse_date
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
+from backend.crud import json_body
 
 
 def _photo_upload_payload(img):
@@ -70,9 +71,17 @@ def list_photos():
 @photo_context.bp.route('/api/photos', methods=['PUT'])
 def reorder_photos():
     """Replace the photo array while refusing to lose existing entries."""
-    if not isinstance(request.json, list):
+    new_data = json_body()
+    if (
+        not isinstance(new_data, list)
+        or any(
+            not isinstance(item, dict)
+            or not isinstance(item.get('filename'), str)
+            or not item['filename'].strip()
+            for item in new_data
+        )
+    ):
         return jsonify({'error': 'Expected a JSON array'}), 400
-    new_data = request.json
     lost = photo_context.PHOTO_REPOSITORY.replace_preserving(new_data)
     if lost:
         names = ', '.join(sorted(lost))

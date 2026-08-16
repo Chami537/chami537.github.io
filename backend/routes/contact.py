@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 
 bp = Blueprint('contact', __name__)
 from backend.repositories import repository_for
-from backend.crud import list_all, create_item, update_item_by_id, delete_item_by_id, require_json
+from backend.crud import json_body, list_all, create_item, update_item_by_id, delete_item_by_id, require_json
 
 
 @bp.route('/api/contact', methods=['GET'])
@@ -12,12 +12,13 @@ def list_contact():
 
 @bp.route('/api/contact', methods=['PUT'])
 def update_contact():
-    if not isinstance(request.json, list):
+    data = json_body()
+    if not isinstance(data, list):
         return jsonify({"error": "Expected a JSON array"}), 400
-    for item in request.json:
-        if not isinstance(item.get('id'), int):
+    for item in data:
+        if not isinstance(item, dict) or not isinstance(item.get('id'), int):
             return jsonify({"error": "Each item must have a numeric id"}), 400
-    repository_for('contact.json').save(request.json)
+    repository_for('contact.json').save(data)
     return jsonify({"status": "updated"})
 
 

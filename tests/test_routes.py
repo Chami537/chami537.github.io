@@ -734,6 +734,22 @@ def test_photos_reorder_refuses_drop(client, data_backup):
         assert r.status_code == 409
 
 
+@pytest.mark.parametrize('payload', [None, [1], [{'not_filename': 'x'}]])
+def test_photos_reorder_rejects_malformed_entries(client, payload):
+    response = client.put('/api/photos', json=payload)
+    assert response.status_code == 400
+
+
+def test_contact_update_rejects_non_object_entries(client):
+    response = client.put('/api/contact', json=[1])
+    assert response.status_code == 400
+
+
+def test_stack_update_rejects_non_string_entries(client):
+    response = client.put('/api/stack', json=['valid', 1])
+    assert response.status_code == 400
+
+
 # ── Photo tags/date/gps validation ──
 
 def test_photo_tags_missing_fields(client):

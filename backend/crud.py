@@ -7,11 +7,16 @@ from flask import jsonify, request
 from backend.repositories import repository_for
 
 
+def json_body():
+    """Read a JSON body without turning malformed input into a framework 415."""
+    return request.get_json(silent=True)
+
+
 def require_json(f):
     """Decorator: reject requests without a JSON object body."""
     @wraps(f)
     def wrapper(*args, **kwargs):
-        if not isinstance(request.json, dict):
+        if not isinstance(json_body(), dict):
             return jsonify({"error": "Expected a JSON object"}), 400
         return f(*args, **kwargs)
     return wrapper
@@ -22,6 +27,9 @@ def list_all(filename):
 
 
 def create_item(filename, item, auto_id=False):
+    if not isinstance(item, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
+    item = dict(item)
     repository = repository_for(filename)
     data = repository.list()
     if auto_id:
@@ -32,6 +40,9 @@ def create_item(filename, item, auto_id=False):
 
 
 def update_item_by_id(filename, id_val, updates):
+    if not isinstance(updates, dict):
+        return jsonify({"error": "Expected a JSON object"}), 400
+    updates = dict(updates)
     repository = repository_for(filename)
     data = repository.list()
     for i, item in enumerate(data):
