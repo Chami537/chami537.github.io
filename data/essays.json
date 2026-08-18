@@ -40,15 +40,6 @@
     "pinned": false
   },
   {
-    "slug": "essay-47430450",
-    "title": "Agent时代怎么学CS?",
-    "tag": "技术",
-    "date": "2026-07-07 11:40",
-    "epigraph": "占位",
-    "excerpt": "占位",
-    "readTime": 1
-  },
-  {
     "slug": "essay-ca510106",
     "title": "如何构建一把不碰服务器的锁",
     "tag": "技术, 安全, 项目复盘",
@@ -64,6 +55,15 @@
     "date": "2026-07-12 02:01",
     "epigraph": "学习",
     "excerpt": "占位",
+    "readTime": 1
+  },
+  {
+    "slug": "essay-7b64261b",
+    "title": "日本之旅",
+    "tag": "生活",
+    "date": "2026-08-17",
+    "epigraph": "一次美好的旅行",
+    "excerpt": "十天，够看一座城市从陌生变成熟悉，又变回陌生——只不过这一次，陌生的是即将要回去的自己。",
     "readTime": 1
   }
 ]
