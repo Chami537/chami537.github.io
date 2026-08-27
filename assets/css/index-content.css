@@ -31,8 +31,8 @@
 .support-trigger.support-fab:hover .support-trigger-label, .support-trigger.support-fab:focus-visible .support-trigger-label { max-width: 3em; opacity: 1; }
 .support-trigger-arrow { font-size: 16px; transition: transform .2s; }
 .support-trigger:hover .support-trigger-arrow { transform: translate(2px, -2px); }
-.support-trigger.support-fab { background: radial-gradient(circle at 32% 24%, rgba(255,255,255,.95), rgba(255,242,205,.92) 46%, rgba(247,218,174,.88)); color: #493b2b; transition: width .55s cubic-bezier(.2,.7,.2,1), background .55s ease, border-color .55s ease, box-shadow .55s ease, color .55s ease, transform .55s cubic-bezier(.2,.7,.2,1); }
-.support-trigger.support-fab:hover, .support-trigger.support-fab:focus-visible { width: 104px; border-radius: 999px; background: radial-gradient(circle at 65% 72%, rgba(255,255,255,.96), rgba(255,224,160,.94) 48%, rgba(237,177,104,.9)); color: #33281d; border-color: rgba(112,86,45,.45); transform: scale(1.035); }
+.support-trigger.support-fab { gap: 0; background: radial-gradient(circle at 32% 24%, rgba(255,255,255,.95), rgba(255,242,205,.92) 46%, rgba(247,218,174,.88)); color: #493b2b; transition: width .55s cubic-bezier(.2,.7,.2,1), gap .55s cubic-bezier(.2,.7,.2,1), background .55s ease, border-color .55s ease, box-shadow .55s ease, color .55s ease, transform .55s cubic-bezier(.2,.7,.2,1); }
+.support-trigger.support-fab:hover, .support-trigger.support-fab:focus-visible { width: 104px; gap: 8px; border-radius: 999px; background: radial-gradient(circle at 65% 72%, rgba(255,255,255,.96), rgba(255,224,160,.94) 48%, rgba(237,177,104,.9)); color: #33281d; border-color: rgba(112,86,45,.45); transform: scale(1.035); }
 .support-dialog[hidden] { display: none; }
 .support-dialog { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 20px; }
 .support-dialog-backdrop { position: absolute; inset: 0; background: rgba(10,10,10,.48); backdrop-filter: blur(8px); opacity: 0; transition: opacity .18s ease; }
