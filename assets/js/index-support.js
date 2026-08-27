@@ -25,7 +25,10 @@
     if (applePay && applePay.enabled) {
       methodsEl.insertAdjacentHTML('afterbegin', '<button type="button" class="support-method support-apple-pay" id="support-apple-pay"><span><strong>Apple Pay</strong><small>使用设备上的 Apple Pay 支持此项目</small></span><span class="support-apple-pay-mark"> Pay</span></button>');
       var appleButton = document.getElementById('support-apple-pay');
-      if (!window.ApplePaySession || !ApplePaySession.canMakePayments()) {
+      if (applePay.demo) {
+        appleButton.querySelector('small').textContent = 'Apple Pay 风格演示';
+        appleButton.addEventListener('click', runApplePayDemo);
+      } else if (!window.ApplePaySession || !ApplePaySession.canMakePayments()) {
         appleButton.disabled = true;
         appleButton.classList.add('disabled');
         appleButton.querySelector('small').textContent = '当前设备或浏览器暂不支持';
@@ -33,6 +36,15 @@
         appleButton.addEventListener('click', beginApplePay);
       }
     }
+  }
+
+  function runApplePayDemo() {
+    var button = document.getElementById('support-apple-pay');
+    button.disabled = true;
+    button.classList.add('is-processing');
+    statusEl.textContent = '正在打开 Apple Pay…';
+    setTimeout(function () { statusEl.textContent = '正在准备支付动画…'; }, 520);
+    setTimeout(function () { statusEl.textContent = '演示完成，未发起真实支付。'; button.classList.remove('is-processing'); button.disabled = false; }, 1250);
   }
 
   function beginApplePay() {
