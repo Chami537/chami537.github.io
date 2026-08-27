@@ -67,7 +67,6 @@
       "epigraph": "不是所有想藏起来的东西都需要一把锁。有时候墙就够了。但如果你想把它放在所有人都能看到的地方，同时又不想让所有人都能看见——那这把锁，就值得。",
       "excerpt": "密码不该碰服务器——加密、解密，还有要不要加密这件事本身。",
       "readTime": 7,
-      "pinned": false,
       "date_display": "Jul 07, 2026",
       "password_protected": false
     },
@@ -79,7 +78,6 @@
       "epigraph": "学习",
       "excerpt": "占位",
       "readTime": 1,
-      "pinned": false,
       "date_display": "Jul 12, 2026",
       "password_protected": true
     },
@@ -91,7 +89,6 @@
       "epigraph": "一次美好的旅行",
       "excerpt": "十天，够看一座城市从陌生变成熟悉，又变回陌生——只不过这一次，陌生的是即将要回去的自己。",
       "readTime": 1,
-      "pinned": false,
       "date_display": "2026-08-17",
       "password_protected": false
     }
