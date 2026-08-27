@@ -11,21 +11,15 @@
 .contact-row .arr { font-size: 18px; transition: transform .2s ease; }
 .contact-row:hover .arr { transform: translateX(4px); }
 
-/* Support card and Apple Pay-inspired interaction (visual only until a method is configured). */
-#support { padding: 100px 0 120px; }
-.support-card {
-  display: flex; align-items: flex-end; justify-content: space-between; gap: 32px;
-  padding: 36px; border: 1px solid var(--line); border-radius: 24px;
-  background: linear-gradient(135deg, rgba(255,184,0,.14), rgba(255,109,0,.08) 48%, rgba(156,39,176,.08));
-  position: relative; overflow: hidden;
-}
-.support-card::before { content: ''; position: absolute; width: 220px; height: 220px; right: -72px; top: -100px; border-radius: 50%; background: var(--c3); opacity: .18; filter: blur(4px); animation: support-orbit 8s ease-in-out infinite; }
-@keyframes support-orbit { 50% { transform: translate(-28px, 38px) scale(1.12); opacity: .28; } }
-.support-copy { max-width: 570px; position: relative; z-index: 1; }
+/* Independent support entry and Apple Pay-inspired secondary window. */
+.support-fab { position: fixed; right: 28px; bottom: 28px; z-index: 90; box-shadow: 0 8px 24px rgba(0,0,0,.16); }
+.support-fab::before { content: ''; position: absolute; inset: -5px; border: 1px solid var(--c3); border-radius: inherit; opacity: .55; animation: support-pulse 2.8s ease-out infinite; pointer-events: none; }
+@keyframes support-pulse { 0%, 60%, 100% { transform: scale(1); opacity: 0; } 18% { opacity: .55; } 40% { transform: scale(1.12); opacity: 0; } }
 .support-kicker { margin: 0 0 12px; font-size: 10px; letter-spacing: .16em; font-weight: 800; color: var(--muted); }
-.support-copy h2, .support-dialog-panel h2 { margin: 0 0 12px; font-family: 'Lora', 'Noto Serif SC', serif; font-size: clamp(24px, 4vw, 38px); letter-spacing: -.02em; }
-.support-copy p:not(.support-kicker) { margin: 0; color: var(--muted); font-family: 'Lora', 'Noto Serif SC', serif; line-height: 1.8; }
-.support-trigger { border: 0; background: var(--fg); color: var(--bg); border-radius: 999px; padding: 14px 18px; display: inline-flex; align-items: center; gap: 10px; font: 600 13px 'Inter', sans-serif; cursor: pointer; transition: transform .22s ease, box-shadow .22s ease; white-space: nowrap; position: relative; z-index: 1; }
+.support-dialog-panel h2 { margin: 0 0 10px; font-family: 'Lora', 'Noto Serif SC', serif; font-size: clamp(24px, 4vw, 38px); letter-spacing: -.02em; }
+.support-dialog-description { margin: 0; color: var(--muted); font-family: 'Lora', 'Noto Serif SC', serif; line-height: 1.75; font-size: 14px; }
+.support-dialog-question { margin: 24px 0 10px; font-size: 12px; color: var(--muted); }
+.support-trigger { border: 0; background: var(--fg); color: var(--bg); border-radius: 999px; padding: 14px 18px; display: inline-flex; align-items: center; gap: 10px; font: 600 13px 'Inter', sans-serif; cursor: pointer; transition: transform .22s ease, box-shadow .22s ease; white-space: nowrap; position: relative; }
 .support-trigger:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.16); }
 .support-trigger:active { transform: translateY(0) scale(.97); }
 .support-trigger-icon { font-size: 20px; line-height: 1; }
@@ -51,12 +45,9 @@
 .support-empty, .support-status { color: var(--muted); font-size: 12px; line-height: 1.6; }
 .support-status { margin: 14px 0 0; min-height: 19px; }
 body.support-dialog-open { overflow: hidden; }
-html.dark .support-card { background: linear-gradient(135deg, rgba(255,184,0,.12), rgba(156,39,176,.12)); }
 html.dark .support-dialog-panel { background: #222224; }
 
 @media (max-width: 600px) {
-  #support { padding: 80px 0 90px; }
-  .support-card { align-items: stretch; flex-direction: column; padding: 24px; gap: 24px; }
-  .support-trigger { align-self: flex-start; }
+  .support-fab { right: 16px; bottom: 16px; padding: 12px 15px; }
   .support-dialog-panel { padding: 28px 22px 22px; }
 }

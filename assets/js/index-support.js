@@ -54,7 +54,7 @@
     return response.ok ? response.json() : null;
   }).then(function (data) {
     if (!data) return;
-    if (data.title) document.getElementById('support-title').textContent = data.title;
+    if (data.title) document.getElementById('support-dialog-title').textContent = data.title;
     if (data.description) document.getElementById('support-description').textContent = data.description;
     methods = Array.isArray(data.methods) ? data.methods : [];
     renderMethods();
