@@ -8,7 +8,7 @@
 
   var selectedAmount = 10;
   var methods = [];
-  var applePay = null;
+  var paymentDemo = null;
 
   function renderMethods() {
     if (!methods.length) {
@@ -22,41 +22,20 @@
       return '<a class="support-method" href="' + htmlEncode(url) + '" target="_blank" rel="noopener noreferrer"><span><strong>' + label + '</strong><small>' + description + '</small></span><em>打开 ↗</em></a>';
       }).join('');
     }
-    if (applePay && applePay.enabled) {
-      methodsEl.insertAdjacentHTML('afterbegin', '<div class="support-apple-pay-shell"><apple-pay-button id="support-apple-pay" buttonstyle="black" type="plain" locale="zh-CN"></apple-pay-button><small>Apple Pay 官方按钮</small></div>');
-      var appleButton = document.getElementById('support-apple-pay');
-      if (!window.ApplePaySession || !ApplePaySession.canMakePayments()) {
-        appleButton.setAttribute('disabled', '');
-        appleButton.parentElement.classList.add('disabled');
-        appleButton.parentElement.querySelector('small').textContent = '当前设备或浏览器暂不支持';
-      } else {
-        appleButton.addEventListener('click', beginApplePay);
-      }
+    if (paymentDemo && paymentDemo.enabled) {
+      methodsEl.insertAdjacentHTML('afterbegin', '<button type="button" class="support-method support-pay-button" id="support-pay-button"><span><strong><i aria-hidden="true">⊹</i> 支持此项目</strong><small>确认金额后继续</small></span><em class="support-pay-action">继续</em></button>');
+      var payButton = document.getElementById('support-pay-button');
+      payButton.addEventListener('click', runSupportAnimation);
     }
   }
 
-  function beginApplePay() {
-    if (!applePay.merchantValidationEndpoint) {
-      statusEl.textContent = 'Apple Pay 尚未配置商户验证接口。';
-      return;
-    }
-    statusEl.textContent = '正在准备 Apple Pay…';
-    var request = { countryCode: applePay.countryCode || 'CN', currencyCode: applePay.currencyCode || 'CNY', total: { label: 'Chami', amount: selectedAmount.toFixed(2) }, supportedNetworks: ['visa', 'masterCard', 'amex'], merchantCapabilities: ['supports3DS'] };
-    var session;
-    try { session = new ApplePaySession(3, request); } catch (error) { statusEl.textContent = 'Apple Pay 暂不可用，请稍后再试。'; return; }
-    session.onvalidatemerchant = function (event) {
-      fetch(applePay.merchantValidationEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ validationURL: event.validationURL }) })
-        .then(function (response) { if (!response.ok) throw new Error('merchant validation failed'); return response.json(); })
-        .then(function (merchantSession) { session.completeMerchantValidation(merchantSession); })
-        .catch(function () { statusEl.textContent = '商户验证失败，未发起支付。'; session.abort(); });
-    };
-    session.onpaymentauthorized = function () {
-      statusEl.textContent = '已收到支付凭证，等待服务端处理…';
-      session.completePayment(ApplePaySession.STATUS_FAILURE);
-      statusEl.textContent = '服务端支付处理尚未启用，本次未扣款。';
-    };
-    session.oncancel = function () { statusEl.textContent = '已取消支付。'; };
-    session.begin();
+  function runSupportAnimation() {
+    var button = document.getElementById('support-pay-button');
+    if (!button || button.classList.contains('is-processing')) return;
+    button.classList.add('is-processing');
+    statusEl.textContent = '正在确认 ¥' + selectedAmount + '…';
+    setTimeout(function () { statusEl.textContent = '正在准备支持流程…'; }, 520);
+    setTimeout(function () { button.classList.remove('is-processing'); statusEl.textContent = '演示完成，未连接真实支付接口。'; }, 1250);
   }
 
   function open() {
@@ -93,7 +72,7 @@
     if (data.title) document.getElementById('support-dialog-title').textContent = data.title;
     if (data.description) document.getElementById('support-description').textContent = data.description;
     methods = Array.isArray(data.methods) ? data.methods : [];
-    applePay = data.applePay || null;
+    paymentDemo = data.paymentDemo || null;
     renderMethods();
   }).catch(function () { renderMethods(); });
   renderMethods();
