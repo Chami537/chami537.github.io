@@ -42,6 +42,7 @@
       <a href="#essays">Essays</a>
       <a href="#photos">Photos</a>
       <a href="#music">Music</a>
+      <a href="#support">Support</a>
       <a href="#contact">Contact</a>
     </div>
     <button class="theme-btn" onclick="toggleTheme()" title="切换主题" id="theme-btn">🌙</button>
@@ -118,6 +119,22 @@
     <audio id="player" preload="auto"></audio>
   </section>
 
+  <section id="support">
+    <div class="section-tag orange">SUPPORT</div>
+    <div class="support-card" id="support-card">
+      <div class="support-copy">
+        <p class="support-kicker">KEEP THE LIGHTS ON</p>
+        <h2 id="support-title">如果这些内容帮到了你</h2>
+        <p id="support-description">请我喝杯咖啡，或者留下一点鼓励。每一份支持都会变成下一篇随笔、下一组照片和下一次更新。</p>
+      </div>
+      <button class="support-trigger" id="support-trigger" type="button" aria-haspopup="dialog" aria-controls="support-dialog">
+        <span class="support-trigger-icon">⌁</span>
+        <span>支持一下</span>
+        <span class="support-trigger-arrow">↗</span>
+      </button>
+    </div>
+  </section>
+
   <section id="contact">
     <div class="section-tag purple">CONTACT</div>
     <div class="contact-list skeleton-loading" id="contact-list">
@@ -149,6 +166,23 @@
   <div class="lb-counter" id="lb-counter"></div>
 </div>
 
+<div class="support-dialog" id="support-dialog" role="dialog" aria-modal="true" aria-labelledby="support-dialog-title" hidden>
+  <div class="support-dialog-backdrop" data-support-close></div>
+  <div class="support-dialog-panel">
+    <button class="support-dialog-close" type="button" aria-label="关闭" data-support-close>×</button>
+    <p class="support-kicker">A LITTLE SUPPORT</p>
+    <h2 id="support-dialog-title">选一个金额</h2>
+    <div class="support-amounts" role="group" aria-label="赞赏金额">
+      <button type="button" data-support-amount="5">¥5</button>
+      <button type="button" data-support-amount="10" class="active">¥10</button>
+      <button type="button" data-support-amount="20">¥20</button>
+      <button type="button" data-support-amount="50">¥50</button>
+    </div>
+    <div class="support-methods" id="support-methods"></div>
+    <p class="support-status" id="support-status" aria-live="polite"></p>
+  </div>
+</div>
+
 <footer>
   <div class="friends skeleton-loading" id="friends-container">
     <div class="friends-label">FRIEND</div>
@@ -162,6 +196,7 @@
 <script src="assets/js/index-photo-gallery.js?v=1784123678"></script>
 <script src="assets/js/index-photo-map.js?v=1784123678"></script>
 <script src="assets/js/index-content.js?v=1784123678"></script>
+<script src="assets/js/index-support.js?v=1784123678"></script>
 <script src="assets/js/index-lightbox.js?v=1784123678"></script>
 <script src="assets/js/index.js?v=1784123678"></script>
 

@@ -36,6 +36,7 @@ _PUBLIC_DATA_FILES = frozenset({
     'about.json', 'contact.json', 'essays_public.json', 'friends.json',
     'music.json', 'photos.json', 'photo_stories.json', 'stack.json',
     'tracks.json', 'work.json', 'giscus.css', 'giscus-dark.css',
+    'support.json',
 })
 
 
