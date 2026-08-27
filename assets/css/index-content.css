@@ -50,13 +50,10 @@
 .support-method strong { font-size: 13px; }
 .support-method small, .support-method em { color: var(--muted); font-size: 11px; font-style: normal; }
 .support-method.disabled { opacity: .58; cursor: not-allowed; }
-.support-apple-pay { width: 100%; background: #111; color: #fff; border-color: #111; cursor: pointer; text-align: left; }
-.support-apple-pay:hover { border-color: #111; background: #1d1d1f; transform: translateY(-1px); }
-.support-apple-pay small, .support-apple-pay em { color: rgba(255,255,255,.62); }
-.support-apple-pay-mark { font-size: 13px; font-weight: 700; white-space: nowrap; }
-.support-apple-pay.is-processing { pointer-events: none; opacity: .72; }
-.support-apple-pay.is-processing .support-apple-pay-mark { color: transparent; width: 28px; height: 16px; border: 2px solid rgba(255,255,255,.42); border-top-color: #fff; border-radius: 50%; animation: support-spinner .7s linear infinite; }
-@keyframes support-spinner { to { transform: rotate(360deg); } }
+.support-apple-pay-shell { display: grid; gap: 7px; }
+.support-apple-pay-shell apple-pay-button { display: block; width: 100%; height: 44px; }
+.support-apple-pay-shell small { color: var(--muted); font-size: 11px; }
+.support-apple-pay-shell.disabled { opacity: .55; }
 .support-empty, .support-status { color: var(--muted); font-size: 12px; line-height: 1.6; }
 .support-status { margin: 14px 0 0; min-height: 19px; }
 body.support-dialog-open { overflow: hidden; }

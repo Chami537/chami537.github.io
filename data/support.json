@@ -4,7 +4,7 @@
   "methods": [],
   "applePay": {
     "enabled": true,
-    "demo": true,
+    "demo": false,
     "merchantValidationEndpoint": ""
   }
 }
