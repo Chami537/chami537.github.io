@@ -12,8 +12,9 @@
 .contact-row:hover .arr { transform: translateX(4px); }
 
 /* Independent support entry and Apple Pay-inspired secondary window. */
-.support-fab { position: fixed; right: 28px; bottom: 28px; z-index: 90; box-shadow: 0 8px 24px rgba(0,0,0,.16); }
-.support-fab::before { content: ''; position: absolute; inset: -5px; border: 1px solid var(--c3); border-radius: inherit; opacity: .55; animation: support-pulse 2.8s ease-out infinite; pointer-events: none; }
+.support-fab { position: fixed !important; left: auto !important; right: max(24px, env(safe-area-inset-right)) !important; bottom: max(24px, env(safe-area-inset-bottom)) !important; z-index: 90; width: 48px; height: 48px; padding: 0; border: 1px solid var(--fg); border-radius: 50%; background: var(--bg); color: var(--fg); box-shadow: 0 8px 24px rgba(0,0,0,.12); justify-content: center; }
+.support-fab::before { content: ''; position: absolute; inset: -5px; border: 1px solid var(--c3); border-radius: 50%; opacity: .55; animation: support-pulse 2.8s ease-out infinite; pointer-events: none; }
+.support-fab:hover { background: var(--fg); color: var(--bg); }
 @keyframes support-pulse { 0%, 60%, 100% { transform: scale(1); opacity: 0; } 18% { opacity: .55; } 40% { transform: scale(1.12); opacity: 0; } }
 .support-kicker { margin: 0 0 12px; font-size: 10px; letter-spacing: .16em; font-weight: 800; color: var(--muted); }
 .support-dialog-panel h2 { margin: 0 0 10px; font-family: 'Lora', 'Noto Serif SC', serif; font-size: clamp(24px, 4vw, 38px); letter-spacing: -.02em; }
@@ -25,6 +26,8 @@
 .support-trigger-icon { font-size: 20px; line-height: 1; }
 .support-trigger-arrow { font-size: 16px; transition: transform .2s; }
 .support-trigger:hover .support-trigger-arrow { transform: translate(2px, -2px); }
+.support-trigger.support-fab { background: var(--bg); color: var(--fg); }
+.support-trigger.support-fab:hover { background: var(--fg); color: var(--bg); }
 .support-dialog[hidden] { display: none; }
 .support-dialog { position: fixed; inset: 0; z-index: 1100; display: grid; place-items: center; padding: 20px; }
 .support-dialog-backdrop { position: absolute; inset: 0; background: rgba(10,10,10,.48); backdrop-filter: blur(8px); opacity: 0; transition: opacity .18s ease; }
@@ -48,6 +51,6 @@ body.support-dialog-open { overflow: hidden; }
 html.dark .support-dialog-panel { background: #222224; }
 
 @media (max-width: 600px) {
-  .support-fab { right: 16px; bottom: 16px; padding: 12px 15px; }
+  .support-fab { right: max(16px, env(safe-area-inset-right)) !important; bottom: max(16px, env(safe-area-inset-bottom)) !important; }
   .support-dialog-panel { padding: 28px 22px 22px; }
 }
