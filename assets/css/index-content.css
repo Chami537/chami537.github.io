@@ -24,8 +24,9 @@
 .support-trigger { border: 0; background: var(--fg); color: var(--bg); border-radius: 999px; padding: 14px 18px; display: inline-flex; align-items: center; gap: 10px; font: 600 13px 'Inter', sans-serif; cursor: pointer; transition: transform .22s ease, box-shadow .22s ease; white-space: nowrap; position: relative; }
 .support-trigger:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.16); }
 .support-trigger:active { transform: translateY(0) scale(.97); }
-.support-trigger-icon { font-size: 17px; line-height: 1; transition: transform .55s cubic-bezier(.2,.7,.2,1); }
-.support-fab:hover .support-trigger-icon { transform: rotate(12deg) scale(1.06); }
+.support-trigger-icon { font-size: 17px; line-height: 1; display: inline-block; transform-origin: center; transition: transform .55s cubic-bezier(.2,.7,.2,1); animation: support-icon-drift 5.4s cubic-bezier(.45,0,.25,1) infinite; }
+@keyframes support-icon-drift { 0%, 100% { transform: rotate(0deg) translateY(0) scale(1); } 24% { transform: rotate(-7deg) translateY(-1px) scale(1.04); } 52% { transform: rotate(4deg) translateY(1px) scale(.98); } 76% { transform: rotate(-2deg) translateY(0) scale(1.02); } }
+.support-fab:hover .support-trigger-icon, .support-fab:focus-visible .support-trigger-icon { animation-play-state: paused; transform: rotate(12deg) scale(1.06); }
 .support-trigger-label { max-width: 0; overflow: hidden; opacity: 0; white-space: nowrap; font-size: 12px; transition: max-width .55s cubic-bezier(.2,.7,.2,1), opacity .4s ease; }
 .support-trigger.support-fab:hover .support-trigger-label, .support-trigger.support-fab:focus-visible .support-trigger-label { max-width: 3em; opacity: 1; }
 .support-trigger-arrow { font-size: 16px; transition: transform .2s; }
