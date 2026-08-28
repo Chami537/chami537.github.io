@@ -7,6 +7,8 @@
   if (!dialog || !trigger) return;
 
   var methods = [];
+  var qrPending = false;
+  var revealTimer = null;
 
   function renderMethods() {
     if (!methods.length) {
@@ -14,7 +16,7 @@
     } else {
       methodsEl.innerHTML = methods.map(function (method) {
       if (method.type === 'qr' && method.image) {
-        return '<div class="support-qr-stage"><button type="button" class="support-qr-card" data-qr-image="' + htmlEncode(method.image) + '"><img src="' + htmlEncode(method.image) + '" alt="' + htmlEncode(method.label || '收款二维码') + '"><strong>' + htmlEncode(method.label || '微信支付') + '</strong><small>' + htmlEncode(method.description || '扫码支持') + '</small></button></div>';
+        return '<div class="support-qr-stage' + (qrPending ? ' is-pending' : '') + '"><button type="button" class="support-qr-card" data-qr-image="' + htmlEncode(method.image) + '"><img src="' + htmlEncode(method.image) + '" alt="' + htmlEncode(method.label || '收款二维码') + '"><strong>' + htmlEncode(method.label || '微信支付') + '</strong><small>' + htmlEncode(method.description || '扫码支持') + '</small></button></div>';
       }
       var url = safeExternalUrl(method.url);
       var label = htmlEncode(method.label || '支持');
@@ -36,11 +38,26 @@
     document.body.appendChild(layer);
   }
 
+  function revealQr() {
+    qrPending = false;
+    var stage = methodsEl.querySelector('.support-qr-stage');
+    if (stage) { stage.classList.remove('is-pending'); stage.classList.add('reveal'); }
+    statusEl.textContent = '请扫码';
+  }
+
   function open() {
     dialog.hidden = false;
     requestAnimationFrame(function () { dialog.classList.add('show'); });
     document.body.classList.add('support-dialog-open');
-    statusEl.textContent = '微信扫一扫';
+    qrPending = true;
+    statusEl.textContent = '正在打开…';
+    var stage = methodsEl.querySelector('.support-qr-stage');
+    if (stage) { stage.classList.remove('reveal'); stage.classList.add('is-pending'); }
+    clearTimeout(revealTimer);
+    revealTimer = setTimeout(function () {
+      statusEl.textContent = '准备二维码…';
+      setTimeout(revealQr, 380);
+    }, 520);
     trigger.setAttribute('aria-expanded', 'true');
     dialog.querySelector('.support-dialog-close').focus();
   }

@@ -50,7 +50,9 @@
 .support-method strong { font-size: 13px; }
 .support-method small, .support-method em { color: var(--muted); font-size: 11px; font-style: normal; }
 .support-method.disabled { opacity: .58; cursor: not-allowed; }
-.support-qr-stage { width: 100%; position: relative; padding: 8px; animation: support-qr-reveal .65s cubic-bezier(.2,.7,.2,1) both; }
+.support-qr-stage { width: 100%; position: relative; padding: 8px; }
+.support-qr-stage.is-pending { opacity: 0; transform: scale(.94); pointer-events: none; }
+.support-qr-stage.reveal { animation: support-qr-reveal .58s cubic-bezier(.2,.7,.2,1) both; }
 .support-qr-stage::before { content: ''; position: absolute; inset: 0; border: 1px solid rgba(218,173,79,.38); border-radius: 22px; animation: support-qr-shell 3.2s ease-in-out infinite; pointer-events: none; }
 @keyframes support-qr-shell { 0%, 100% { transform: scale(.97); opacity: .25; } 50% { transform: scale(1.015); opacity: .72; } }
 .support-qr-card { width: 100%; display: grid; justify-items: center; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.5); color: var(--fg); cursor: pointer; transition: transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s ease; }
