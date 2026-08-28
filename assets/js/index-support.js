@@ -6,7 +6,6 @@
   var statusEl = document.getElementById('support-status');
   if (!dialog || !trigger) return;
 
-  var selectedAmount = 10;
   var methods = [];
   var paymentDemo = null;
 
@@ -29,7 +28,7 @@
       });
     }
     if (paymentDemo && paymentDemo.enabled) {
-      methodsEl.insertAdjacentHTML('afterbegin', '<button type="button" class="support-method support-pay-button" id="support-pay-button"><span><strong><i aria-hidden="true">⊹</i> 支持</strong><small>确认金额</small></span><em class="support-pay-action">继续</em></button>');
+      methodsEl.insertAdjacentHTML('afterbegin', '<button type="button" class="support-method support-pay-button" id="support-pay-button"><span><strong><i aria-hidden="true">⊹</i> 支持</strong><small>查看微信二维码</small></span><em class="support-pay-action">打开</em></button>');
       var payButton = document.getElementById('support-pay-button');
       payButton.addEventListener('click', runSupportAnimation);
     }
@@ -47,8 +46,8 @@
     var button = document.getElementById('support-pay-button');
     if (!button || button.classList.contains('is-processing')) return;
     button.classList.add('is-processing');
-    statusEl.textContent = '确认 ¥' + selectedAmount + '…';
-    setTimeout(function () { statusEl.textContent = '处理中…'; }, 520);
+    statusEl.textContent = '正在打开…';
+    setTimeout(function () { statusEl.textContent = '准备二维码…'; }, 520);
     setTimeout(function () {
       button.classList.remove('is-processing');
       var qr = methodsEl.querySelector('.support-qr-method');
@@ -61,7 +60,9 @@
     dialog.hidden = false;
     requestAnimationFrame(function () { dialog.classList.add('show'); });
     document.body.classList.add('support-dialog-open');
-    statusEl.textContent = '选择金额';
+    statusEl.textContent = '点击支持，查看二维码';
+    var qr = methodsEl.querySelector('.support-qr-method');
+    if (qr) { qr.classList.add('is-hidden'); qr.classList.remove('reveal'); }
     trigger.setAttribute('aria-expanded', 'true');
     dialog.querySelector('.support-dialog-close').focus();
   }
@@ -76,14 +77,6 @@
   trigger.addEventListener('click', open);
   dialog.querySelectorAll('[data-support-close]').forEach(function (el) { el.addEventListener('click', close); });
   document.addEventListener('keydown', function (event) { if (event.key === 'Escape' && !dialog.hidden) close(); });
-  dialog.querySelectorAll('[data-support-amount]').forEach(function (button) {
-    button.addEventListener('click', function () {
-      selectedAmount = Number(button.dataset.supportAmount) || 10;
-      dialog.querySelectorAll('[data-support-amount]').forEach(function (item) { item.classList.toggle('active', item === button); });
-      statusEl.textContent = '已选 ¥' + selectedAmount;
-    });
-  });
-
   fetch('data/support.json?v=' + (window.TS || Date.now())).then(function (response) {
     return response.ok ? response.json() : null;
   }).then(function (data) {
