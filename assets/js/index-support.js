@@ -7,7 +7,6 @@
   if (!dialog || !trigger) return;
 
   var methods = [];
-  var paymentDemo = null;
 
   function renderMethods() {
     if (!methods.length) {
@@ -15,7 +14,7 @@
     } else {
       methodsEl.innerHTML = methods.map(function (method) {
       if (method.type === 'qr' && method.image) {
-        return '<button type="button" class="support-method support-qr-method is-hidden" data-qr-image="' + htmlEncode(method.image) + '"><img src="' + htmlEncode(method.image) + '" alt="' + htmlEncode(method.label || '收款二维码') + '"><span><strong>' + htmlEncode(method.label || '微信支付') + '</strong><small>' + htmlEncode(method.description || '扫码支持') + '</small></span><em>查看</em></button>';
+        return '<button type="button" class="support-qr-card" data-qr-image="' + htmlEncode(method.image) + '"><img src="' + htmlEncode(method.image) + '" alt="' + htmlEncode(method.label || '收款二维码') + '"><strong>' + htmlEncode(method.label || '微信支付') + '</strong><small>' + htmlEncode(method.description || '扫码支持') + '</small></button>';
       }
       var url = safeExternalUrl(method.url);
       var label = htmlEncode(method.label || '支持');
@@ -27,11 +26,6 @@
         button.addEventListener('click', function () { openQr(button.dataset.qrImage); });
       });
     }
-    if (paymentDemo && paymentDemo.enabled) {
-      methodsEl.insertAdjacentHTML('afterbegin', '<button type="button" class="support-method support-pay-button" id="support-pay-button"><span><strong><i aria-hidden="true">⊹</i> 支持</strong><small>查看微信二维码</small></span><em class="support-pay-action">打开</em></button>');
-      var payButton = document.getElementById('support-pay-button');
-      payButton.addEventListener('click', runSupportAnimation);
-    }
   }
 
   function openQr(image) {
@@ -42,27 +36,11 @@
     document.body.appendChild(layer);
   }
 
-  function runSupportAnimation() {
-    var button = document.getElementById('support-pay-button');
-    if (!button || button.classList.contains('is-processing')) return;
-    button.classList.add('is-processing');
-    statusEl.textContent = '正在打开…';
-    setTimeout(function () { statusEl.textContent = '准备二维码…'; }, 520);
-    setTimeout(function () {
-      button.classList.remove('is-processing');
-      var qr = methodsEl.querySelector('.support-qr-method');
-      if (qr) { qr.classList.remove('is-hidden'); qr.classList.add('reveal'); }
-      statusEl.textContent = '请扫码';
-    }, 1250);
-  }
-
   function open() {
     dialog.hidden = false;
     requestAnimationFrame(function () { dialog.classList.add('show'); });
     document.body.classList.add('support-dialog-open');
-    statusEl.textContent = '点击支持，查看二维码';
-    var qr = methodsEl.querySelector('.support-qr-method');
-    if (qr) { qr.classList.add('is-hidden'); qr.classList.remove('reveal'); }
+    statusEl.textContent = '微信扫一扫';
     trigger.setAttribute('aria-expanded', 'true');
     dialog.querySelector('.support-dialog-close').focus();
   }
@@ -84,7 +62,6 @@
     if (data.title) document.getElementById('support-dialog-title').textContent = data.title;
     if (data.description) document.getElementById('support-description').textContent = data.description;
     methods = Array.isArray(data.methods) ? data.methods : [];
-    paymentDemo = data.paymentDemo || null;
     renderMethods();
   }).catch(function () { renderMethods(); });
   renderMethods();

@@ -8,9 +8,5 @@
       "description": "长按识别二维码",
       "image": "images/support/wechat-pay.png"
     }
-  ],
-  "paymentDemo": {
-    "enabled": true,
-    "provider": ""
-  }
+  ]
 }

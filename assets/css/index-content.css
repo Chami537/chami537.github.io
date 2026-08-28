@@ -50,9 +50,11 @@
 .support-method strong { font-size: 13px; }
 .support-method small, .support-method em { color: var(--muted); font-size: 11px; font-style: normal; }
 .support-method.disabled { opacity: .58; cursor: not-allowed; }
-.support-qr-method { width: 100%; text-align: left; cursor: pointer; }
-.support-qr-method.is-hidden { display: none; }
-.support-qr-method.reveal { animation: support-qr-reveal .42s cubic-bezier(.2,.7,.2,1) both; }
+.support-qr-card { width: 100%; display: grid; justify-items: center; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.5); color: var(--fg); cursor: pointer; animation: support-qr-reveal .42s cubic-bezier(.2,.7,.2,1) both; }
+ .support-qr-card img { width: min(100%, 280px); aspect-ratio: 1; object-fit: contain; border-radius: 10px; background: #fff; }
+.support-qr-card strong { font-size: 14px; }
+.support-qr-card small { color: var(--muted); font-size: 11px; }
+.support-qr-card:hover { border-color: var(--fg); }
 @keyframes support-qr-reveal { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .support-qr-method img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #fff; }
 .support-qr-method:hover { border-color: var(--fg); transform: translateX(3px); }
@@ -61,15 +63,6 @@
 .support-qr-lightbox button { position: fixed; top: 20px; right: 24px; border: 0; background: none; color: #fff; font-size: 32px; cursor: pointer; }
 .support-qr-lightbox small { color: rgba(255,255,255,.75); font-size: 12px; }
 @keyframes support-qr-in { from { opacity: 0; } to { opacity: 1; } }
-.support-pay-button { width: 100%; background: #191918; color: #fff; border-color: #191918; cursor: pointer; text-align: left; }
-.support-pay-button:hover { border-color: #191918; background: #2b2a27; transform: translateY(-1px); }
-.support-pay-button small, .support-pay-button em { color: rgba(255,255,255,.62); }
-.support-pay-button i { display: inline-block; color: #f4c978; font-style: normal; transition: transform .45s ease; }
-.support-pay-button:hover i { transform: rotate(18deg) scale(1.08); }
-.support-pay-action { white-space: nowrap; }
-.support-pay-button.is-processing { pointer-events: none; opacity: .72; }
-.support-pay-button.is-processing .support-pay-action { color: transparent; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.38); border-top-color: #fff; border-radius: 50%; animation: support-spinner .7s linear infinite; }
-@keyframes support-spinner { to { transform: rotate(360deg); } }
 .support-empty, .support-status { color: var(--muted); font-size: 12px; line-height: 1.6; }
 .support-status { margin: 14px 0 0; min-height: 19px; }
 body.support-dialog-open { overflow: hidden; }
