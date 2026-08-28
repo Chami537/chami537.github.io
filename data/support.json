@@ -1,7 +1,14 @@
 {
   "title": "喜欢的话，支持一下",
   "description": "一杯咖啡，支持我继续写下去。",
-  "methods": [],
+  "methods": [
+    {
+      "type": "qr",
+      "label": "微信支付",
+      "description": "长按识别二维码",
+      "image": "images/support/wechat-pay.png"
+    }
+  ],
   "paymentDemo": {
     "enabled": true,
     "provider": ""
