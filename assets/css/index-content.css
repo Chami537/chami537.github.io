@@ -50,11 +50,15 @@
 .support-method strong { font-size: 13px; }
 .support-method small, .support-method em { color: var(--muted); font-size: 11px; font-style: normal; }
 .support-method.disabled { opacity: .58; cursor: not-allowed; }
-.support-qr-card { width: 100%; display: grid; justify-items: center; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.5); color: var(--fg); cursor: pointer; animation: support-qr-reveal .42s cubic-bezier(.2,.7,.2,1) both; }
- .support-qr-card img { width: min(100%, 280px); aspect-ratio: 1; object-fit: contain; border-radius: 10px; background: #fff; }
+.support-qr-stage { width: 100%; position: relative; padding: 8px; animation: support-qr-reveal .65s cubic-bezier(.2,.7,.2,1) both; }
+.support-qr-stage::before { content: ''; position: absolute; inset: 0; border: 1px solid rgba(218,173,79,.38); border-radius: 22px; animation: support-qr-shell 3.2s ease-in-out infinite; pointer-events: none; }
+@keyframes support-qr-shell { 0%, 100% { transform: scale(.97); opacity: .25; } 50% { transform: scale(1.015); opacity: .72; } }
+.support-qr-card { width: 100%; display: grid; justify-items: center; gap: 8px; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: rgba(255,255,255,.5); color: var(--fg); cursor: pointer; transition: transform .45s cubic-bezier(.2,.7,.2,1), box-shadow .45s ease; }
+.support-qr-card img { width: min(100%, 280px); aspect-ratio: 1; object-fit: contain; border-radius: 10px; background: #fff; animation: support-qr-focus .7s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes support-qr-focus { from { opacity: .45; transform: scale(.94); filter: blur(2px); } to { opacity: 1; transform: scale(1); filter: blur(0); } }
 .support-qr-card strong { font-size: 14px; }
 .support-qr-card small { color: var(--muted); font-size: 11px; }
-.support-qr-card:hover { border-color: var(--fg); }
+.support-qr-card:hover { border-color: var(--fg); transform: translateY(-2px); box-shadow: 0 12px 28px rgba(106,77,35,.12); }
 @keyframes support-qr-reveal { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .support-qr-method img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #fff; }
 .support-qr-method:hover { border-color: var(--fg); transform: translateX(3px); }

@@ -14,7 +14,7 @@
     } else {
       methodsEl.innerHTML = methods.map(function (method) {
       if (method.type === 'qr' && method.image) {
-        return '<button type="button" class="support-qr-card" data-qr-image="' + htmlEncode(method.image) + '"><img src="' + htmlEncode(method.image) + '" alt="' + htmlEncode(method.label || '收款二维码') + '"><strong>' + htmlEncode(method.label || '微信支付') + '</strong><small>' + htmlEncode(method.description || '扫码支持') + '</small></button>';
+        return '<div class="support-qr-stage"><button type="button" class="support-qr-card" data-qr-image="' + htmlEncode(method.image) + '"><img src="' + htmlEncode(method.image) + '" alt="' + htmlEncode(method.label || '收款二维码') + '"><strong>' + htmlEncode(method.label || '微信支付') + '</strong><small>' + htmlEncode(method.description || '扫码支持') + '</small></button></div>';
       }
       var url = safeExternalUrl(method.url);
       var label = htmlEncode(method.label || '支持');
