@@ -50,6 +50,14 @@
 .support-method strong { font-size: 13px; }
 .support-method small, .support-method em { color: var(--muted); font-size: 11px; font-style: normal; }
 .support-method.disabled { opacity: .58; cursor: not-allowed; }
+.support-qr-method { width: 100%; text-align: left; cursor: pointer; }
+.support-qr-method img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #fff; }
+.support-qr-method:hover { border-color: var(--fg); transform: translateX(3px); }
+.support-qr-lightbox { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; gap: 14px; padding: 24px; background: rgba(20,18,14,.7); backdrop-filter: blur(12px); animation: support-qr-in .22s ease both; }
+.support-qr-lightbox img { width: min(78vw, 420px); height: min(78vw, 420px); object-fit: contain; border-radius: 12px; background: #fff; box-shadow: 0 20px 60px rgba(0,0,0,.3); }
+.support-qr-lightbox button { position: fixed; top: 20px; right: 24px; border: 0; background: none; color: #fff; font-size: 32px; cursor: pointer; }
+.support-qr-lightbox small { color: rgba(255,255,255,.75); font-size: 12px; }
+@keyframes support-qr-in { from { opacity: 0; } to { opacity: 1; } }
 .support-pay-button { width: 100%; background: #191918; color: #fff; border-color: #191918; cursor: pointer; text-align: left; }
 .support-pay-button:hover { border-color: #191918; background: #2b2a27; transform: translateY(-1px); }
 .support-pay-button small, .support-pay-button em { color: rgba(255,255,255,.62); }
