@@ -16,7 +16,7 @@
     } else {
       methodsEl.innerHTML = methods.map(function (method) {
       if (method.type === 'qr' && method.image) {
-        return '<button type="button" class="support-method support-qr-method" data-qr-image="' + htmlEncode(method.image) + '"><img src="' + htmlEncode(method.image) + '" alt="' + htmlEncode(method.label || '收款二维码') + '"><span><strong>' + htmlEncode(method.label || '微信支付') + '</strong><small>' + htmlEncode(method.description || '扫码支持') + '</small></span><em>查看</em></button>';
+        return '<button type="button" class="support-method support-qr-method is-hidden" data-qr-image="' + htmlEncode(method.image) + '"><img src="' + htmlEncode(method.image) + '" alt="' + htmlEncode(method.label || '收款二维码') + '"><span><strong>' + htmlEncode(method.label || '微信支付') + '</strong><small>' + htmlEncode(method.description || '扫码支持') + '</small></span><em>查看</em></button>';
       }
       var url = safeExternalUrl(method.url);
       var label = htmlEncode(method.label || '支持');
@@ -49,7 +49,12 @@
     button.classList.add('is-processing');
     statusEl.textContent = '确认 ¥' + selectedAmount + '…';
     setTimeout(function () { statusEl.textContent = '处理中…'; }, 520);
-    setTimeout(function () { button.classList.remove('is-processing'); statusEl.textContent = '演示完成'; }, 1250);
+    setTimeout(function () {
+      button.classList.remove('is-processing');
+      var qr = methodsEl.querySelector('.support-qr-method');
+      if (qr) { qr.classList.remove('is-hidden'); qr.classList.add('reveal'); }
+      statusEl.textContent = '请扫码';
+    }, 1250);
   }
 
   function open() {

@@ -51,6 +51,9 @@
 .support-method small, .support-method em { color: var(--muted); font-size: 11px; font-style: normal; }
 .support-method.disabled { opacity: .58; cursor: not-allowed; }
 .support-qr-method { width: 100%; text-align: left; cursor: pointer; }
+.support-qr-method.is-hidden { display: none; }
+.support-qr-method.reveal { animation: support-qr-reveal .42s cubic-bezier(.2,.7,.2,1) both; }
+@keyframes support-qr-reveal { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 .support-qr-method img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; background: #fff; }
 .support-qr-method:hover { border-color: var(--fg); transform: translateX(3px); }
 .support-qr-lightbox { position: fixed; inset: 0; z-index: 1200; display: grid; place-items: center; gap: 14px; padding: 24px; background: rgba(20,18,14,.7); backdrop-filter: blur(12px); animation: support-qr-in .22s ease both; }
