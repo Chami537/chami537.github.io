@@ -12,7 +12,7 @@
 
   function renderMethods() {
     if (!methods.length) {
-      methodsEl.innerHTML = '<div class="support-empty">收款渠道正在准备中，先把这份喜欢收下了。</div>';
+      methodsEl.innerHTML = '<div class="support-empty">收款方式准备中</div>';
     } else {
       methodsEl.innerHTML = methods.map(function (method) {
       var url = safeExternalUrl(method.url);
@@ -23,7 +23,7 @@
       }).join('');
     }
     if (paymentDemo && paymentDemo.enabled) {
-      methodsEl.insertAdjacentHTML('afterbegin', '<button type="button" class="support-method support-pay-button" id="support-pay-button"><span><strong><i aria-hidden="true">⊹</i> 支持此项目</strong><small>确认金额后继续</small></span><em class="support-pay-action">继续</em></button>');
+      methodsEl.insertAdjacentHTML('afterbegin', '<button type="button" class="support-method support-pay-button" id="support-pay-button"><span><strong><i aria-hidden="true">⊹</i> 支持</strong><small>确认金额</small></span><em class="support-pay-action">继续</em></button>');
       var payButton = document.getElementById('support-pay-button');
       payButton.addEventListener('click', runSupportAnimation);
     }
@@ -33,16 +33,16 @@
     var button = document.getElementById('support-pay-button');
     if (!button || button.classList.contains('is-processing')) return;
     button.classList.add('is-processing');
-    statusEl.textContent = '正在确认 ¥' + selectedAmount + '…';
-    setTimeout(function () { statusEl.textContent = '正在准备支持流程…'; }, 520);
-    setTimeout(function () { button.classList.remove('is-processing'); statusEl.textContent = '演示完成，未连接真实支付接口。'; }, 1250);
+    statusEl.textContent = '确认 ¥' + selectedAmount + '…';
+    setTimeout(function () { statusEl.textContent = '处理中…'; }, 520);
+    setTimeout(function () { button.classList.remove('is-processing'); statusEl.textContent = '演示完成'; }, 1250);
   }
 
   function open() {
     dialog.hidden = false;
     requestAnimationFrame(function () { dialog.classList.add('show'); });
     document.body.classList.add('support-dialog-open');
-    statusEl.textContent = '选择金额后打开收款渠道。';
+    statusEl.textContent = '选择金额';
     trigger.setAttribute('aria-expanded', 'true');
     dialog.querySelector('.support-dialog-close').focus();
   }
@@ -61,7 +61,7 @@
     button.addEventListener('click', function () {
       selectedAmount = Number(button.dataset.supportAmount) || 10;
       dialog.querySelectorAll('[data-support-amount]').forEach(function (item) { item.classList.toggle('active', item === button); });
-      statusEl.textContent = '已选择 ¥' + selectedAmount + '，请选择收款渠道。';
+      statusEl.textContent = '已选 ¥' + selectedAmount;
     });
   });
 
