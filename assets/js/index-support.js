@@ -40,6 +40,8 @@
 
   function revealQr() {
     qrPending = false;
+    var transition = document.getElementById('support-transition');
+    if (transition) transition.classList.add('is-done');
     var stage = methodsEl.querySelector('.support-qr-stage');
     if (stage) { stage.classList.remove('is-pending'); stage.classList.add('reveal'); }
     statusEl.textContent = '请扫码';
@@ -51,6 +53,8 @@
     document.body.classList.add('support-dialog-open');
     qrPending = true;
     statusEl.textContent = '正在打开…';
+    var transition = document.getElementById('support-transition');
+    if (transition) transition.classList.remove('is-done');
     var stage = methodsEl.querySelector('.support-qr-stage');
     if (stage) { stage.classList.remove('reveal'); stage.classList.add('is-pending'); }
     clearTimeout(revealTimer);

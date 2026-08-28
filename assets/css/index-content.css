@@ -21,6 +21,13 @@
 .support-dialog-panel h2 { margin: 0 0 10px; font-family: 'Lora', 'Noto Serif SC', serif; font-size: clamp(24px, 4vw, 38px); letter-spacing: -.02em; }
 .support-dialog-description { margin: 0; color: var(--muted); font-family: 'Lora', 'Noto Serif SC', serif; line-height: 1.75; font-size: 14px; }
 .support-dialog-question { margin: 24px 0 10px; font-size: 12px; color: var(--muted); }
+.support-transition { height: 108px; display: grid; place-items: center; overflow: hidden; transition: height .42s cubic-bezier(.2,.7,.2,1), opacity .3s ease; }
+.support-transition.is-done { height: 0; opacity: 0; }
+.support-transition span { width: 54px; height: 54px; display: grid; place-items: center; position: relative; border: 1px solid rgba(218,173,79,.55); border-radius: 50%; color: #b78325; font-size: 23px; animation: support-confirm 1.35s cubic-bezier(.45,0,.25,1) infinite; }
+.support-transition span::before, .support-transition span::after { content: ''; position: absolute; width: 70px; height: 70px; border: 1px solid rgba(218,173,79,.3); border-radius: 50%; animation: support-confirm-ring 1.35s ease-out infinite; }
+.support-transition span::after { animation-delay: .45s; }
+@keyframes support-confirm { 0%, 100% { transform: scale(.94) rotate(-4deg); opacity: .7; } 50% { transform: scale(1.05) rotate(4deg); opacity: 1; } }
+@keyframes support-confirm-ring { 0% { transform: scale(.7); opacity: .65; } 100% { transform: scale(1.35); opacity: 0; } }
 .support-trigger { border: 0; background: var(--fg); color: var(--bg); border-radius: 999px; padding: 14px 18px; display: inline-flex; align-items: center; gap: 10px; font: 600 13px 'Inter', sans-serif; cursor: pointer; transition: transform .22s ease, box-shadow .22s ease; white-space: nowrap; position: relative; }
 .support-trigger:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(0,0,0,.16); }
 .support-trigger:active { transform: translateY(0) scale(.97); }
