@@ -22,6 +22,39 @@ MARKDOWN_EXTENSION_CONFIGS = {
 
 _HREF_RE = re.compile(r'(?i)(href\s*=\s*)(["\'])(.*?)\2', re.DOTALL)
 _SCRIPTABLE_SCHEMES = frozenset({'javascript', 'vbscript', 'data'})
+_WIKILINK_RE = re.compile(r'\[\[([^\[\]]+)\]\]')
+
+
+def _wiki_anchor(value):
+    return re.sub(r'[^\w\u4e00-\u9fff -]', '', value.strip().lower()).replace(' ', '-')
+
+
+def _expand_wikilinks(md_content, essay_links):
+    if not essay_links:
+        return md_content
+    lookup = {}
+    for essay in essay_links:
+        if not isinstance(essay, dict) or not essay.get('slug'):
+            continue
+        title = str(essay.get('title', '')).strip()
+        if title:
+            lookup[title.casefold()] = str(essay['slug'])
+
+    def replace(match):
+        target = match.group(1).strip()
+        parts = target.split('|', 1)
+        destination = parts[0].strip()
+        label = parts[1].strip() if len(parts) == 2 and parts[1].strip() else destination
+        note, separator, heading = destination.partition('#')
+        slug = lookup.get(note.strip().casefold())
+        if not slug:
+            return match.group(0)
+        href = f'{slug}.html'
+        if separator and heading.strip():
+            href += '#' + _wiki_anchor(heading)
+        return f'[{label}]({href})'
+
+    return _WIKILINK_RE.sub(replace, md_content)
 
 
 def _escape_html_outside_fenced_code(md_content):
@@ -52,7 +85,8 @@ def _sanitize_href(match):
     return match.group(0)
 
 
-def render_markdown(md_content):
+def render_markdown(md_content, essay_links=None):
+    md_content = _expand_wikilinks(md_content, essay_links)
     rendered = md_to_html(
         _escape_html_outside_fenced_code(md_content),
         extensions=MARKDOWN_EXTENSIONS,

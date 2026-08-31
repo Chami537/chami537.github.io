@@ -200,7 +200,7 @@ def _read_essay_source(slug):
     return ''
 
 
-def _prepare_essay_body(slug, raw_md, last_edited):
+def _prepare_essay_body(slug, raw_md, last_edited, essays=None):
     if raw_md and _is_encrypted_v3(raw_md):
         return {'password_protected': True, 'encrypted_body': raw_md, 'body_html': '', 'encrypted_is_md': True, 'og_image': ''}
     if not raw_md or not raw_md.strip():
@@ -209,7 +209,7 @@ def _prepare_essay_body(slug, raw_md, last_edited):
     if password:
         stored = _persist_essay_source(slug, raw_md)
         return {'password_protected': True, 'encrypted_body': stored, 'body_html': '', 'encrypted_is_md': True, 'og_image': ''}
-    rendered_html = render_markdown(raw_md)
+    rendered_html = render_markdown(raw_md, essay_links=essays)
     return {
         'password_protected': False,
         'encrypted_body': '',
@@ -234,8 +234,8 @@ def _sync_essay_html(essay, raw_md_memory=None, essays=None):
     if raw_md_memory is not None:
         _persist_essay_source(slug, raw_md_memory)
     raw_md = _read_essay_source(slug)
-    body_data = _prepare_essay_body(slug, raw_md, _parse_date(essay.get('date', ''), include_time=True))
     essays = ESSAY_REPOSITORY.list() if essays is None else essays
+    body_data = _prepare_essay_body(slug, raw_md, _parse_date(essay.get('date', ''), include_time=True), essays)
     html = render_essay_html(essay, body_data, essays, _env.get_template('essay.html'), _parse_date)
     write_essay_html(os.path.join(ESSAYS_DIR, f"{slug}.html"), html)
 

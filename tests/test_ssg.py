@@ -323,6 +323,20 @@ def test_render_markdown_blocks_javascript_links():
     assert 'javascript:' not in html.lower()
 
 
+def test_render_markdown_resolves_public_wikilinks():
+    html = render_markdown(
+        '参见 [[目标文章]]，以及 [[目标文章#引言|这篇文章]]。',
+        essay_links=[{'slug': 'target', 'title': '目标文章'}],
+    )
+    assert '<a href="target.html">目标文章</a>' in html
+    assert '<a href="target.html#引言">这篇文章</a>' in html
+
+
+def test_render_markdown_keeps_unknown_wikilinks():
+    html = render_markdown('[[不存在的文章]]', essay_links=[])
+    assert '[[不存在的文章]]' in html
+
+
 @pytest.mark.parametrize('target', [
     'java&#x73;cript:alert(1)',
     'jav&#97;script:alert(1)',
