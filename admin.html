@@ -176,6 +176,8 @@
       <div style="display:flex; gap:8px;">
         <button class="btn" onclick="promptNewTag()">+ 新建标签</button>
         <button class="btn" id="delete-tag-btn" onclick="toggleDeleteTagMode()">删除标签</button>
+        <button class="btn" onclick="document.getElementById('essay-md-import').click()">导入 Markdown</button>
+        <input type="file" id="essay-md-import" accept=".md,text/markdown" style="display:none" onchange="importEssayMarkdown(this)">
         <button class="btn btn-primary" onclick="showEssayForm()">+ 新建文章</button>
       </div>
     </div>
