@@ -21,6 +21,12 @@ function _markdownMeta(markdown, filename) {
   return {markdown: markdown, title: title.slice(0, 120), date: front.date || '', tag: front.tags || front.tag || '随笔', excerpt: front.excerpt || excerpt};
 }
 
+function _fileTimestamp(file) {
+  var date = new Date(file.lastModified || Date.now());
+  function pad(value) { return String(value).padStart(2, '0'); }
+  return date.getFullYear() + '-' + pad(date.getMonth() + 1) + '-' + pad(date.getDate()) + ' ' + pad(date.getHours()) + ':' + pad(date.getMinutes());
+}
+
 async function importEssayMarkdown(input) {
   var file = input.files && input.files[0];
   input.value = '';
@@ -30,7 +36,7 @@ async function importEssayMarkdown(input) {
     var meta = _markdownMeta(markdown, file.name);
     var basename = file.name.replace(/\.md$/i, '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
     var slug = basename && /^[a-z0-9-]+$/.test(basename) ? (basename.indexOf('essay-') === 0 ? basename : 'essay-' + basename) : genSlug();
-    await api('POST', '/api/essays', {slug: slug, title: meta.title, tag: meta.tag, date: meta.date, epigraph: '', excerpt: meta.excerpt, body: meta.markdown});
+    await api('POST', '/api/essays', {slug: slug, title: meta.title, tag: meta.tag, date: meta.date || _fileTimestamp(file), epigraph: '', excerpt: meta.excerpt, body: meta.markdown});
     toast('Markdown 已导入并发布');
     window['essay' + 'Entry']();
   } catch (error) {
