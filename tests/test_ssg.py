@@ -328,8 +328,8 @@ def test_render_markdown_resolves_public_wikilinks():
         '参见 [[目标文章]]，以及 [[目标文章#引言|这篇文章]]。',
         essay_links=[{'slug': 'target', 'title': '目标文章'}],
     )
-    assert '<a href="target.html">目标文章</a>' in html
-    assert '<a href="target.html#引言">这篇文章</a>' in html
+    assert '<a class="essay-wikilink" href="target.html">目标文章</a>' in html
+    assert '<a class="essay-wikilink" href="target.html#引言">这篇文章</a>' in html
 
 
 def test_render_markdown_keeps_unknown_wikilinks():

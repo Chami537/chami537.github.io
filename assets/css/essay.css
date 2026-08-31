@@ -60,6 +60,8 @@ html.dark .essay-body blockquote { background: rgba(255,184,0,0.08); }
   color: var(--fg);
   margin-top: 1.6em;
 }
+.essay-body a.essay-wikilink { color: var(--c3); text-decoration-color: color-mix(in srgb, var(--c3) 42%, transparent); text-underline-offset: 3px; transition: color .2s ease, text-decoration-color .2s ease; }
+.essay-body a.essay-wikilink:hover { color: color-mix(in srgb, var(--c3) 72%, var(--fg)); text-decoration-color: currentColor; }
 
 .essay-body h2 {
   font-size: 21px; font-weight: 700;

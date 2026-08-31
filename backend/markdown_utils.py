@@ -23,6 +23,7 @@ MARKDOWN_EXTENSION_CONFIGS = {
 _HREF_RE = re.compile(r'(?i)(href\s*=\s*)(["\'])(.*?)\2', re.DOTALL)
 _SCRIPTABLE_SCHEMES = frozenset({'javascript', 'vbscript', 'data'})
 _WIKILINK_RE = re.compile(r'\[\[([^\[\]]+)\]\]')
+_WIKILINK_LINK_RE = re.compile(r'<a href="([^"]+)" title="wikilink">')
 
 
 def _wiki_anchor(value):
@@ -52,7 +53,7 @@ def _expand_wikilinks(md_content, essay_links):
         href = f'{slug}.html'
         if separator and heading.strip():
             href += '#' + _wiki_anchor(heading)
-        return f'[{label}]({href})'
+        return f'[{label}]({href} "wikilink")'
 
     return _WIKILINK_RE.sub(replace, md_content)
 
@@ -92,6 +93,7 @@ def render_markdown(md_content, essay_links=None):
         extensions=MARKDOWN_EXTENSIONS,
         extension_configs=MARKDOWN_EXTENSION_CONFIGS,
     )
+    rendered = _WIKILINK_LINK_RE.sub(r'<a class="essay-wikilink" href="\1">', rendered)
     # Markdown's URL parser permits scriptable schemes; neutralize them before
     # the HTML is inserted into public pages or the admin preview.
     return _HREF_RE.sub(_sanitize_href, rendered)
