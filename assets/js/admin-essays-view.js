@@ -32,10 +32,7 @@ async function loadEssayTagOrder(data) {
 
 function syncEssayFilterState(primaryTags) {
   if (!currentEssayTag && primaryTags.length) currentEssayTag = primaryTags[0];
-  if (currentEssayTag !== '技术') {
-    currentEssayChildTag = null;
-    currentEssayTypeTag = null;
-  }
+  if (currentEssayTag !== '技术') currentEssayTypeTag = null;
   if (currentEssayTag && !primaryTags.includes(currentEssayTag)) {
     currentEssayTag = primaryTags[0] || null;
     currentEssayChildTag = null;
@@ -93,13 +90,26 @@ function _renderEssayPrimaryTabs(primaryTags) {
 }
 
 function _renderEssaySubTabs(ordered, groups) {
-  const childTags = _orderedEssayTags(ordered.filter(t => groups.topicSet.has(t)), ESSAY_TECH_TOPICS);
+  const scopedTags = currentEssayTag === '技术'
+    ? ordered.filter(t => groups.topicSet.has(t))
+    : ordered.filter(function(tag) {
+        if (ESSAY_MAIN_TAGS.includes(tag) || groups.typeSet.has(tag)) return false;
+        return (_essayAllData || []).some(function(essay) {
+          const tags = _essayTagParts(essay.tag);
+          return tags.includes(currentEssayTag) && tags.includes(tag);
+        });
+      });
+  const childTags = _orderedEssayTags(scopedTags, currentEssayTag === '技术' ? ESSAY_TECH_TOPICS : []);
   const typeTags = _orderedEssayTags(ordered.filter(t => groups.typeSet.has(t)), ESSAY_TECH_TYPES);
   const subTabs = document.getElementById('essay-subtag-tabs');
   const typeTabs = document.getElementById('essay-type-tabs');
-  if (currentEssayTag === '技术') {
-    renderEssayTagGroup(subTabs, childTags, '全部主题', {name:'switchEssayChildTag', current:currentEssayChildTag});
-    renderEssayTagGroup(typeTabs, typeTags, '全部类型', {name:'switchEssayTypeTag', current:currentEssayTypeTag});
+  if (currentEssayTag) {
+    renderEssayTagGroup(subTabs, childTags, currentEssayTag === '技术' ? '全部主题' : '全部子类', {name:'switchEssayChildTag', current:currentEssayChildTag});
+    if (currentEssayTag === '技术') {
+      renderEssayTagGroup(typeTabs, typeTags, '全部类型', {name:'switchEssayTypeTag', current:currentEssayTypeTag});
+    } else {
+      renderEssayTagGroup(typeTabs, [], '全部类型', {name:'switchEssayTypeTag', current:null});
+    }
   } else {
     renderEssayTagGroup(subTabs, [], '全部主题', {name:'switchEssayChildTag', current:null});
     renderEssayTagGroup(typeTabs, [], '全部类型', {name:'switchEssayTypeTag', current:null});
@@ -116,7 +126,7 @@ function filterEssayData(data) {
   return data.filter(function(essay) {
     const tags = _essayTagParts(essay.tag);
     if (!tags.length) return currentEssayTag === '随笔';
-    if (currentEssayTag === '技术' && currentEssayChildTag && (!tags.includes('技术') || !tags.includes(currentEssayChildTag))) return false;
+    if (currentEssayChildTag && !tags.includes(currentEssayChildTag)) return false;
     if (currentEssayTag === '技术' && currentEssayTypeTag && (!tags.includes('技术') || !tags.includes(currentEssayTypeTag))) return false;
     return tags.includes(currentEssayTag);
   });

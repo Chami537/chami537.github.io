@@ -42,7 +42,7 @@ function _defaultEssayTagForCurrentFilter() {
   if (currentEssayTag === '技术') {
     return _uniqueEssayTags(['技术', currentEssayChildTag, currentEssayTypeTag]).join(', ');
   }
-  return _defaultEssayTagForFilter(currentEssayTag);
+  return _uniqueEssayTags([currentEssayTag || '随笔', currentEssayChildTag]).join(', ');
 }
 
 function syncEssayTagFromTaxonomy() {
