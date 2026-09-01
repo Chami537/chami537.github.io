@@ -22,6 +22,7 @@ def render_essay_html(essay, body_data, essays, template, parse_date):
         encrypted_body=body_data['encrypted_body'],
         password_protected=body_data['password_protected'],
         encrypted_is_md=body_data['encrypted_is_md'],
+        raw_md=body_data.get('raw_md', ''),
         last_edited=html_mod.escape(parse_date(essay.get('date', ''), include_time=True)),
         prev_nav=Markup(prev_nav),
         next_nav=Markup(next_nav),

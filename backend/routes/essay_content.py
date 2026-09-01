@@ -19,7 +19,6 @@ from backend.file_utils import atomic_write_text
 from backend.routes import essay_context
 
 MAX_ESSAY_PASSWORD_LENGTH = 256
-
 def _rewrite_encrypted_essay(md_file, old_password, new_password):
     """Decrypt an existing Markdown file and encrypt it with a new password."""
     if not os.path.exists(md_file) or not old_password:

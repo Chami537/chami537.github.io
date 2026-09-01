@@ -202,9 +202,9 @@ def _read_essay_source(slug):
 
 def _prepare_essay_body(slug, raw_md, last_edited, essays=None):
     if raw_md and _is_encrypted_v3(raw_md):
-        return {'password_protected': True, 'encrypted_body': raw_md, 'body_html': '', 'encrypted_is_md': True, 'og_image': ''}
+        return {'password_protected': True, 'encrypted_body': raw_md, 'body_html': '', 'encrypted_is_md': True, 'og_image': '', 'raw_md': raw_md}
     if not raw_md or not raw_md.strip():
-        return {'password_protected': False, 'encrypted_body': '', 'body_html': '', 'encrypted_is_md': False, 'og_image': ''}
+        return {'password_protected': False, 'encrypted_body': '', 'body_html': '', 'encrypted_is_md': False, 'og_image': '', 'raw_md': raw_md or ''}
     password = get_essay_password(slug)
     if password:
         stored = _persist_essay_source(slug, raw_md)
@@ -216,6 +216,7 @@ def _prepare_essay_body(slug, raw_md, last_edited, essays=None):
         'body_html': f'{rendered_html}\n<p class="essay-updated">Last edited at {last_edited}</p>',
         'encrypted_is_md': False,
         'og_image': _extract_first_image(raw_md),
+        'raw_md': raw_md,
     }
 
 

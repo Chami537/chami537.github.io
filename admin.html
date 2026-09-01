@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' cdn.staticfile.net cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src-elem 'self' 'unsafe-inline' cdn.staticfile.net cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' cdn.staticfile.net cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' cdn.staticfile.net; img-src 'self' data: blob: https:; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com">
 <title>Chami — Site Admin</title>
-<link rel="stylesheet" href="assets/css/admin-foundation.css?v=1785566329">
-<link rel="stylesheet" href="assets/css/admin-photo.css?v=1785566329">
-<link rel="stylesheet" href="assets/css/admin-git.css?v=1785566329">
-<link rel="stylesheet" href="assets/css/admin-essay.css?v=1785566329">
-<link rel="stylesheet" href="assets/css/admin-health.css?v=1785566329">
-<link rel="stylesheet" href="assets/css/admin-ai.css?v=1785566329">
+<link rel="stylesheet" href="assets/css/admin-foundation.css?v=1788253214">
+<link rel="stylesheet" href="assets/css/admin-photo.css?v=1788253214">
+<link rel="stylesheet" href="assets/css/admin-git.css?v=1788253214">
+<link rel="stylesheet" href="assets/css/admin-essay.css?v=1788253214">
+<link rel="stylesheet" href="assets/css/admin-health.css?v=1788253214">
+<link rel="stylesheet" href="assets/css/admin-ai.css?v=1788253214">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github.min.css">
 <script>
   var _saved = localStorage.getItem('theme');
@@ -178,6 +178,7 @@
         <button class="btn" id="delete-tag-btn" onclick="toggleDeleteTagMode()">删除标签</button>
         <button class="btn" onclick="document.getElementById('essay-md-import').click()">导入 Markdown</button>
         <input type="file" id="essay-md-import" accept=".md,text/markdown" style="display:none" onchange="importEssayMarkdown(this)">
+        <button class="btn" onclick="scanLocalEssayChanges()">同步本地改动</button>
         <button class="btn btn-primary" onclick="showEssayForm()">+ 新建文章</button>
       </div>
     </div>
@@ -191,6 +192,7 @@
     </div>
     <div style="border-bottom:1px solid var(--border);margin-bottom:20px;"></div>
     <div id="essay-list"></div>
+    <div id="essay-local-sync-panel" class="card" style="display:none;margin-top:16px;"></div>
     <div id="essay-form" style="display:none;" class="card">
       <h3 id="essay-form-title">新建随笔</h3>
       <input type="hidden" id="essay-edit-slug">
@@ -584,42 +586,43 @@
 
 <script src="https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
-<script src="assets/js/theme.js?v=1785566329"></script>
-<script src="assets/js/admin-core.js?v=1785566329"></script>
-<script src="assets/js/admin-api.js?v=1785566329"></script>
-<script src="assets/js/admin-ui.js?v=1785566329"></script>
-<script src="assets/js/admin-ai-workflow.js?v=1785566329"></script>
-<script src="assets/js/admin-ai-tools.js?v=1785566329"></script>
-<script src="assets/js/admin-dashboard.js?v=1785566329"></script>
-<script src="assets/js/admin-health.js?v=1785566329"></script>
-<script src="assets/js/code-rendering.js?v=1785566329"></script>
-<script src="assets/js/admin-editor-rendering.js?v=1785566329"></script>
-<script src="assets/js/admin-work.js?v=1785566329"></script>
-<script src="assets/js/admin-social.js?v=1785566329"></script>
-<script src="assets/js/admin-music.js?v=1785566329"></script>
-<script src="assets/js/admin-stack.js?v=1785566329"></script>
-<script src="assets/js/admin-git.js?v=1785566329"></script>
-<script src="assets/js/admin-essay-tag-state.js?v=1785566329"></script>
-<script src="assets/js/admin-essay-taxonomy.js?v=1785566329"></script>
-<script src="assets/js/admin-essay-tag-order.js?v=1785566329"></script>
-<script src="assets/js/admin-essay-tag-actions.js?v=1785566329"></script>
-<script src="assets/js/admin-essay-security.js?v=1785566329"></script>
-<script src="assets/js/admin-about.js?v=1785566329"></script>
-<script src="assets/js/admin-tracks.js?v=1785566329"></script>
-<script src="assets/js/admin-readme.js?v=1785566329"></script>
-<script src="assets/js/admin-essay-meta.js?v=1785566329"></script>
-<script src="assets/js/admin-essay-content.js?v=1785566329"></script>
-<script src="assets/js/admin-essay-formatting.js?v=1785566329"></script>
-<script src="assets/js/admin-essay-media.js?v=1785566329"></script>
-<script src="assets/js/admin-ai.js?v=1785566329"></script>
-<script src="assets/js/admin-essays-view.js?v=1785566329"></script>
-<script src="assets/js/admin-photo-list.js?v=1785566329"></script>
-<script src="assets/js/admin-photo-tags.js?v=1785566329"></script>
-<script src="assets/js/admin-photo-metadata.js?v=1785566329"></script>
-<script src="assets/js/admin-photo-files.js?v=1785566329"></script>
-<script src="assets/js/admin-photo-stories.js?v=1785566329"></script>
-<script src="assets/js/admin-upload.js?v=1785566329"></script>
-<script src="assets/js/admin-tabs.js?v=1785566329"></script>
+<script src="assets/js/theme.js?v=1788253214"></script>
+<script src="assets/js/admin-core.js?v=1788253214"></script>
+<script src="assets/js/admin-api.js?v=1788253214"></script>
+<script src="assets/js/admin-ui.js?v=1788253214"></script>
+<script src="assets/js/admin-ai-workflow.js?v=1788253214"></script>
+<script src="assets/js/admin-ai-tools.js?v=1788253214"></script>
+<script src="assets/js/admin-dashboard.js?v=1788253214"></script>
+<script src="assets/js/admin-health.js?v=1788253214"></script>
+<script src="assets/js/code-rendering.js?v=1788253214"></script>
+<script src="assets/js/admin-editor-rendering.js?v=1788253214"></script>
+<script src="assets/js/admin-work.js?v=1788253214"></script>
+<script src="assets/js/admin-social.js?v=1788253214"></script>
+<script src="assets/js/admin-music.js?v=1788253214"></script>
+<script src="assets/js/admin-stack.js?v=1788253214"></script>
+<script src="assets/js/admin-git.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-tag-state.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-taxonomy.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-tag-order.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-tag-actions.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-security.js?v=1788253214"></script>
+<script src="assets/js/admin-about.js?v=1788253214"></script>
+<script src="assets/js/admin-tracks.js?v=1788253214"></script>
+<script src="assets/js/admin-readme.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-meta.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-content.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-local-sync.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-formatting.js?v=1788253214"></script>
+<script src="assets/js/admin-essay-media.js?v=1788253214"></script>
+<script src="assets/js/admin-ai.js?v=1788253214"></script>
+<script src="assets/js/admin-essays-view.js?v=1788253214"></script>
+<script src="assets/js/admin-photo-list.js?v=1788253214"></script>
+<script src="assets/js/admin-photo-tags.js?v=1788253214"></script>
+<script src="assets/js/admin-photo-metadata.js?v=1788253214"></script>
+<script src="assets/js/admin-photo-files.js?v=1788253214"></script>
+<script src="assets/js/admin-photo-stories.js?v=1788253214"></script>
+<script src="assets/js/admin-upload.js?v=1788253214"></script>
+<script src="assets/js/admin-tabs.js?v=1788253214"></script>
 <script>refreshGitStatus();loadDashboard();</script>
 
 <!-- Password Dialog -->

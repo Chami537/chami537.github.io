@@ -921,6 +921,55 @@ def test_photo_tags_not_found(client):
     assert r.status_code == 404
 
 
+def test_local_essay_changes_scan_and_sync(client, monkeypatch, tmp_path, data_backup):
+    from backend.routes import essay_local_sync as content_route
+    from backend.routes import essay_context
+
+    slug = 'test-local-sync'
+    essay = {
+        'slug': slug, 'title': '本地同步', 'date': '2026-01-01',
+        'epigraph': '', 'excerpt': '', 'tag': '随笔', 'readTime': 1,
+    }
+    essays = essay_context.ESSAY_REPOSITORY.list()
+    essays.append(essay)
+    essay_context.ESSAY_REPOSITORY.save(essays)
+    md_dir = tmp_path / 'md'
+    html_dir = tmp_path / 'essays'
+    md_dir.mkdir(); html_dir.mkdir()
+    monkeypatch.setattr(content_route, 'MD_DIR', str(md_dir))
+    monkeypatch.setattr(content_route, 'ESSAYS_DIR', str(html_dir))
+    source = '# 新内容\n\n本地编辑'
+    (md_dir / f'{slug}.md').write_text(source, encoding='utf-8')
+    (html_dir / f'{slug}.html').write_text('<!-- RAW_MD\n旧内容\nRAW_MD -->', encoding='utf-8')
+    (md_dir / 'unregistered.md').write_text('未登记', encoding='utf-8')
+
+    response = client.get('/api/essays/local-changes')
+    assert response.status_code == 200
+    changes = {item['slug']: item for item in response.json['changes']}
+    assert changes[slug]['status'] == 'changed'
+    assert changes['unregistered']['status'] == 'unregistered'
+
+    (md_dir / f'{slug}.md').unlink()
+    missing = client.get('/api/essays/local-changes').json['changes']
+    assert next(item for item in missing if item['slug'] == slug)['status'] == 'missing_source'
+    restored = client.post('/api/essays/restore-local-source', json={'slugs': [slug]})
+    assert restored.json['restored'] == 1
+    assert (md_dir / f'{slug}.md').read_text(encoding='utf-8') == '旧内容'
+    (md_dir / f'{slug}.md').write_text(source, encoding='utf-8')
+
+    synced = []
+    monkeypatch.setattr(essay_context.ESSAY_WORKFLOW, 'read_time', lambda content: 3)
+    monkeypatch.setattr(essay_context.ESSAY_WORKFLOW, 'sync', lambda target, **kwargs: synced.append(target['slug']))
+    monkeypatch.setattr(essay_context.ESSAY_WORKFLOW, 'regenerate_feeds', lambda: None)
+    response = client.post('/api/essays/sync-local', json={'slugs': [slug]})
+    assert response.status_code == 200
+    assert response.json['synced'] == 1
+    assert synced == [slug]
+    updated = next(item for item in essay_context.ESSAY_REPOSITORY.list() if item['slug'] == slug)
+    assert updated['readTime'] == 3
+    assert updated['date']
+
+
 @pytest.mark.parametrize('tags', [
     'not-a-list',
     [1],

@@ -59,6 +59,19 @@ function _essayFilterSets() {
   return {primary: primary, topics: techTopicSet, types: techTypeSet};
 }
 
+function _essaySecondaryTagsFor(primary) {
+  var secondary = new Set();
+  if (!primary) return secondary;
+  _essayData.forEach(function(e) {
+    var tags = _essayTagsFor(e);
+    if (tags.indexOf(primary) < 0) return;
+    tags.forEach(function(t) {
+      if (t !== primary && _essayPrimaryTags.indexOf(t) < 0) secondary.add(t);
+    });
+  });
+  return secondary;
+}
+
 function _renderEssayPrimaryFilter(primary) {
   var html = '<button type="button" class="ef-chip' + (!_essayPrimaryFilter ? ' active' : '') + '" onclick="filterEssayPrimary(\'\')">置顶</button>';
   primary.forEach(function(t) {
@@ -71,10 +84,20 @@ function _renderEssayTechFilter(techTopicSet, techTypeSet) {
   var topicEl = document.getElementById('essay-topic-filter');
   var typeEl = document.getElementById('essay-type-filter');
   if (!topicEl || !typeEl) return;
-  if (_essayPrimaryFilter !== '技术') {
+  if (!_essayPrimaryFilter) {
     _clearEssayTechFilters(topicEl, typeEl);
     return;
   }
+
+  // 技术类保留“主题 + 类型”两级筛选；其他主类也展示其自身的附加标签。
+  if (_essayPrimaryFilter !== '技术') {
+    var secondary = _orderedEssayTags(Array.from(_essaySecondaryTagsFor(_essayPrimaryFilter)), []);
+    _renderEssayFilterGroup(topicEl, secondary, '子类', _essayTopicFilter, 'filterEssayTopic');
+    typeEl.style.display = 'none';
+    typeEl.innerHTML = '';
+    return;
+  }
+
   var techTopics = _orderedEssayTags(Array.from(techTopicSet), _essayTechTopics);
   var techTypes = _orderedEssayTags(Array.from(techTypeSet), _essayTechTypes);
   _renderEssayFilterGroup(topicEl, techTopics, '主题', _essayTopicFilter, 'filterEssayTopic');
