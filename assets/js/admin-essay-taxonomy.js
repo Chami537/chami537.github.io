@@ -35,7 +35,7 @@ function _defaultEssayTagForFilter(tag) {
     return tags.indexOf('技术') >= 0 && tags.indexOf(tag) >= 0;
   });
   if (isKnownTechTag || isExistingTechTag) return '技术, ' + tag;
-  return '随笔, ' + tag;
+  return (currentEssayTag || '随笔') + ', ' + tag;
 }
 
 function _defaultEssayTagForCurrentFilter() {

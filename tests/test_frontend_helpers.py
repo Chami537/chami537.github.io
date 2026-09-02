@@ -176,3 +176,34 @@ assert.strictEqual(summary.gain, 5);
 assert.strictEqual(context._fmtDist(1250), '1.3 km');
 """
     subprocess.run([node, '-e', script], cwd=ROOT, check=True, capture_output=True, text=True)
+
+
+def test_essay_subtags_keep_the_selected_primary_category():
+    state_path = (ROOT / 'assets' / 'js' / 'admin-essay-tag-state.js').as_posix()
+    taxonomy_path = (ROOT / 'assets' / 'js' / 'admin-essay-taxonomy.js').as_posix()
+    actions_path = (ROOT / 'assets' / 'js' / 'admin-essay-tag-actions.js').as_posix()
+    script = f"""
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+const elements = {{}};
+const context = {{
+  document: {{
+    getElementById(id) {{ return elements[id] || (elements[id] = {{value:'', style:{{}}, classList:{{toggle(){{}}}}}}); }},
+    querySelector() {{ return {{classList:{{toggle(){{}}}}, textContent:''}}; }}
+  }},
+  window: {{}}, console, _essayAllData: []
+}};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('{state_path}', 'utf8'), context);
+vm.runInContext(fs.readFileSync('{taxonomy_path}', 'utf8'), context);
+vm.runInContext(fs.readFileSync('{actions_path}', 'utf8'), context);
+vm.runInContext("currentEssayTag = '阅读'; currentEssayChildTag = '消费';", context);
+assert.strictEqual(context._defaultEssayTagForFilter('消费'), '阅读, 消费');
+context.hidePanel = () => {{}};
+context.hideEssayContentEditor = () => {{}};
+context.window.essayEntry = () => {{}};
+vm.runInContext("switchEssayChildTag('旅行');", context);
+assert.strictEqual(vm.runInContext('currentEssayTag', context), '阅读');
+"""
+    _run_node(script)

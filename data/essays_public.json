@@ -82,17 +82,6 @@
       "password_protected": true
     },
     {
-      "slug": "essay-7b64261b",
-      "title": "日本之旅",
-      "tag": "生活",
-      "date": "2026-08-17",
-      "epigraph": "一次美好的旅行",
-      "excerpt": "十天，够看一座城市从陌生变成熟悉，又变回陌生——只不过这一次，陌生的是即将要回去的自己。",
-      "readTime": 1,
-      "date_display": "2026-08-17",
-      "password_protected": false
-    },
-    {
       "slug": "essay-5db18183",
       "title": "消费水平",
       "tag": "阅读",

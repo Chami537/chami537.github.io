@@ -12,7 +12,6 @@ function switchEssayTag(tag) {
 function switchEssayChildTag(tag) {
   hidePanel('essay-form');
   hideEssayContentEditor();
-  currentEssayTag = '技术';
   currentEssayChildTag = tag || null;
   window['essay' + 'Entry']();
 }
