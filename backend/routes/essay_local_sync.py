@@ -2,12 +2,16 @@
 
 import os
 import re
+import hashlib
+import shutil
+from difflib import SequenceMatcher
 from datetime import datetime
 
 from flask import jsonify, request
+from PIL import Image
 
 from backend.crud import require_json
-from backend.data import ESSAYS_DIR, MD_DIR, has_essay_password
+from backend.data import ALLOWED_IMAGE_EXTENSIONS, ESSAYS_DIR, IMAGES_DIR, MD_DIR, has_essay_password
 from backend.essay_crypto import is_encrypted_content
 from backend.file_utils import atomic_write_text
 from backend.routes import essay_context
@@ -44,7 +48,7 @@ def _normalize_name(value):
     return re.sub(r'[^0-9A-Za-z\u3400-\u9fff]', '', value or '').lower()
 
 
-def _obsidian_source_for(essay):
+def _obsidian_source_for(essay, project_content=None):
     """Find a matching Obsidian note by title when the project source is unchanged."""
     if not OBSIDIAN_DIR or not essay.get('title'):
         return None
@@ -60,7 +64,89 @@ def _obsidian_source_for(essay):
         name = _normalize_name(os.path.splitext(entry.name)[0])
         if all(char in name for char in title):
             return entry.path
+    if project_content:
+        best = (0, None)
+        for entry in candidates:
+            try:
+                with open(entry.path, 'r', encoding='utf-8') as file:
+                    candidate = file.read()
+            except (OSError, UnicodeDecodeError):
+                continue
+            score = SequenceMatcher(None, project_content, candidate).ratio()
+            if score > best[0]:
+                best = (score, entry.path)
+        if best[0] >= 0.75:
+            return best[1]
     return None
+
+
+def _find_obsidian_image(name, note_path):
+    """Resolve an Obsidian embed to a file inside the configured vault."""
+    clean = (name or '').split('|', 1)[0].strip().replace('\\', '/')
+    if not clean or clean.startswith('/') or '..' in clean.split('/'):
+        return None
+    note_dir = os.path.dirname(note_path)
+    direct = os.path.realpath(os.path.join(note_dir, clean))
+    vault_root = os.path.realpath(OBSIDIAN_DIR or '')
+    if not direct.startswith(vault_root + os.sep):
+        return None
+    if os.path.isfile(direct):
+        return direct
+    basename = os.path.basename(clean)
+    for root, _dirs, files in os.walk(vault_root):
+        if basename in files:
+            return os.path.join(root, basename)
+    return None
+
+
+def _safe_image_name(name):
+    base, ext = os.path.splitext(os.path.basename(name))
+    base = re.sub(r'[^0-9A-Za-z\u3400-\u9fff_-]+', '-', base).strip('-') or 'image'
+    ext = ext.lower()
+    return base[:80] + ext
+
+
+def _materialize_obsidian_images(content, note_path, essay):
+    """Copy embedded Obsidian images into public essay assets and rewrite links."""
+    if not OBSIDIAN_DIR or not content:
+        return content
+    pattern = re.compile(r'!\[\[([^\]]+)\]\]')
+    folder = re.sub(r'[/\\]+', '_', essay.get('title', essay['slug'])).strip() or essay['slug']
+    image_dir = os.path.realpath(os.path.join(IMAGES_DIR, 'essays', folder))
+    root = os.path.realpath(os.path.join(IMAGES_DIR, 'essays'))
+    if not image_dir.startswith(root + os.sep):
+        raise ValueError('Invalid essay image directory')
+    changed = False
+
+    def replace(match):
+        nonlocal changed
+        source = _find_obsidian_image(match.group(1), note_path)
+        if not source or os.path.splitext(source)[1].lower().lstrip('.') not in ALLOWED_IMAGE_EXTENSIONS:
+            return match.group(0)
+        try:
+            with Image.open(source) as image:
+                image.verify()
+            os.makedirs(image_dir, exist_ok=True)
+            filename = _safe_image_name(match.group(1))
+            destination = os.path.join(image_dir, filename)
+            if os.path.exists(destination):
+                with open(source, 'rb') as file:
+                    source_digest = hashlib.sha256(file.read()).hexdigest()
+                with open(destination, 'rb') as file:
+                    destination_digest = hashlib.sha256(file.read()).hexdigest()
+                if source_digest != destination_digest:
+                    filename = os.path.splitext(filename)[0] + '-' + source_digest[:8] + os.path.splitext(filename)[1]
+                    destination = os.path.join(image_dir, filename)
+            if not os.path.exists(destination):
+                shutil.copy2(source, destination)
+            changed = True
+            url = '/images/essays/{}/{}'.format(folder, filename)
+            return '![{}]({})'.format(os.path.splitext(filename)[0], url)
+        except (OSError, ValueError):
+            return match.group(0)
+
+    result = pattern.sub(replace, content)
+    return result if changed else content
 
 
 def _local_essay_changes(essays):
@@ -89,7 +175,7 @@ def _local_essay_changes(essays):
                             'mtime': mtime, 'readTime': essay.get('readTime', 1),
                             'password_protected': has_essay_password(slug)})
         else:
-            obsidian_path = _obsidian_source_for(essay)
+            obsidian_path = _obsidian_source_for(essay, content)
             if obsidian_path:
                 try:
                     with open(obsidian_path, 'r', encoding='utf-8') as file:
@@ -167,7 +253,7 @@ def sync_local_essays():
             except (OSError, UnicodeDecodeError):
                 results.append({'slug': slug, 'status': 'error', 'error': 'Markdown source not found or unreadable'})
                 continue
-            obsidian_path = _obsidian_source_for(target)
+            obsidian_path = _obsidian_source_for(target, content)
             source_mtime = os.path.getmtime(md_file)
             if obsidian_path:
                 try:
@@ -176,6 +262,8 @@ def sync_local_essays():
                         content = file.read()
                 except (OSError, UnicodeDecodeError):
                     pass
+            if obsidian_path and obsidian_path != md_file:
+                content = _materialize_obsidian_images(content, obsidian_path, target)
             protected = has_essay_password(slug)
             if protected and not is_encrypted_content(content):
                 results.append({'slug': slug, 'status': 'error', 'error': '受保护文章的本地文件不是有效密文，已跳过'})

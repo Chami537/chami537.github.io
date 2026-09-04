@@ -970,6 +970,29 @@ def test_local_essay_changes_scan_and_sync(client, monkeypatch, tmp_path, data_b
     assert updated['date']
 
 
+def test_obsidian_image_embed_is_copied_and_rewritten(monkeypatch, tmp_path):
+    from PIL import Image
+    from backend.routes import essay_local_sync
+
+    vault = tmp_path / 'vault'
+    public = tmp_path / 'images'
+    vault.mkdir()
+    image_path = vault / 'photo.jpg'
+    Image.new('RGB', (8, 8), 'red').save(image_path)
+    note = vault / '日本之旅.md'
+    note.write_text('![[photo.jpg]]', encoding='utf-8')
+    monkeypatch.setattr(essay_local_sync, 'OBSIDIAN_DIR', str(vault))
+    monkeypatch.setattr(essay_local_sync, 'IMAGES_DIR', str(public))
+    essay = {'slug': 'essay-demo', 'title': '日本之旅'}
+
+    rendered = essay_local_sync._materialize_obsidian_images('![[photo.jpg]]', str(note), essay)
+    assert rendered == '![photo](/images/essays/日本之旅/photo.jpg)'
+    assert (public / 'essays' / '日本之旅' / 'photo.jpg').is_file()
+    rendered_again = essay_local_sync._materialize_obsidian_images('![[photo.jpg]]', str(note), essay)
+    assert rendered_again == rendered
+    assert len(list((public / 'essays' / '日本之旅').glob('*.jpg'))) == 1
+
+
 @pytest.mark.parametrize('tags', [
     'not-a-list',
     [1],
