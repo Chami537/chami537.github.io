@@ -3,6 +3,7 @@
 import os
 import json
 import threading
+import time
 from pathlib import Path
 
 import pytest
@@ -59,13 +60,17 @@ def test_admin_shell_loads_shared_modules_and_switches_tabs(live_server, browser
         assert page.evaluate("typeof api") == 'function'
         assert page.evaluate("typeof switchTab") == 'function'
         page.locator('.tab-btn[data-tab="essays"]').click()
-        page.wait_for_timeout(150)
         assert page.locator('#essay-list').count() == 1
         for name in (
             'saveEssay', 'editEssayContent', '_wrapSelection', 'previewEssayContent',
             '_essayTagParts', 'renderEssayTaxonomy', 'saveTagOrder', 'switchEssayTag',
             'markDirty', 'requestEssayAi', 'applyEssayAiResult', 'updateEssayAiAvailability',
         ):
+            deadline = time.monotonic() + 5
+            while page.evaluate('typeof ' + name) != 'function':
+                if time.monotonic() >= deadline:
+                    pytest.fail(f'{name} was not exposed after essay modules loaded')
+                page.wait_for_timeout(25)
             assert page.evaluate('typeof ' + name) == 'function'
         assert page.locator('#essay-ai-panel').count() == 1
         assert page.locator('#essay-ai-actions button').count() == 6
