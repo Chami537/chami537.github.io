@@ -2,6 +2,7 @@
 
 import json
 import os
+import copy
 import time
 
 
@@ -14,17 +15,32 @@ class JsonStore:
 
     def __init__(self, data_dir):
         self.data_dir = os.path.abspath(data_dir)
+        self._cache = {}
+
+    @staticmethod
+    def _signature(path):
+        try:
+            stat = os.stat(path)
+        except OSError:
+            return None
+        return stat.st_mtime_ns, stat.st_size
 
     def _path(self, filename):
         return os.path.join(self.data_dir, filename)
 
     def read(self, filename, default=None):
         path = self._path(filename)
-        if not os.path.exists(path):
+        signature = self._signature(path)
+        cached = self._cache.get(filename)
+        if cached is not None and cached[0] == signature:
+            return copy.deepcopy(cached[1])
+        if signature is None:
             return [] if default is None else default
         try:
             with open(path, 'r', encoding='utf-8') as handle:
-                return json.load(handle)
+                value = json.load(handle)
+            self._cache[filename] = (signature, value)
+            return copy.deepcopy(value)
         except json.JSONDecodeError as exc:
             raise DataCorruptionError(f'Invalid JSON data: {path}') from exc
 
@@ -42,6 +58,7 @@ class JsonStore:
                     if attempt == 4:
                         raise
                     time.sleep(0.05 * (attempt + 1))
+            self._cache.pop(filename, None)
         except Exception:
             if os.path.exists(temp_path):
                 try:

@@ -465,3 +465,37 @@ def test_shared_code_renderer_runs_in_admin_and_essay_pages(live_server, browser
         assert page.locator('script[src*="code-rendering.js"]').count() == 1
     finally:
         page.close()
+
+
+def test_essay_toc_builds_heading_anchors_and_supports_group_collapse(live_server, browser):
+    page = browser.new_page()
+    try:
+        essays = json.loads((ROOT / 'data' / 'essays.json').read_text(encoding='utf-8'))
+        page.goto(live_server + f"/essays/{essays[0]['slug']}.html", wait_until='domcontentloaded')
+        page.wait_for_function("typeof buildEssayToc === 'function'")
+        result = page.evaluate("""
+          (function() {
+            var body = document.querySelector('.essay-body');
+            body.innerHTML = '<h1>第一章</h1><h2>背景与目标</h2><h2>背景与目标</h2><h1>第二章</h1>';
+            buildEssayToc(body);
+            var links = Array.from(document.querySelectorAll('#essay-toc-list a'));
+            var firstToggle = document.querySelector('.essay-toc-toggle');
+            firstToggle.click();
+            return {
+              visible: !document.getElementById('essay-toc').hidden,
+              ids: Array.from(body.querySelectorAll('h1, h2')).map(function(h) { return h.id; }),
+              links: links.map(function(link) { return link.getAttribute('href'); }),
+              collapsed: document.querySelector('.essay-toc-sublist').hidden,
+              labels: links.map(function(link) { return link.textContent; })
+            };
+          })()
+        """)
+        assert result == {
+            'visible': True,
+            'ids': ['heading-第一章', 'heading-背景与目标', 'heading-背景与目标-2', 'heading-第二章'],
+            'links': ['#heading-第一章', '#heading-背景与目标', '#heading-背景与目标-2', '#heading-第二章'],
+            'collapsed': True,
+            'labels': ['第一章', '背景与目标', '背景与目标', '第二章'],
+        }
+    finally:
+        page.close()

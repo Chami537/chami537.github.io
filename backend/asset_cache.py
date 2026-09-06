@@ -7,7 +7,7 @@ from backend.file_utils import atomic_write_text
 
 
 _ASSET_REFERENCE_RE = re.compile(
-    r'(?P<prefix>\b(?:href|src)\s*=\s*)'
+    r'(?P<prefix>\b(?:href|src|data-lazy-src)\s*=\s*)'
     r'(?P<quote>["\'])'
     r'(?P<path>assets/(?:css|js)/[^?"\']+)'
     r'(?:\?v=\d+)?'

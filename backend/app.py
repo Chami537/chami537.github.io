@@ -38,6 +38,7 @@ _PUBLIC_DATA_FILES = frozenset({
     'tracks.json', 'work.json', 'giscus.css', 'giscus-dark.css',
     'support.json',
 })
+_STATIC_MAX_AGE = 31536000
 
 
 # ── Auth guard: all /api/* requires login except /api/login (skipped in test mode) ──
@@ -87,46 +88,46 @@ def admin_panel():
 # ── Static file serving (for index.html preview) ──
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
-    return send_from_directory(os.path.join(BASE_DIR, 'assets'), filename)
+    return send_from_directory(os.path.join(BASE_DIR, 'assets'), filename, max_age=_STATIC_MAX_AGE)
 
 
 @app.route('/data/<path:filename>')
 def serve_data(filename):
     if filename not in _PUBLIC_DATA_FILES:
         abort(404)
-    return send_from_directory(DATA_DIR, filename)
+    return send_from_directory(DATA_DIR, filename, max_age=300)
 
 
 @app.route('/images/<path:filename>')
 def serve_images(filename):
-    return send_from_directory(IMAGES_DIR, filename)
+    return send_from_directory(IMAGES_DIR, filename, max_age=_STATIC_MAX_AGE)
 
 
 @app.route('/index.html')
 def serve_index():
-    return send_from_directory(BASE_DIR, 'index.html')
+    return send_from_directory(BASE_DIR, 'index.html', max_age=300)
 
 
 @app.route('/essays/<path:filename>')
 def serve_essay(filename):
-    return send_from_directory(ESSAYS_DIR, filename)
+    return send_from_directory(ESSAYS_DIR, filename, max_age=300)
 
 
 @app.route('/music/<path:filename>')
 def serve_music(filename):
-    return send_from_directory(os.path.join(BASE_DIR, 'music'), filename)
+    return send_from_directory(os.path.join(BASE_DIR, 'music'), filename, max_age=_STATIC_MAX_AGE)
 
 
 @app.route('/tracks/<path:filename>')
 def serve_tracks(filename):
-    return send_from_directory(os.path.join(BASE_DIR, 'tracks'), filename)
+    return send_from_directory(os.path.join(BASE_DIR, 'tracks'), filename, max_age=_STATIC_MAX_AGE)
 
 
 # Routes for root-level generated files.
 _ROOTS = ['rss.xml', 'sitemap.xml', 'archive.html', 'map.html']
 for _f in _ROOTS:
     _ep = f'serve_{_f.replace(".", "_")}'
-    app.add_url_rule(f'/{_f}', _ep, lambda _f=_f: send_from_directory(BASE_DIR, _f))
+    app.add_url_rule(f'/{_f}', _ep, lambda _f=_f: send_from_directory(BASE_DIR, _f, max_age=300))
 
 
 # Register all API routes after app creation, without route modules importing the app.

@@ -3,6 +3,8 @@
 import json
 import os
 import urllib.request
+import urllib.error
+from concurrent.futures import ThreadPoolExecutor
 
 from backend.data import DATA_DIR
 from backend.repositories import repository_for
@@ -37,6 +39,11 @@ def _update_stars(item, etags):
                 return False
             stars = json.loads(response.read().decode()).get('stargazers_count', 0)
             etag = response.headers.get('ETag')
+    except urllib.error.HTTPError as exc:
+        if exc.code == 304:
+            return False
+        print(f"  WARNING: failed to fetch stars for {repo}: HTTP Error {exc.code}")
+        return False
     except Exception as exc:
         print(f"  WARNING: failed to fetch stars for {repo}: {exc}")
         return False
@@ -56,7 +63,9 @@ def fetch_stars():
     etag_path = os.path.join(DATA_DIR, '_stars_etag.json')
     etags = _load_etags(etag_path)
 
-    changed = [_update_stars(item, etags) for item in work]
+    max_workers = min(4, len(work)) or 1
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        changed = list(executor.map(lambda item: _update_stars(item, etags), work))
     if any(changed):
         repository.save(work)
     etag_tmp = etag_path + '.tmp'

@@ -42,6 +42,8 @@
 
 <main class="reading" data-build-ts="{{ build_ts }}" data-slug="{{ slug }}">
 
+<div class="essay-main">
+
   <div class="section-tag">ESSAYS</div>
 
   <h1 class="essay-title">{{ title }}</h1>
@@ -167,6 +169,7 @@
         var content = document.getElementById('essay-content');
         content.innerHTML = html;
         content.style.display = 'block';
+        if (window.buildEssayToc) buildEssayToc(content);
         // Re-render KaTeX in decrypted content
         renderKatexIn(content);
         highlightCodeBlocks(content);
@@ -221,6 +224,15 @@ RAW_MD -->
   <div class="comments-section" id="giscus-container"></div>
 <script src="/assets/js/essay-comments.js?v={{ build_ts }}"></script>
 
+</div>
+
+  <details id="essay-toc" class="essay-toc" hidden open>
+    <summary>On This Page</summary>
+    <nav aria-label="文章目录">
+      <ol id="essay-toc-list"></ol>
+    </nav>
+  </details>
+
 </main>
 
     {% include 'includes/footer.html' %}
@@ -228,6 +240,7 @@ RAW_MD -->
 <script src="/assets/js/essay-lightbox.js?v={{ build_ts }}"></script>
 <script src="/assets/js/theme.js?v={{ build_ts }}"></script>
 <script src="/assets/js/essay-page.js?v={{ build_ts }}"></script>
+<script src="/assets/js/essay-toc.js?v={{ build_ts }}"></script>
 <script src="/assets/js/essay-nav.js?v={{ build_ts }}"></script>
 
 <!--

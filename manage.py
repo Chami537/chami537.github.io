@@ -49,7 +49,7 @@ if __name__ == '__main__':
                 print(f"  ✓ essays/{slug}.html")
                 rebuilt += 1
 
-            generate_feeds()
+            generate_feeds(essays=essays)
             cache_bust_assets(BASE_DIR)
 
             # Pre-fetch GitHub stars (rate-limited, only on full or when work data changed)

@@ -9,7 +9,7 @@ async function loadMusic() {
     <div class="card">
       <div class="card-header">
         <div>
-          <div class="card-title">${pad2(m.id)} ${esc(m.title)}</div>
+          <div class="card-title">${String(m.id).padStart(2, '0')} ${esc(m.title)}</div>
           <div class="card-meta">${esc(m.artist)} · ${esc(m.filename)}</div>
         </div>
         <div class="card-actions">

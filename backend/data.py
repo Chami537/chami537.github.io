@@ -2,6 +2,7 @@
 
 import os
 import json
+import threading
 from backend.storage import JsonStore
 
 from dotenv import load_dotenv
@@ -20,17 +21,37 @@ if os.path.exists(_dotenv_path):
 # ── Password store (gitignored, local-only) ──
 
 PASSWORD_STORE = os.path.join(DATA_DIR, 'essay_passwords.json')
+_password_cache = None
+_password_cache_lock = threading.RLock()
+
+
+def _password_store_signature():
+    try:
+        stat = os.stat(PASSWORD_STORE)
+    except OSError:
+        return None
+    return stat.st_mtime_ns, stat.st_size
 
 
 def _read_password_store():
     """Read the local password store. Returns empty dict if missing or corrupted."""
-    if not os.path.exists(PASSWORD_STORE):
-        return {}
-    try:
-        with open(PASSWORD_STORE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except (json.JSONDecodeError, IOError):
-        return {}
+    global _password_cache
+    signature = _password_store_signature()
+    with _password_cache_lock:
+        if _password_cache is not None and _password_cache[0] == signature:
+            return dict(_password_cache[1])
+        if signature is None:
+            value = {}
+        else:
+            try:
+                with open(PASSWORD_STORE, 'r', encoding='utf-8') as f:
+                    value = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                value = {}
+        if not isinstance(value, dict):
+            value = {}
+        _password_cache = (signature, value)
+        return dict(value)
 
 
 def _write_password_store(data):
@@ -40,6 +61,9 @@ def _write_password_store(data):
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=2)
         os.replace(tmp, PASSWORD_STORE)
+        global _password_cache
+        with _password_cache_lock:
+            _password_cache = (_password_store_signature(), dict(data))
     except Exception:
         if os.path.exists(tmp):
             os.remove(tmp)

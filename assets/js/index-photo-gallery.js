@@ -4,10 +4,10 @@ function renderPhotos(data) {
   if (!data || !data.length) {
     return '<div class="photo-empty">这一组暂时没有匹配的照片。</div>';
   }
-  return data.map(_photoItemHtml).join('');
+  return data.map(function(photo, index) { return _photoItemHtml(photo, index); }).join('');
 }
 
-function _photoItemHtml(photo) {
+function _photoItemHtml(photo, index) {
   var filename = encodeURIComponent(photo.filename);
   var exif = photo.exif || {};
   var meta = _photoMeta(photo, exif);
@@ -15,7 +15,7 @@ function _photoItemHtml(photo) {
   var infoHtml = (meta.exifText || meta.gpsHtml) ? '<div class="photo-info">' + meta.exifText + meta.gpsHtml + '</div>' : '';
   var tagStr = (photo.tags || []).join(',');
   return '<div class="photo-item" data-tags="' + htmlEncode(tagStr) + '">' +
-    '<img src="images/sm/' + filename + '" srcset="' + _photoSrcset(filename) + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo" loading="lazy" data-exif="' + htmlEncode(meta.exifText + (meta.gpsText ? ' · ' + meta.gpsText : '') + (meta.date ? ' · ' + meta.date : '')) + '">' +
+    '<img src="images/sm/' + filename + '" srcset="' + _photoSrcset(filename) + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo" loading="' + (index === 0 ? 'eager' : 'lazy') + '" decoding="async"' + (index === 0 ? ' fetchpriority="high"' : '') + ' data-exif="' + htmlEncode(meta.exifText + (meta.gpsText ? ' · ' + meta.gpsText : '') + (meta.date ? ' · ' + meta.date : '')) + '">' +
     dateHtml + infoHtml + '</div>';
 }
 

@@ -79,21 +79,34 @@ def _extract_first_image(md_text):
     return 'https://chami537.github.io/images/avatar.jpg'
 
 
-def _generate_rss():
+def _needs_regeneration(output_path, input_paths):
+    if not os.path.exists(output_path):
+        return True
+    output_mtime = os.path.getmtime(output_path)
+    return any(os.path.exists(path) and os.path.getmtime(path) > output_mtime for path in input_paths)
+
+
+def _generate_rss(essays=None):
     """Generate rss.xml from essays.json (Jinja2 template)."""
-    essays = ESSAY_REPOSITORY.list()
+    output_path = os.path.join(BASE_DIR, 'rss.xml')
+    if not _needs_regeneration(output_path, [os.path.join(DATA_DIR, 'essays.json'), os.path.join(BASE_DIR, 'templates', 'rss.xml')]):
+        return
+    essays = ESSAY_REPOSITORY.list() if essays is None else essays
     enriched = strip_enrich(essays, 'pub_date', '%a, %d %b %Y %H:%M:%S +0800', 20)
     last_build = datetime.now().strftime('%a, %d %b %Y %H:%M:%S +0800')
     html = _env.get_template('rss.xml').render(essays=enriched, last_build=last_build)
-    atomic_write_text(os.path.join(BASE_DIR, 'rss.xml'), html)
+    atomic_write_text(output_path, html)
 
 
-def _generate_sitemap():
+def _generate_sitemap(essays=None):
     """Generate sitemap.xml (Jinja2 template)."""
-    essays = ESSAY_REPOSITORY.list()
+    output_path = os.path.join(BASE_DIR, 'sitemap.xml')
+    if not _needs_regeneration(output_path, [os.path.join(DATA_DIR, 'essays.json'), os.path.join(BASE_DIR, 'templates', 'sitemap.xml')]):
+        return
+    essays = ESSAY_REPOSITORY.list() if essays is None else essays
     enriched = strip_enrich(essays, 'lastmod', '%Y-%m-%d')
     html = _env.get_template('sitemap.xml').render(essays=enriched)
-    atomic_write_text(os.path.join(BASE_DIR, 'sitemap.xml'), html)
+    atomic_write_text(output_path, html)
 
 
 def _prepare_archive_data(essays):
@@ -105,13 +118,16 @@ def _prepare_archive_data(essays):
     }
 
 
-def _generate_archive():
+def _generate_archive(essays=None):
     """Generate archive.html — timeline grouped by year (Jinja2 template)."""
-    context = _prepare_archive_data(ESSAY_REPOSITORY.list())
+    output_path = os.path.join(BASE_DIR, 'archive.html')
+    if not _needs_regeneration(output_path, [os.path.join(DATA_DIR, 'essays.json'), os.path.join(BASE_DIR, 'templates', 'archive.html')]):
+        return
+    context = _prepare_archive_data(ESSAY_REPOSITORY.list() if essays is None else essays)
     html = _env.get_template('archive.html').render(
         **context,
         build_ts=int(datetime.now().timestamp()))
-    atomic_write_text(os.path.join(BASE_DIR, 'archive.html'), html)
+    atomic_write_text(output_path, html)
 
 
 def _prepare_map_data(photos):
@@ -133,13 +149,16 @@ def _prepare_map_data(photos):
     }
 
 
-def _generate_map():
+def _generate_map(photos=None):
     """Generate map.html — Leaflet map with GPS-tagged photos (Jinja2 template)."""
-    context = _prepare_map_data(PHOTO_REPOSITORY.list())
+    output_path = os.path.join(BASE_DIR, 'map.html')
+    if not _needs_regeneration(output_path, [os.path.join(DATA_DIR, 'photos.json'), os.path.join(BASE_DIR, 'templates', 'map.html')]):
+        return
+    context = _prepare_map_data(PHOTO_REPOSITORY.list() if photos is None else photos)
     html = _env.get_template('map.html').render(
         **context,
         build_ts=int(datetime.now().timestamp()))
-    atomic_write_text(os.path.join(BASE_DIR, 'map.html'), html)
+    atomic_write_text(output_path, html)
 
 
 def _public_essay_data(essays):
@@ -156,24 +175,30 @@ def _ordered_public_tags(all_tags):
     return ordered
 
 
-def _generate_public_essays():
+def _generate_public_essays(essays=None):
     """Write public listing metadata without exposing passwords or essay bodies."""
-    visible, all_tags = _public_essay_data(load_json('essays.json'))
-    public_data = {'_tags': _ordered_public_tags(all_tags), 'essays': visible}
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
+    inputs = [os.path.join(DATA_DIR, 'essays.json')]
+    if os.path.exists(os.path.join(DATA_DIR, 'essay_passwords.json')):
+        inputs.append(os.path.join(DATA_DIR, 'essay_passwords.json'))
+    if not _needs_regeneration(public_path, inputs):
+        return
+    essays = load_json('essays.json') if essays is None else essays
+    visible, all_tags = _public_essay_data(essays)
+    public_data = {'_tags': _ordered_public_tags(all_tags), 'essays': visible}
     atomic_write_text(
         public_path,
         json.dumps(public_data, ensure_ascii=False, indent=2),
     )
 
 
-def _generate_feeds():
+def _generate_feeds(essays=None, photos=None):
     """Regenerate all auto-generated files: RSS, sitemap, archive, map, public essays."""
-    _generate_public_essays()
-    _generate_rss()
-    _generate_sitemap()
-    _generate_archive()
-    _generate_map()
+    _generate_public_essays(essays)
+    _generate_rss(essays)
+    _generate_sitemap(essays)
+    _generate_archive(essays)
+    _generate_map(photos)
 
 
 
