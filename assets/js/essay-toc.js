@@ -1,4 +1,4 @@
-// Build an interactive table of contents from Markdown h1/h2 headings.
+// Build an interactive table of contents from Markdown h1/h2/h3 headings.
 
 (function() {
   function headingId(text, index) {
@@ -73,12 +73,30 @@
     var list = document.getElementById('essay-toc-list');
     if (!root || !toc || !list) return;
 
-    var headings = Array.from(root.querySelectorAll('h1, h2'));
+    var headings = Array.from(root.querySelectorAll('h1, h2, h3'));
     list.replaceChildren();
     var usedIds = new Set();
-    var currentGroup = null;
+    var stack = [];
     var groupLists = [];
     var linksByHeading = new Map();
+
+    function addChildList(parent) {
+      if (parent.sublist) return parent.sublist;
+      var sublist = document.createElement('ul');
+      sublist.className = 'essay-toc-sublist';
+      parent.item.appendChild(sublist);
+      parent.sublist = sublist;
+      var toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'essay-toc-toggle';
+      toggle.setAttribute('aria-label', '收缩此章节');
+      toggle.addEventListener('click', function() {
+        setGroupState(toggle, sublist, sublist.hidden, true);
+      });
+      parent.row.prepend(toggle);
+      groupLists.push({button: toggle, list: sublist});
+      return sublist;
+    }
 
     headings.forEach(function(heading, index) {
       var baseId = heading.id || headingId(heading.textContent, index);
@@ -91,38 +109,19 @@
       heading.classList.add('essay-toc-heading');
       usedIds.add(id);
 
-      if (heading.tagName.toLowerCase() === 'h1') {
-        var item = document.createElement('li');
-        item.className = 'essay-toc-item essay-toc-h1';
-        var row = document.createElement('div');
-        row.className = 'essay-toc-row';
-        var sublist = document.createElement('ul');
-        sublist.className = 'essay-toc-sublist';
-        var toggle = document.createElement('button');
-        toggle.type = 'button';
-        toggle.className = 'essay-toc-toggle';
-        toggle.setAttribute('aria-label', '收缩此章节');
-        toggle.addEventListener('click', function() {
-          var expanded = list.hidden ? true : sublist.hidden;
-          setGroupState(toggle, sublist, expanded, true);
-        });
-        var h1Link = makeLink(heading);
-        linksByHeading.set(heading, h1Link);
-        row.append(toggle, h1Link);
-        item.appendChild(row);
-        item.appendChild(sublist);
-        list.appendChild(item);
-        currentGroup = sublist;
-        groupLists.push({button: toggle, list: sublist});
-      } else {
-        var target = currentGroup || list;
-        var item = document.createElement('li');
-        item.className = 'essay-toc-item essay-toc-h2';
-        var h2Link = makeLink(heading);
-        linksByHeading.set(heading, h2Link);
-        item.appendChild(h2Link);
-        target.appendChild(item);
-      }
+      var level = Number(heading.tagName.slice(1));
+      while (stack.length && stack[stack.length - 1].level >= level) stack.pop();
+      var item = document.createElement('li');
+      item.className = 'essay-toc-item essay-toc-h' + level;
+      var row = document.createElement('div');
+      row.className = 'essay-toc-row';
+      var link = makeLink(heading);
+      linksByHeading.set(heading, link);
+      row.appendChild(link);
+      item.appendChild(row);
+      if (stack.length) addChildList(stack[stack.length - 1]).appendChild(item);
+      else list.appendChild(item);
+      stack.push({level: level, item: item, row: row, sublist: null});
     });
 
     toc.hidden = headings.length === 0;

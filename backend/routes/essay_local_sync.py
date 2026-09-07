@@ -48,33 +48,89 @@ def _normalize_name(value):
     return re.sub(r'[^0-9A-Za-z\u3400-\u9fff]', '', value or '').lower()
 
 
-def _obsidian_source_for(essay, project_content=None):
-    """Find a matching Obsidian note by title when the project source is unchanged."""
-    if not OBSIDIAN_DIR or not essay.get('title'):
-        return None
-    title = _normalize_name(essay['title'])
-    if not title:
-        return None
+def _is_within(path, root):
     try:
-        candidates = [entry for entry in os.scandir(OBSIDIAN_DIR)
-                      if entry.is_file() and entry.name.lower().endswith('.md')]
+        return os.path.normcase(os.path.commonpath((path, root))) == os.path.normcase(root)
+    except ValueError:
+        return False
+
+
+def _comparable_markdown(value):
+    value = (value or '').lstrip('\ufeff').replace('\r\n', '\n').replace('\r', '\n')
+    return re.sub(r'^---\s*\n[\s\S]*?\n---\s*\n?', '', value, count=1)
+
+
+def _obsidian_markdown_candidates():
+    if not OBSIDIAN_DIR:
+        return []
+    vault_root = os.path.realpath(OBSIDIAN_DIR)
+    candidates = []
+    try:
+        for root, _dirs, files in os.walk(vault_root):
+            for filename in files:
+                if not filename.lower().endswith('.md'):
+                    continue
+                path = os.path.realpath(os.path.join(root, filename))
+                if _is_within(path, vault_root):
+                    candidates.append(path)
     except OSError:
+        return []
+    return candidates
+
+
+def _read_matching_candidate(candidates, project_content):
+    if not project_content:
+        return candidates[0] if len(candidates) == 1 else None
+    expected = _comparable_markdown(project_content)
+    for path in candidates:
+        try:
+            with open(path, 'r', encoding='utf-8') as file:
+                if _comparable_markdown(file.read()) == expected:
+                    return path
+        except (OSError, UnicodeDecodeError):
+            continue
+    return None
+
+
+def _obsidian_source_for(essay, project_content=None, source_name=None):
+    """Find a matching Obsidian note by title when the project source is unchanged."""
+    candidates = _obsidian_markdown_candidates()
+    if not candidates:
         return None
-    for entry in candidates:
-        name = _normalize_name(os.path.splitext(entry.name)[0])
-        if all(char in name for char in title):
-            return entry.path
+    source_title = _normalize_name(os.path.splitext(os.path.basename(source_name or ''))[0])
+    if source_title:
+        named = [path for path in candidates
+                 if _normalize_name(os.path.splitext(os.path.basename(path))[0]) == source_title]
+        matched = _read_matching_candidate(named, project_content)
+        if matched:
+            return matched
+        return None
+    title = _normalize_name(essay.get('title'))
+    if title:
+        named = [path for path in candidates
+                 if _normalize_name(os.path.splitext(os.path.basename(path))[0]) == title]
+        matched = _read_matching_candidate(named, project_content)
+        if matched:
+            return matched
+        if len(named) == 1:
+            return named[0]
+        if not project_content:
+            loose = [path for path in candidates
+                     if all(char in _normalize_name(os.path.splitext(os.path.basename(path))[0])
+                            for char in title)]
+            if len(loose) == 1:
+                return loose[0]
     if project_content:
         best = (0, None)
-        for entry in candidates:
+        for path in candidates:
             try:
-                with open(entry.path, 'r', encoding='utf-8') as file:
+                with open(path, 'r', encoding='utf-8') as file:
                     candidate = file.read()
             except (OSError, UnicodeDecodeError):
                 continue
             score = SequenceMatcher(None, project_content, candidate).ratio()
             if score > best[0]:
-                best = (score, entry.path)
+                best = (score, path)
         if best[0] >= 0.75:
             return best[1]
     return None
@@ -86,17 +142,24 @@ def _find_obsidian_image(name, note_path):
     if not clean or clean.startswith('/') or '..' in clean.split('/'):
         return None
     note_dir = os.path.dirname(note_path)
-    direct = os.path.realpath(os.path.join(note_dir, clean))
     vault_root = os.path.realpath(OBSIDIAN_DIR or '')
-    if not direct.startswith(vault_root + os.sep):
-        return None
-    if os.path.isfile(direct):
-        return direct
+    relative_candidates = [os.path.join(note_dir, clean)]
+    if '/' in clean:
+        relative_candidates.append(os.path.join(vault_root, clean))
+    for candidate in relative_candidates:
+        direct = os.path.realpath(candidate)
+        if _is_within(direct, vault_root) and os.path.isfile(direct):
+            return direct
     basename = os.path.basename(clean)
+    matches = []
     for root, _dirs, files in os.walk(vault_root):
-        if basename in files:
-            return os.path.join(root, basename)
-    return None
+        for filename in files:
+            if filename.casefold() != basename.casefold():
+                continue
+            candidate = os.path.realpath(os.path.join(root, filename))
+            if _is_within(candidate, vault_root) and os.path.isfile(candidate):
+                matches.append(candidate)
+    return matches[0] if len(matches) == 1 else None
 
 
 def _safe_image_name(name):
@@ -147,6 +210,13 @@ def _materialize_obsidian_images(content, note_path, essay):
 
     result = pattern.sub(replace, content)
     return result if changed else content
+
+
+def prepare_obsidian_import(content, source_name, essay):
+    note_path = _obsidian_source_for(essay, content, source_name=source_name)
+    if not note_path:
+        return content
+    return _materialize_obsidian_images(content, note_path, essay)
 
 
 def _local_essay_changes(essays):

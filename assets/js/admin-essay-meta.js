@@ -14,8 +14,9 @@ function _markdownMeta(markdown, filename) {
     });
     markdown = markdown.slice(match[0].length);
   }
+  var filenameTitle = filename.replace(/\.md$/i, '').trim();
   var heading = markdown.match(/^#\s+(.+)$/m);
-  var title = front.title || (heading && heading[1].trim()) || filename.replace(/\.md$/i, '');
+  var title = front.title || filenameTitle || (heading && heading[1].trim()) || '未命名随笔';
   var plain = markdown.replace(/^```[\s\S]*?```/gm, '').replace(/^#{1,6}\s+/gm, '').replace(/[*_>`\[\]]/g, '').trim();
   var excerpt = (plain.split(/\n\s*\n/).find(function(p) { return p.trim(); }) || '').replace(/\s+/g, ' ').slice(0, 140);
   return {markdown: markdown, title: title.slice(0, 120), date: front.date || '', tag: front.tags || front.tag || '随笔', excerpt: front.excerpt || excerpt};
@@ -36,7 +37,7 @@ async function importEssayMarkdown(input) {
     var meta = _markdownMeta(markdown, file.name);
     var basename = file.name.replace(/\.md$/i, '').toLowerCase().replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '');
     var slug = basename && /^[a-z0-9-]+$/.test(basename) ? (basename.indexOf('essay-') === 0 ? basename : 'essay-' + basename) : genSlug();
-    await api('POST', '/api/essays', {slug: slug, title: meta.title, tag: meta.tag, date: meta.date || _fileTimestamp(file), epigraph: '', excerpt: meta.excerpt, body: meta.markdown});
+    await api('POST', '/api/essays', {slug: slug, title: meta.title, tag: meta.tag, date: meta.date || _fileTimestamp(file), epigraph: '', excerpt: meta.excerpt, body: meta.markdown, sourceName: file.name});
     toast('Markdown 已导入并发布');
     window['essay' + 'Entry']();
   } catch (error) {

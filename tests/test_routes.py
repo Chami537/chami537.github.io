@@ -973,25 +973,89 @@ def test_local_essay_changes_scan_and_sync(client, monkeypatch, tmp_path, data_b
 
 def test_obsidian_image_embed_is_copied_and_rewritten(monkeypatch, tmp_path):
     from PIL import Image
-    from backend.routes import essay_local_sync
+    from backend.routes import essay_catalog, essay_context, essay_local_sync
 
     vault = tmp_path / 'vault'
     public = tmp_path / 'images'
-    vault.mkdir()
+    note_dir = vault / 'leetcode'
+    note_dir.mkdir(parents=True)
     image_path = vault / 'photo.jpg'
     Image.new('RGB', (8, 8), 'red').save(image_path)
-    note = vault / '日本之旅.md'
-    note.write_text('![[photo.jpg]]', encoding='utf-8')
+    note = note_dir / '双指针法.md'
+    note.write_text('---\ntitle: 双指针法\n---\n# 正文首个标题\n\n![[photo.jpg]]', encoding='utf-8')
     monkeypatch.setattr(essay_local_sync, 'OBSIDIAN_DIR', str(vault))
     monkeypatch.setattr(essay_local_sync, 'IMAGES_DIR', str(public))
-    essay = {'slug': 'essay-demo', 'title': '日本之旅'}
+    monkeypatch.setattr(essay_context.ESSAY_WORKFLOW, 'read_time', lambda content: 1)
+    essay = {
+        'slug': 'essay-demo', 'title': '双指针法',
+        'sourceName': '双指针法.md', 'body': '# 正文首个标题\n\n![[photo.jpg]]',
+    }
 
-    rendered = essay_local_sync._materialize_obsidian_images('![[photo.jpg]]', str(note), essay)
-    assert rendered == '![photo](/images/essays/日本之旅/photo.jpg)'
-    assert (public / 'essays' / '日本之旅' / 'photo.jpg').is_file()
+    rendered = essay_catalog._prepare_new_essay(essay, essay['slug'])
+    assert rendered == '# 正文首个标题\n\n![photo](/images/essays/双指针法/photo.jpg)'
+    assert essay['body'] == rendered
+    assert 'sourceName' not in essay
+    assert (public / 'essays' / '双指针法' / 'photo.jpg').is_file()
     rendered_again = essay_local_sync._materialize_obsidian_images('![[photo.jpg]]', str(note), essay)
-    assert rendered_again == rendered
-    assert len(list((public / 'essays' / '日本之旅').glob('*.jpg'))) == 1
+    assert rendered_again == '![photo](/images/essays/双指针法/photo.jpg)'
+    assert len(list((public / 'essays' / '双指针法').glob('*.jpg'))) == 1
+
+
+def test_obsidian_import_rejects_same_filename_when_content_differs(monkeypatch, tmp_path):
+    from PIL import Image
+    from backend.routes import essay_local_sync
+
+    vault = tmp_path / 'vault'
+    vault.mkdir()
+    Image.new('RGB', (4, 4), 'red').save(vault / 'private.png')
+    (vault / '同名.md').write_text('Vault 中的另一篇正文\n\n![[private.png]]', encoding='utf-8')
+    monkeypatch.setattr(essay_local_sync, 'OBSIDIAN_DIR', str(vault))
+    monkeypatch.setattr(essay_local_sync, 'IMAGES_DIR', str(tmp_path / 'public'))
+    imported = '外部文件的正文\n\n![[private.png]]'
+
+    result = essay_local_sync.prepare_obsidian_import(
+        imported, '同名.md', {'slug': 'essay-demo', 'title': '同名'},
+    )
+
+    assert result == imported
+    assert not (tmp_path / 'public').exists()
+
+
+def test_obsidian_image_resolution_preserves_paths_and_rejects_ambiguous_names(monkeypatch, tmp_path):
+    from PIL import Image
+    from backend.routes import essay_local_sync
+
+    vault = tmp_path / 'vault'
+    note_dir = vault / 'notes'
+    asset_dir = note_dir / 'assets'
+    other_dir = vault / 'other'
+    asset_dir.mkdir(parents=True)
+    other_dir.mkdir(parents=True)
+    note = note_dir / 'note.md'
+    note.write_text('', encoding='utf-8')
+    Image.new('RGB', (4, 4), 'red').save(asset_dir / 'diagram.png')
+    Image.new('RGB', (4, 4), 'blue').save(other_dir / 'diagram.png')
+    monkeypatch.setattr(essay_local_sync, 'OBSIDIAN_DIR', str(vault))
+
+    assert essay_local_sync._find_obsidian_image('assets/diagram.png', str(note)) == str(asset_dir / 'diagram.png')
+    assert essay_local_sync._find_obsidian_image('diagram.png', str(note)) is None
+
+
+def test_registered_essay_keeps_unique_obsidian_source_after_major_rewrite(monkeypatch, tmp_path):
+    from backend.routes import essay_local_sync
+
+    vault = tmp_path / 'vault'
+    note = vault / 'nested' / '稳定标题.md'
+    note.parent.mkdir(parents=True)
+    note.write_text('完全重写后的正文，与旧内容不再相似。', encoding='utf-8')
+    monkeypatch.setattr(essay_local_sync, 'OBSIDIAN_DIR', str(vault))
+
+    source = essay_local_sync._obsidian_source_for(
+        {'slug': 'essay-demo', 'title': '稳定标题'},
+        '过去的正文内容。',
+    )
+
+    assert source == str(note)
 
 
 @pytest.mark.parametrize('tags', [

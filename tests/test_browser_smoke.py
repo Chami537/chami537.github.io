@@ -482,7 +482,7 @@ def test_essay_toc_builds_heading_anchors_and_supports_group_collapse(live_serve
         result = page.evaluate("""
           (function() {
             var body = document.querySelector('.essay-body');
-            body.innerHTML = '<h1>第一章</h1><h2>背景与目标</h2><h2>背景与目标</h2><h1>第二章</h1>';
+            body.innerHTML = '<h1>第一章</h1><h2>背景与目标</h2><h3>实现细节</h3><h2>背景与目标</h2><h1>第二章</h1>';
             buildEssayToc(body);
             var links = Array.from(document.querySelectorAll('#essay-toc-list a'));
             var firstToggle = document.querySelector('.essay-toc-toggle');
@@ -493,9 +493,10 @@ def test_essay_toc_builds_heading_anchors_and_supports_group_collapse(live_serve
               beforeComments: document.getElementById('essay-toc').compareDocumentPosition(
                 document.getElementById('giscus-container')
               ) & Node.DOCUMENT_POSITION_FOLLOWING,
-              ids: Array.from(body.querySelectorAll('h1, h2')).map(function(h) { return h.id; }),
+              ids: Array.from(body.querySelectorAll('h1, h2, h3')).map(function(h) { return h.id; }),
               links: links.map(function(link) { return link.getAttribute('href'); }),
               collapsed: document.querySelector('.essay-toc-sublist').hidden,
+              h3Parent: document.querySelector('.essay-toc-h3').parentElement.parentElement.classList.contains('essay-toc-h2'),
               labels: links.map(function(link) { return link.textContent; })
             };
           })()
@@ -504,10 +505,11 @@ def test_essay_toc_builds_heading_anchors_and_supports_group_collapse(live_serve
             'visible': True,
             'display': 'none',
             'beforeComments': 4,
-            'ids': ['heading-第一章', 'heading-背景与目标', 'heading-背景与目标-2', 'heading-第二章'],
-            'links': ['#heading-第一章', '#heading-背景与目标', '#heading-背景与目标-2', '#heading-第二章'],
+            'ids': ['heading-第一章', 'heading-背景与目标', 'heading-实现细节', 'heading-背景与目标-2', 'heading-第二章'],
+            'links': ['#heading-第一章', '#heading-背景与目标', '#heading-实现细节', '#heading-背景与目标-2', '#heading-第二章'],
             'collapsed': True,
-            'labels': ['第一章', '背景与目标', '背景与目标', '第二章'],
+            'h3Parent': True,
+            'labels': ['第一章', '背景与目标', '实现细节', '背景与目标', '第二章'],
         }
     finally:
         page.close()

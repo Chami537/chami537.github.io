@@ -61,9 +61,14 @@ def _validate_new_essay(item, essays):
 
 def _prepare_new_essay(item, slug):
     password = item.pop('password', '')
+    source_name = item.pop('sourceName', '')
     if password:
         store_password(slug, password)
     body_md = item.get('body', '')
+    if source_name and body_md:
+        from backend.routes.essay_local_sync import prepare_obsidian_import
+        body_md = prepare_obsidian_import(body_md, source_name, item)
+        item['body'] = body_md
     item['readTime'] = essay_context.ESSAY_WORKFLOW.read_time(
         body_md or item.get('content', ''),
     )

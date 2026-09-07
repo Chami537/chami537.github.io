@@ -207,3 +207,21 @@ vm.runInContext("switchEssayChildTag('旅行');", context);
 assert.strictEqual(vm.runInContext('currentEssayTag', context), '阅读');
 """
     _run_node(script)
+
+
+def test_markdown_import_prefers_obsidian_filename_over_body_heading():
+    meta_path = (ROOT / 'assets' / 'js' / 'admin-essay-meta.js').as_posix()
+    script = f"""
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+const context = {{}};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('{meta_path}', 'utf8'), context);
+
+const fromFilename = context._markdownMeta('# 283.移动零\\n\\n正文', '双指针法.md');
+assert.strictEqual(fromFilename.title, '双指针法');
+const fromFrontmatter = context._markdownMeta('---\\ntitle: 指定标题\\n---\\n# 正文标题', '文件标题.md');
+assert.strictEqual(fromFrontmatter.title, '指定标题');
+"""
+    _run_node(script)

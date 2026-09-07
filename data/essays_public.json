@@ -153,6 +153,18 @@
       "readTime": 3,
       "date_display": "Sep 06, 2026",
       "password_protected": false
+    },
+    {
+      "slug": "essay-9f4ce506",
+      "title": "双指针法",
+      "tag": "技术, LeetCode, 学习日志",
+      "date": "2026-09-07 22:45",
+      "epigraph": "",
+      "excerpt": "283.移动零",
+      "body": "# 283.移动零\n\n题目描述\n\n给定一个数组 `nums`，编写一个函数将所有 `0` 移动到数组的末尾，同时保持非零元素的相对顺序。\n\n**请注意** ，必须在不复制数组的情况下原地对数组进行操作。\n\n### 第一版思路\n\n统计有多少个零\n\n两两交换位置挪到末尾部分\n\n挪n次就能挪完\n\n代码\n\n```python\nclass Solution(object):\n\n    def moveZeroes(self, nums):\n\n        zerocount=0\n\n        for num in nums:\n\n            if num==0:\n\n                zerocount+=1\n\n        j=0\n\n        while j<zerocount:\n\n            for i,num in enumerate(nums):\n\n                if num==0 and i<len(nums)-1:\n\n                    temp=nums[i+1]\n\n                    nums[i+1]=nums[i]\n\n                    #num只是enumerate取出来的一个变量 不会真正修改nums[i]\n\n                    nums[i]=temp\n\n            j+=1\n```\n\n然后测试用例74/75 \n\n未通过的用例是因为timeout了\n\n需要减小时间复杂度\n\n### 第二版思路\n\n考虑把所有不为零的元素重新排序 在最后空余的位置重新填上0即可\n\n用一个指针指向当前可以放元素的位置 是0的话就跳过\n\n最后补上即可 有x个0 假设数组长度是l 那么最后j的值为l-x \n\nwhile判断 补上剩余的0即可\n\n代码如下\n\n```python\nclass Solution(object):\n\n    def moveZeroes(self, nums):\n\n        j = 0\n\n        for i in range(len(nums)):\n\n            if nums[i]!=0:\n\n                nums[j]=nums[i]\n\n                j+=1\n\n  \n\n        while j<len(nums):\n\n            nums[j]=0\n\n            j+=1\n```\n\n>这题真正值得记住的东西:\n\n一种很经典的：\n\n```\n读指针 + 写指针\n```\n\n模式。\n\n```\ni：负责读取原数组\n\nj：负责告诉我们“下一个符合条件的元素该写在哪里”\n```\n\n可以抽象成：\n\n```\nj = 0\n\nfor i in range(len(nums)):\n    if 元素符合条件:\n        nums[j] = nums[i]\n        j += 1\n```\n\n以后遇到：\n\n```\n删除某类元素\n过滤数组\n移动元素\n压缩数组\n保留满足条件的元素\n```\n\n都可以想到这种思路。\n# 11. 盛最多水的容器\n\n题目描述\n\n给定一个长度为 `n` 的整数数组 `height` 。有 `n` 条垂线，第 `i` 条线的两个端点是 `(i, 0)` 和 `(i, height[i])` 。\n\n找出其中的两条线，使得它们与 `x` 轴共同构成的容器可以容纳最多的水。\n\n返回容器可以储存的最大水量。\n\n![Pasted-image-20260907222843](/images/essays/双指针法/Pasted-image-20260907222843.png)\n\n定义left right 两根柱子\n\n面积计算则为\n```python\narea=min(height[left],height[right])*(right-left)\n```\n\n暴力解法自然是套两遍for比较\n\n优化方式 先拿宽度最大的 也就是取两边的边界情况\n\n然后向内移动height较小的那个指针即可\n\n每移动一次更新一次最大面积\n\n直到左右指针相遇\n\n代码实现\n\n```python\nclass Solution(object):\n    def maxArea(self, height):\n        left = 0\n        right = len(height) - 1\n        maxarea = 0\n\n        while left < right:\n            area = min(height[left], height[right]) * (right - left)\n            maxarea = max(maxarea, area)\n\n            if height[left] <= height[right]:\n                left += 1\n            else:\n                right -= 1\n\n        return maxarea\n```\n\n时间复杂度为\n\n$$O(n)$$\n# 双指针理解\n\n可以这么想\n\n>用两个位置变量维护当前问题中最重要的两个位置，并通过某种规则移动它们，从而避免暴力枚举。\n\n",
+      "readTime": 3,
+      "date_display": "Sep 07, 2026",
+      "password_protected": false
     }
   ]
 }

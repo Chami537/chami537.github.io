@@ -66,15 +66,15 @@ html.dark .essay-body blockquote { background: rgba(255,184,0,0.08); }
 .essay-toc ol, .essay-toc ul { list-style: none; padding: 0; margin: 0; }
 .essay-toc-item { margin: 0; line-height: 1.55; }
 .essay-toc-row { display: flex; align-items: baseline; gap: 5px; }
-.essay-toc-row > a, .essay-toc-h2 > a {
+.essay-toc-row > a {
   display: inline-block; color: var(--muted); text-decoration: none;
   transition: color .18s ease, transform .18s ease;
 }
-.essay-toc-row > a:hover, .essay-toc-h2 > a:hover,
-.essay-toc-row > a.is-active, .essay-toc-h2 > a.is-active {
+.essay-toc-row > a:hover,
+.essay-toc-row > a.is-active {
   color: var(--c3); font-weight: 600;
 }
-.essay-toc-row > a:hover, .essay-toc-h2 > a:hover { transform: translateX(2px); }
+.essay-toc-row > a:hover { transform: translateX(2px); }
 .essay-toc-toggle { width: 16px; height: 20px; flex: 0 0 16px; }
 .essay-toc-sublist { padding-left: 16px !important; }
 .essay-toc-sublist {
@@ -82,7 +82,8 @@ html.dark .essay-body blockquote { background: rgba(255,184,0,0.08); }
   transition: max-height .32s cubic-bezier(.2,.7,.2,1), opacity .22s ease;
 }
 .essay-toc-sublist[hidden] { display: block; opacity: 0; pointer-events: none; }
-.essay-toc-h2 { padding: 3px 0 3px 12px; }
+.essay-toc-h2 > .essay-toc-row { padding: 3px 0; }
+.essay-toc-h3 > .essay-toc-row { padding: 2px 0; font-size: 11px; opacity: .88; }
 .essay-toc-heading { scroll-margin-top: 96px; }
 .essay-body h1 { font-size: 28px; line-height: 1.25; margin-top: 2.5em; margin-bottom: .5em; }
 .essay-body h2 { scroll-margin-top: 96px; }
@@ -91,10 +92,9 @@ html.dark .essay-toc {
   border-color: rgba(210, 200, 180, .14);
   background: transparent;
 }
-html.dark .essay-toc-row > a.is-active,
-html.dark .essay-toc-h2 > a.is-active { color: var(--c3); }
+html.dark .essay-toc-row > a.is-active { color: var(--c3); }
 @media (prefers-reduced-motion: reduce) {
-  .essay-toc:not([hidden]), .essay-toc-row > a, .essay-toc-h2 > a { animation: none; transition: none; }
+  .essay-toc:not([hidden]), .essay-toc-row > a { animation: none; transition: none; }
 }
 
 /* The right rail becomes an inline collapsible section on smaller screens. */
