@@ -177,5 +177,7 @@
   }
 
   window.buildEssayToc = buildEssayToc;
-  document.addEventListener('DOMContentLoaded', function() { buildEssayToc(); });
+  // This script is loaded after the article and TOC markup. Build immediately
+  // instead of waiting for parser-blocking CDN scripts at the end of the page.
+  buildEssayToc();
 })();

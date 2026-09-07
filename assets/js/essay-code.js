@@ -38,7 +38,51 @@ function markMathForKatex(md) {
   });
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  renderKatexIn(document);
-  highlightCodeBlocks(document);
-});
+var _essayCodeDependencyLoads = {};
+function loadEssayCodeScript(name, src) {
+  if (window[name]) return Promise.resolve();
+  if (_essayCodeDependencyLoads[name]) return _essayCodeDependencyLoads[name];
+  _essayCodeDependencyLoads[name] = new Promise(function(resolve, reject) {
+    var script = document.createElement('script');
+    script.src = src;
+    script.async = true;
+    script.onload = resolve;
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+  return _essayCodeDependencyLoads[name];
+}
+
+function loadEssayKatex() {
+  var stylesheet = document.querySelector('link[data-essay-katex]');
+  if (!stylesheet) {
+    stylesheet = document.createElement('link');
+    stylesheet.rel = 'stylesheet';
+    stylesheet.dataset.essayKatex = 'true';
+    stylesheet.href = 'https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.css';
+    document.head.appendChild(stylesheet);
+  }
+  return loadEssayCodeScript('katex', 'https://cdn.staticfile.net/KaTeX/0.16.9/katex.min.js');
+}
+
+function enhanceEssayCode() {
+  var root = document.querySelector('.essay-body');
+  if (!root) return;
+
+  var hasMath = root.querySelector('.arithmatex');
+  var hasCode = root.querySelector('pre code[class*="language-"]');
+  if (hasCode) {
+    // Give code an immediate local rendering while the optional CDN loads.
+    highlightCodeBlocks(root);
+    loadEssayCodeScript('hljs', 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js')
+      .then(function() { highlightCodeBlocks(root); })
+      .catch(function() {});
+  }
+  if (hasMath) {
+    loadEssayKatex().then(function() { renderKatexIn(root); }).catch(function() {});
+  }
+}
+
+// This script is loaded after the article body, so enhancement can start
+// immediately without waiting for unrelated parser-blocking dependencies.
+enhanceEssayCode();

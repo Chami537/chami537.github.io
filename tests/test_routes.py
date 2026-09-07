@@ -927,7 +927,7 @@ def test_local_essay_changes_scan_and_sync(client, monkeypatch, tmp_path, data_b
 
     slug = 'test-local-sync'
     essay = {
-        'slug': slug, 'title': '本地同步', 'date': '2026-01-01',
+        'slug': slug, 'title': '正文标题', 'date': '2026-01-01',
         'epigraph': '', 'excerpt': '', 'tag': '随笔', 'readTime': 1,
     }
     essays = essay_context.ESSAY_REPOSITORY.list()
@@ -938,7 +938,7 @@ def test_local_essay_changes_scan_and_sync(client, monkeypatch, tmp_path, data_b
     md_dir.mkdir(); html_dir.mkdir()
     monkeypatch.setattr(content_route, 'MD_DIR', str(md_dir))
     monkeypatch.setattr(content_route, 'ESSAYS_DIR', str(html_dir))
-    source = '# 新内容\n\n本地编辑'
+    source = '# 第一个大标题\n\n本地编辑'
     (md_dir / f'{slug}.md').write_text(source, encoding='utf-8')
     (html_dir / f'{slug}.html').write_text('<!-- RAW_MD\n旧内容\nRAW_MD -->', encoding='utf-8')
     (md_dir / 'unregistered.md').write_text('未登记', encoding='utf-8')
@@ -968,6 +968,7 @@ def test_local_essay_changes_scan_and_sync(client, monkeypatch, tmp_path, data_b
     updated = next(item for item in essay_context.ESSAY_REPOSITORY.list() if item['slug'] == slug)
     assert updated['readTime'] == 3
     assert updated['date']
+    assert updated['title'] == '正文标题'
 
 
 def test_obsidian_image_embed_is_copied_and_rewritten(monkeypatch, tmp_path):

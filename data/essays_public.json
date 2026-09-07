@@ -141,6 +141,18 @@
       "readTime": 1,
       "date_display": "Sep 05, 2026",
       "password_protected": false
+    },
+    {
+      "slug": "essay-hashmap",
+      "title": "题1 242. 有效的字母异位词",
+      "tag": "技术, LeetCode, 学习日志",
+      "date": "2026-09-06 18:37",
+      "epigraph": "",
+      "excerpt": "key-hash模式识别",
+      "body": "\n\n> 判断元素及次数是否一致 → hash 计数\n> 把相同特征的东西分组 → 特征作为 key，列表作为 value\n\n\n# 题1 242. 有效的字母异位词\n\n给定两个字符串 `s` 和 `t` ，编写一个函数来判断 `t` 是否是 `s` 的 字母异位词。\n\n思路\n\n用hashmap遍历字符串元素 不存在的设为1 存在的+1\n\n另 python中可以直接用`for`来遍历字符串\n\n```python\nclass Solution(object):\n\n    def isAnagram(self, s, t):\n\n        hashmap1={}\n\n        hashmap2={}\n\n        for c in s:\n\n            if c in hashmap1:\n\n                hashmap1[c]=hashmap1[c]+1\n\n            else:\n\n                hashmap1[c]=1\n\n        for d in t:\n\n            if d in hashmap2:\n\n                hashmap2[d]=hashmap2[d]+1\n\n            else:\n\n                hashmap2[d]=1\n\n        return hashmap1==hashmap2\n```\n比较两个dict是否一致\n\n空间更省的解法 只用一个hashmap去遍历\n\n对第二个词相减即可 如果遇到不存在的字母返回False即可 \n\n```python\nclass Solution(object):\n\n    def isAnagram(self, s, t):\n\n        hashmap = {}\n\n  \n        for c in s:\n\n            if c in hashmap:\n\n                hashmap[c]=hashmap[c]+1\n\n            else:\n\n                hashmap[c]=1\n\n\n        for d in t:\n\n            if d in hashmap:\n\n                hashmap[d]=hashmap[d]-1\n\n            else:\n\n                return False\n\n        for value in hashmap.values():\n\n            if value !=0:\n\n                return False\n\n        return True\n```\n\n记住`  for value in hashmap.values():`这样的写法\n\n# 题2  49.字母异位词分组\n\n给你一个字符串数组，请你将 字母异位词 组合在一起。可以按任意顺序返回结果列表。\n\n**示例 :**\n\n**输入:** strs = [\"eat\", \"tea\", \"tan\", \"ate\", \"nat\", \"bat\"]\n\n**输出:** \\[[\"bat\"],[\"nat\",\"tan\"],[\"ate\",\"eat\",\"tea\"]\\]\n\n**解释：**\n\n- 在 strs 中没有字符串可以通过重新排列来形成 `\"bat\"`。\n- 字符串 `\"nat\"` 和 `\"tan\"` 是字母异位词，因为它们可以重新排列以形成彼此。\n- 字符串 `\"ate\"` ，`\"eat\"` 和 `\"tea\"` 是字母异位词，因为它们可以重新排列以形成彼此。\n\n思路\n\n开始的想法是对于每一个word都建立一个hash 写一个`makehash`函数 然后将makehash的结果作为新的hash进行匹配\n\n这就引申出几个问题\n\n- 1. makehash的返回值应该是什么？\n- 2. 如何确保对于排列不同的单词makehash的返回值相同？\n- 3. 得到key后如何建立起恰当的key value 对应关系\n\n最初想用字符频次 dict 作为特征，因为上一题中我们得到的返回值就是一个dict\n\n但是 [[列表与词典|词典]]里的key只能是不可变元素\n如str int 还有不含可变元素的[[tuple]]\n\n因此这里选择更简单的规范化方式：tuple(sorted(word))。同时解决了排序问题\n\n于是我们得到的返回值就是\n\n```python\ntuple(sorted(words))\n```\n\n下一步就是将这个返回值作为key\n\n自然想到 key对应的value应该是谁\n\n题目要求的返回值是一个列表 因此 key应该和列表对应\n\n即`group`为\n\n```\n{\"key\":[\"abc\"]\n}\n```\n\n类似表达\n\n已存在的key用`append()`处理即可\n\n不存在的建立对应关系\n\n最后只取value部分即可 再用`list`进行转化\n\n代码如下\n\n```python\nclass Solution(object):\n\n    def groupAnagrams(self, strs):\n\n        groups={}\n\n        def makehash(word):\n\n            return tuple(sorted(word))\n\n        for word in strs:\n\n            key =makehash(word)\n\n            if key in groups:\n\n                groups[key].append(word)\n\n            else:\n\n                groups[key]=[word]\n\n        return list(groups.values())\n```\n\n总结一下\n\n>核心模式：把原始数据转换成统一的“特征 key”，再利用 hashmap 分组\n",
+      "readTime": 3,
+      "date_display": "Sep 06, 2026",
+      "password_protected": false
     }
   ]
 }

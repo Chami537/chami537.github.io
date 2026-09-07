@@ -475,6 +475,7 @@ def test_shared_code_renderer_runs_in_admin_and_essay_pages(live_server, browser
 def test_essay_toc_builds_heading_anchors_and_supports_group_collapse(live_server, browser):
     page = browser.new_page()
     try:
+        page.set_viewport_size({'width': 1100, 'height': 700})
         essays = json.loads((ROOT / 'data' / 'essays.json').read_text(encoding='utf-8'))
         page.goto(live_server + f"/essays/{essays[0]['slug']}.html", wait_until='domcontentloaded')
         page.wait_for_function("typeof buildEssayToc === 'function'")
@@ -488,6 +489,10 @@ def test_essay_toc_builds_heading_anchors_and_supports_group_collapse(live_serve
             firstToggle.click();
             return {
               visible: !document.getElementById('essay-toc').hidden,
+              display: getComputedStyle(document.getElementById('essay-toc')).display,
+              beforeComments: document.getElementById('essay-toc').compareDocumentPosition(
+                document.getElementById('giscus-container')
+              ) & Node.DOCUMENT_POSITION_FOLLOWING,
               ids: Array.from(body.querySelectorAll('h1, h2')).map(function(h) { return h.id; }),
               links: links.map(function(link) { return link.getAttribute('href'); }),
               collapsed: document.querySelector('.essay-toc-sublist').hidden,
@@ -497,6 +502,8 @@ def test_essay_toc_builds_heading_anchors_and_supports_group_collapse(live_serve
         """)
         assert result == {
             'visible': True,
+            'display': 'none',
+            'beforeComments': 4,
             'ids': ['heading-第一章', 'heading-背景与目标', 'heading-背景与目标-2', 'heading-第二章'],
             'links': ['#heading-第一章', '#heading-背景与目标', '#heading-背景与目标-2', '#heading-第二章'],
             'collapsed': True,
