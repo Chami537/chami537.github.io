@@ -165,6 +165,18 @@
       "readTime": 3,
       "date_display": "Sep 07, 2026",
       "password_protected": false
+    },
+    {
+      "slug": "essay-356e0d48",
+      "title": "滑动窗口",
+      "tag": "技术, LeetCode, 学习日志",
+      "date": "2026-09-08 23:32",
+      "epigraph": "",
+      "excerpt": "3. 无重复字符的最长子串",
+      "body": "# 3. 无重复字符的最长子串\n\n题目描述\n\n给定一个字符串 `s` ，请你找出其中不含有重复字符的 **最长 子串** 的长度。\n\n**示例 1:**\n\n**输入:** s = \"abcabcbb\"\n**输出:** 3 \n**解释:** 因为无重复字符的最长子串是 `\"abc\"`，所以其长度为 3。注意 \"bca\" 和 \"cab\" 也是正确答案。\n\n**示例 2:**\n\n**输入:** s = \"bbbbb\"\n**输出:** 1\n**解释:** 因为无重复字符的最长子串是 `\"b\"`，所以其长度为 1。\n\n**示例 3:**\n\n**输入:** s = \"pwwkew\"\n**输出:** 3\n**解释:** 因为无重复字符的最长子串是 `\"wke\"`，所以其长度为 3。\n请注意，你的答案必须是 **子串** 的长度，`\"pwke\"` 是一个子序列，不是子串。\n\n## 第一版思路\n\n从首字母开始用[[哈希表]]记录每个字母的出现次数 出现第二次就结束并返回字典长度\n\n然后从1，2，i，n扫描原字符串即可\n\n每次更新最大值\n\n注：\n\n>s[i:]表示从i开始的字符串\n\n代码:\n\n```python\nclass Solution(object):\n\n    def lengthOfLongestSubstring(self, s):\n\n        maxsize=0\n\n        def returnstringlength(s):\n\n            hashmap={}\n\n            for c in s:\n\n                if c in hashmap:\n\n                    return len(hashmap)\n\n                hashmap[c]=1\n\n            return len(hashmap)\n\n        for i in range(len(s)):\n\n            maxsize = max(returnstringlength(s[i:]), maxsize)\n\n        return maxsize\n```\n\n\n## 第二版思路\n\n\n想象为一个队列 左右两指针维护左右两侧 \n\n右指针向右移动 然后遇到现有窗口里的元素让左指针\n\n**一格一格右移** 直到窗口中不再有重复字符\n\n直到右指针指到队列末端 取这个过程的最大值\n\n具体计数方式还是哈希表 \n\n用hashmap[s[left]]判断窗口中是否有字符\n\n注:\n\n使用del来删除字典中的键\n\n代码：\n\n```python\nclass Solution(object):\n\n    def lengthOfLongestSubstring(self, s):\n\n        left=0\n\n        right=0\n\n        maxsize=0\n\n        hashmap={}\n\n        while right<len(s):\n\n            if s[right] in hashmap:\n\n                del hashmap[s[left]] #使用del来删除字典中的键\n\n                left+=1\n\n                continue\n\n            hashmap[s[right]]=1\n\n            right+=1\n\n            maxsize=max(right-left,maxsize)\n\n        return maxsize\n```\n## 时间复杂度\n\n第一版：O(n²)\n因为每个起点都可能重新向后扫描一遍。\n\n第二版：O(n)\nleft 和 right 都只会从左往右移动，每个字符最多被加入和删除一次。\n\n其中 continue 是一个比较巧妙的点 确保了左指针一定能移动到新的元素上去",
+      "readTime": 2,
+      "date_display": "Sep 08, 2026",
+      "password_protected": false
     }
   ]
 }
