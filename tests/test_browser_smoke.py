@@ -249,11 +249,56 @@ def test_public_homepage_shell_loads_essay_surface(live_server, browser):
     page = browser.new_page()
     try:
         page.goto(live_server + '/index.html', wait_until='domcontentloaded')
+        assert page.locator('#work-container').get_attribute('aria-busy') == 'false'
         assert page.locator('#essays-list').count() == 1
+        assert page.locator('#work-container .num').all_text_contents() == ['01', '02', '03']
         assert page.locator('script[src*="index-essays.js"]').count() == 1
         assert page.evaluate("safeExternalUrl('javascript:alert(1)')") == ''
         assert 'href=' not in page.evaluate("renderContact([{label:'X',handle:'Y',url:'javascript:alert(1)'}])")
         assert page.evaluate("renderWork([{id:1,title:'X',description:'Y',url:'data:text/html,x',tags:[]}])").startswith('<div')
+    finally:
+        page.close()
+
+
+def test_public_homepage_does_not_show_stale_projects_before_data_load(live_server, browser):
+    page = browser.new_page()
+    try:
+        page.route('**/data/work.json*', lambda route: None)
+        page.goto(live_server + '/index.html', wait_until='domcontentloaded')
+
+        assert page.locator('#work-container .work-card').count() == 0
+        assert page.locator('#work-container').get_attribute('aria-busy') == 'true'
+        assert page.locator('#work-container').inner_text() == '项目加载中…'
+    finally:
+        page.close()
+
+
+def test_archive_combines_search_and_tag_filters_with_accessible_controls(live_server, browser):
+    page = browser.new_page()
+    try:
+        page.goto(live_server + '/archive.html', wait_until='domcontentloaded')
+
+        search = page.get_by_label('搜索随笔')
+        search.fill('滑动窗口')
+        page.wait_for_timeout(150)
+        assert page.locator('.archive-row').count() == 1
+
+        reading_filter = page.get_by_role('button', name='阅读', exact=True)
+        reading_filter.click()
+        assert reading_filter.get_attribute('aria-pressed') == 'true'
+        assert page.locator('.archive-row').count() == 0
+        assert search.input_value() == '滑动窗口'
+    finally:
+        page.close()
+
+
+def test_archive_mobile_keeps_article_tags_visible(live_server, browser):
+    page = browser.new_page(viewport={'width': 390, 'height': 844})
+    try:
+        page.goto(live_server + '/archive.html', wait_until='domcontentloaded')
+
+        assert page.locator('.archive-tag').first.is_visible()
+        assert page.evaluate('document.documentElement.scrollWidth === document.documentElement.clientWidth')
     finally:
         page.close()
 

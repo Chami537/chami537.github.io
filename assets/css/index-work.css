@@ -1,5 +1,12 @@
 /* Main page Work section. */
 .work-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; }
+.section-loading {
+  grid-column: 1 / -1;
+  padding: 36px 0;
+  color: var(--muted);
+  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
+  font-size: 13px;
+}
 .work-card {
   display: block; text-decoration: none; color: inherit;
   padding: 40px 32px; border-right: 1px solid var(--line);

@@ -194,7 +194,7 @@ const TS = Date.now(); // cache busting timestamp, fixed per page load
 
 function renderWork(data) {
   return data.map((w, i) => {
-    const num = String(w.id || i + 1).padStart(2, '0');
+    const num = String(i + 1).padStart(2, '0');
     var url = safeExternalUrl(w.url);
     var tag = url ? 'a' : 'div';
     var linkAttrs = url ? ' href="' + htmlEncode(url) + '" target="_blank" rel="noopener noreferrer"' : '';

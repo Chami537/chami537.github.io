@@ -15,9 +15,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/lxgw-wenkai-lite-webfont@1.1.0/style.css">
 {% endraw %}
 <style>
 {% include 'includes/base.css' %}
+:root {
+  --archive-muted: #666;
+  --archive-accent-text: #765500;
+}
+html.dark {
+  --archive-muted: #aaa;
+  --archive-accent-text: #ffc642;
+}
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
 .archive-wrap {
   max-width: 680px; margin: 0 auto; padding: 120px 48px 100px;
 }
@@ -32,35 +45,40 @@
 }
 .archive-header .sub {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 15px; color: var(--muted);
+  font-size: 15px; color: var(--archive-muted);
 }
 
 /* Tag filter chips */
-.essay-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+.essay-filter {
+  display: flex; flex-wrap: wrap; gap: 0 28px;
+  margin-bottom: 28px; border-bottom: 1px solid var(--line);
+}
 .ef-chip {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  display: inline-block; padding: 3px 12px; border-radius: 20px;
-  font-size: 11px; font-weight: 600; cursor: pointer;
-  border: 1px solid var(--line); color: var(--muted);
-  transition: all .15s; user-select: none;
+  display: inline-flex; align-items: center; min-height: 36px;
+  padding: 0 0 9px; border: 0; border-bottom: 2px solid transparent;
+  border-radius: 0; background: transparent; color: var(--archive-muted);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: color .16s ease, border-color .16s ease; user-select: none;
+  appearance: none;
 }
-.ef-chip:hover { border-color: var(--c3); color: var(--c3); }
-.ef-chip.active { background: var(--c3); color: #fff; border-color: var(--c3); }
+.ef-chip:hover { color: var(--fg); }
+.ef-chip.active { color: var(--fg); border-bottom-color: var(--c3); }
 
 /* Search */
 .essay-search {
   margin-bottom: 12px; position: relative;
 }
 .essay-search input {
-  width: 100%; padding: 8px 14px 8px 34px;
+  width: 100%; min-height: 42px; padding: 8px 14px 8px 36px;
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 13px; color: var(--fg);
+  font-size: 14px; color: var(--fg);
   background: var(--bg); border: 1px solid var(--line);
   border-radius: 8px; outline: none;
   transition: border-color .2s;
 }
 .essay-search input:focus { border-color: var(--c3); }
-.essay-search input::placeholder { color: #bbb; }
+.essay-search input::placeholder { color: var(--archive-muted); }
 .essay-search::before {
   content: "🔍"; position: absolute;
   left: 10px; top: 50%; transform: translateY(-50%);
@@ -70,12 +88,13 @@
 .archive-year { margin-bottom: 40px; }
 .archive-year-heading {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 28px; font-weight: 800; color: var(--c3);
+  font-size: 28px; font-weight: 800; color: var(--archive-accent-text);
   border-left: 3px solid var(--c3); padding-left: 14px;
   margin-bottom: 20px;
 }
 .archive-row {
-  display: flex; align-items: baseline; gap: 16px;
+  display: grid; grid-template-columns: 72px minmax(0, 1fr) auto;
+  align-items: baseline; column-gap: 16px;
   padding: 14px 0; border-bottom: 1px solid var(--line);
   text-decoration: none; color: var(--fg);
   transition: padding-left .3s, background .3s;
@@ -85,78 +104,37 @@
 }
 .archive-date {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 12px; color: var(--muted); min-width: 72px;
+  font-size: 12px; color: var(--archive-muted);
 }
 .archive-title {
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 17px; font-weight: 600; flex: 1;
+  font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif;
+  font-size: 17px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;
 }
 .archive-lock { font-size: 12px; margin-left: 6px; }
 .archive-tag {
   font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
-  text-transform: uppercase; color: var(--c3);
+  text-transform: uppercase; color: var(--archive-accent-text);
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
 }
 
 /* Back link */
 .back-link {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 13px; font-weight: 600; color: var(--muted);
+  font-size: 13px; font-weight: 600; color: var(--archive-muted);
   text-decoration: none; display: flex; align-items: center; justify-content: center;
   gap: 6px; margin-top: 48px; transition: color .2s;
 }
 .back-link:hover { color: var(--c3); }
 .back-link .arr { transition: transform .2s; display: inline-block; }
 .back-link:hover .arr { transform: translateX(-4px); }
-.essay-search {
-  margin-bottom: 12px; position: relative;
-}
-.essay-search input {
-  width: 100%; padding: 8px 14px 8px 34px;
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 13px; color: var(--fg);
-  background: var(--bg); border: 1px solid var(--line);
-  border-radius: 8px; outline: none;
-  transition: border-color .2s;
-}
-.essay-search input:focus { border-color: var(--c3); }
-.essay-search input::placeholder { color: #bbb; }
-.archive-year { margin-bottom: 40px; }
-.archive-year-heading {
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 28px; font-weight: 800; color: var(--c3);
-  border-left: 3px solid var(--c3); padding-left: 14px;
-  margin-bottom: 20px;
-}
-.archive-row {
-  display: flex; align-items: baseline; gap: 16px;
-  padding: 14px 0; border-bottom: 1px solid var(--line);
-  text-decoration: none; color: var(--fg);
-  transition: padding-left .3s, background .3s;
-}
-.archive-row:hover {
-  padding-left: 24px; background: rgba(255,184,0,0.05);
-}
-.archive-date {
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 12px; color: var(--muted); min-width: 72px;
-}
-.archive-title {
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  font-size: 17px; font-weight: 600; flex: 1;
-}
-.archive-tag {
-  font-size: 10px; font-weight: 700; letter-spacing: 0.05em;
-  text-transform: uppercase; color: var(--c3);
-  font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-}
 @media (max-width: 768px) {
   nav { padding: 0 16px; }
   .archive-wrap { padding: 100px 24px 80px; }
-  .archive-row { gap: 10px; }
-  .archive-date { min-width: 56px; font-size: 11px; }
-  .archive-tag { display: none; }
-  .ef-chip { font-size: 10px; padding: 2px 10px; }
+  .archive-row { grid-template-columns: 56px minmax(0, 1fr); column-gap: 10px; row-gap: 5px; }
+  .archive-date { font-size: 11px; }
+  .archive-tag { grid-column: 2; font-size: 9px; }
+  .ef-chip { font-size: 12px; }
+  .essay-search input { font-size: 16px; }
 }
 </style>
 {% raw %}
@@ -181,9 +159,12 @@
     <p class="sub">共 {% endraw %}{{ total }}{% raw %} 篇随笔</p>
   </div>
 
-  <div class="essay-search"><input type="text" id="archive-search" placeholder="搜索随笔..." oninput="onArchiveSearch(this.value)"></div>
+  <div class="essay-search">
+    <label class="sr-only" for="archive-search">搜索随笔</label>
+    <input type="search" id="archive-search" placeholder="搜索随笔..." oninput="onArchiveSearch(this.value)">
+  </div>
   <div id="archive-tag-filter" class="essay-filter"></div>
-  <div id="archive-entries"></div>
+  <div id="archive-entries" aria-live="polite"></div>
 
   <a href="/index.html" class="back-link">
     <span class="arr">←</span>
@@ -198,6 +179,7 @@
 <script>
 var _archiveEssays = {% endraw %}{{ essays_json }}{% raw %};
 var _archiveFilter = '';
+var _archiveSearch = '';
 var _archiveSearchTimer = null;
 
 // Theme init
@@ -261,9 +243,9 @@ function buildTagFilter() {
   _archiveEssays.forEach(function(e) {
     (e.tag || '').split(/[,，]/).forEach(function(t) { t = t.trim(); if (t) tags.add(t); });
   });
-  var html = '<span class="ef-chip' + (!_archiveFilter ? ' active' : '') + '" onclick="filterArchiveByTag(\'\')">全部</span>';
+  var html = '<button type="button" class="ef-chip' + (!_archiveFilter ? ' active' : '') + '" aria-pressed="' + (!_archiveFilter) + '" onclick="filterArchiveByTag(\'\')">全部</button>';
   tags.forEach(function(t) {
-    html += '<span class="ef-chip' + (_archiveFilter === t ? ' active' : '') + '" data-tag="' + t.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '" onclick="filterArchiveByTag(this.getAttribute(\'data-tag\'))">' + t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span>';
+    html += '<button type="button" class="ef-chip' + (_archiveFilter === t ? ' active' : '') + '" aria-pressed="' + (_archiveFilter === t) + '" data-tag="' + t.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '" onclick="filterArchiveByTag(this.getAttribute(\'data-tag\'))">' + t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</button>';
   });
   document.getElementById('archive-tag-filter').innerHTML = html;
 }
@@ -276,22 +258,23 @@ function filterArchiveByTag(tag) {
 
 function onArchiveSearch(query) {
   clearTimeout(_archiveSearchTimer);
+  _archiveSearch = query.toLowerCase().trim();
   _archiveSearchTimer = setTimeout(function() {
-    applyFilters(query.toLowerCase().trim());
+    applyFilters();
   }, 100);
 }
 
-function applyFilters(searchQuery) {
+function applyFilters() {
   var filtered = _archiveEssays;
   if (_archiveFilter) {
     filtered = filtered.filter(function(e) {
       return (e.tag || '').split(/[,，]/).some(function(t) { return t.trim() === _archiveFilter; });
     });
   }
-  if (searchQuery) {
+  if (_archiveSearch) {
     filtered = filtered.filter(function(e) {
-      return (e.title || '').toLowerCase().indexOf(searchQuery) !== -1 ||
-             (e.excerpt || '').toLowerCase().indexOf(searchQuery) !== -1;
+      return (e.title || '').toLowerCase().indexOf(_archiveSearch) !== -1 ||
+             (e.excerpt || '').toLowerCase().indexOf(_archiveSearch) !== -1;
     });
   }
   renderArchiveEntries(filtered);

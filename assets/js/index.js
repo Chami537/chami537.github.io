@@ -27,9 +27,15 @@ document.addEventListener('DOMContentLoaded', async function() {
     }
   } catch(e) {}
   // Work
-  if (results.work) {
-    document.getElementById('work-container').innerHTML = renderWork(results.work);
+  var workContainer = document.getElementById('work-container');
+  if (Array.isArray(results.work)) {
+    workContainer.innerHTML = results.work.length
+      ? renderWork(results.work)
+      : '<p class="section-loading">暂无项目</p>';
+  } else {
+    workContainer.innerHTML = '<p class="section-loading">项目暂时无法加载</p>';
   }
+  workContainer.setAttribute('aria-busy', 'false');
   // Essays
   if (results.essays) {
     var essaysData = Array.isArray(results.essays) ? results.essays : results.essays.essays;
