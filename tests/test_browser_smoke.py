@@ -558,3 +558,22 @@ def test_essay_toc_builds_heading_anchors_and_supports_group_collapse(live_serve
         }
     finally:
         page.close()
+
+
+def test_archive_navigation_shows_essay_toc_on_desktop(live_server, browser):
+    page = browser.new_page()
+    try:
+        page.set_viewport_size({'width': 1366, 'height': 768})
+        page.goto(live_server + '/archive.html', wait_until='domcontentloaded')
+        essay_link = page.locator('.archive-row[href="essays/essay-9f4ce506.html"]')
+        essay_link.click()
+        page.wait_for_url('**/essays/essay-9f4ce506.html')
+        page.wait_for_function("document.querySelectorAll('#essay-toc-list a').length > 0")
+
+        toc = page.locator('#essay-toc')
+        assert toc.is_visible()
+        assert page.locator('#essay-toc-list a').count() == page.locator(
+            '.essay-body h1, .essay-body h2, .essay-body h3'
+        ).count()
+    finally:
+        page.close()

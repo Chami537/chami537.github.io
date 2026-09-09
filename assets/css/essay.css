@@ -97,8 +97,8 @@ html.dark .essay-toc-row > a.is-active { color: var(--c3); }
   .essay-toc:not([hidden]), .essay-toc-row > a { animation: none; transition: none; }
 }
 
-/* The right rail becomes an inline collapsible section on smaller screens. */
-@media (max-width: 1440px) {
+/* Hide the fixed right rail only when it would crowd the 680px reading column. */
+@media (max-width: 1240px) {
   .essay-toc {
     display: none !important;
   }
