@@ -47,7 +47,7 @@ class Solution(object):
             hashmap[num]=i
 ```
 
-# 2.存在重复元素
+# 217.存在重复元素
 
 思路类似 直接上代码
 
