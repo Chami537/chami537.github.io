@@ -44,4 +44,5 @@ def cache_bust_assets(base_dir):
             )
 
         updated = _ASSET_REFERENCE_RE.sub(add_version, html)
-        atomic_write_text(html_path, updated)
+        if updated != html:
+            atomic_write_text(html_path, updated)

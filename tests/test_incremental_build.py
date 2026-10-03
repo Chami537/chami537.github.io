@@ -11,6 +11,7 @@ from jinja2 import Environment, FileSystemLoader
 
 import backend.data as data
 import backend.ssg as ssg
+from backend.asset_cache import cache_bust_assets
 from backend.essay_repository import EssayRepository
 from backend.photo_repository import PhotoRepository
 from backend.storage import JsonStore
@@ -134,4 +135,17 @@ def test_build_command_skips_unchanged_essay(build_site, monkeypatch):
 
     runpy.run_path(str(ROOT / 'manage.py'), run_name='__main__')
 
+    assert output.stat().st_mtime_ns == 200_000_000_000
+
+
+@pytest.mark.parametrize('page', ['index.html', 'admin.html'])
+def test_cache_bust_preserves_unchanged_entry_page(tmp_path, page):
+    write_input(tmp_path / 'assets/js/example.js', '// script')
+    output = tmp_path / page
+    html = '<script src="assets/js/example.js?v=100"></script>'
+    write_input(output, html, modified=200)
+
+    cache_bust_assets(str(tmp_path))
+
+    assert output.read_text(encoding='utf-8') == html
     assert output.stat().st_mtime_ns == 200_000_000_000
