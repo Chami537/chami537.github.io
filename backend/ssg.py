@@ -24,7 +24,7 @@ from backend.essay_service import EssayService
 from backend.essay_renderer import render_essay_html, write_essay_html
 from backend.file_utils import atomic_write_text
 from backend.repositories import PHOTO_REPOSITORY, repository_for
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, meta
 
 _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
 ESSAY_REPOSITORY = EssayRepository(STORE)
@@ -86,6 +86,25 @@ def _needs_regeneration(output_path, input_paths):
     return any(os.path.exists(path) and os.path.getmtime(path) > output_mtime for path in input_paths)
 
 
+def template_dependencies(template_name):
+    """Collect a template and its transitive static Jinja references once each."""
+    pending = [template_name]
+    visited = set()
+    paths = []
+    while pending:
+        name = pending.pop()
+        if name in visited:
+            continue
+        visited.add(name)
+        source, filename, _ = _env.loader.get_source(_env, name)
+        paths.append(filename)
+        pending.extend(
+            reference for reference in meta.find_referenced_templates(_env.parse(source))
+            if reference is not None
+        )
+    return paths
+
+
 def _generate_rss(essays=None):
     """Generate rss.xml from essays.json (Jinja2 template)."""
     output_path = os.path.join(BASE_DIR, 'rss.xml')
@@ -121,7 +140,8 @@ def _prepare_archive_data(essays):
 def _generate_archive(essays=None):
     """Generate archive.html — timeline grouped by year (Jinja2 template)."""
     output_path = os.path.join(BASE_DIR, 'archive.html')
-    if not _needs_regeneration(output_path, [os.path.join(DATA_DIR, 'essays.json'), os.path.join(BASE_DIR, 'templates', 'archive.html')]):
+    inputs = [os.path.join(DATA_DIR, 'essays.json'), *template_dependencies('archive.html')]
+    if not _needs_regeneration(output_path, inputs):
         return
     context = _prepare_archive_data(ESSAY_REPOSITORY.list() if essays is None else essays)
     html = _env.get_template('archive.html').render(
@@ -152,7 +172,8 @@ def _prepare_map_data(photos):
 def _generate_map(photos=None):
     """Generate map.html — Leaflet map with GPS-tagged photos (Jinja2 template)."""
     output_path = os.path.join(BASE_DIR, 'map.html')
-    if not _needs_regeneration(output_path, [os.path.join(DATA_DIR, 'photos.json'), os.path.join(BASE_DIR, 'templates', 'map.html')]):
+    inputs = [os.path.join(DATA_DIR, 'photos.json'), *template_dependencies('map.html')]
+    if not _needs_regeneration(output_path, inputs):
         return
     context = _prepare_map_data(PHOTO_REPOSITORY.list() if photos is None else photos)
     html = _env.get_template('map.html').render(

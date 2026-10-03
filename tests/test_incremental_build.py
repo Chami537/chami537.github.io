@@ -71,3 +71,67 @@ def test_public_listing_updates_when_only_tag_order_changes(build_site):
     ssg._generate_public_essays(essays)
 
     assert json.loads(output.read_text(encoding='utf-8'))['_tags'] == ['B', 'A']
+
+
+@pytest.mark.parametrize('page,generator', [
+    ('archive.html', ssg._generate_archive),
+    ('map.html', ssg._generate_map),
+])
+def test_feed_page_rebuilds_after_nested_include_changes(build_site, page, generator):
+    root, _ = build_site
+    generator([])
+    output = root / page
+    os.utime(output, (200, 200))
+    write_input(root / 'templates/includes/link.html', 'new nav', modified=300)
+
+    generator([])
+
+    assert 'new nav' in output.read_text(encoding='utf-8')
+
+
+@pytest.mark.parametrize('include,content', [
+    ('link.html', 'new nav'),
+    ('base.css', 'new style'),
+    ('footer.html', 'new footer'),
+])
+def test_build_command_rebuilds_essay_after_include_changes(build_site, monkeypatch, include, content):
+    root, essays = build_site
+    ssg.sync_essay_html(essays[0], essays=essays)
+    output = root / 'essays/probe.html'
+    os.utime(output, (200, 200))
+    write_input(root / 'templates/includes' / include, content, modified=300)
+    monkeypatch.setattr(sys, 'argv', ['manage.py', 'build'])
+
+    runpy.run_path(str(ROOT / 'manage.py'), run_name='__main__')
+
+    assert content in output.read_text(encoding='utf-8')
+    assert '<h1>Body</h1>' in output.read_text(encoding='utf-8')
+
+
+@pytest.mark.parametrize('page,generator', [
+    ('archive.html', ssg._generate_archive),
+    ('map.html', ssg._generate_map),
+])
+def test_feed_page_skips_rebuild_for_unrelated_template(build_site, page, generator):
+    root, _ = build_site
+    generator([])
+    output = root / page
+    os.utime(output, (200, 200))
+    write_input(root / 'templates/unrelated.html', 'unrelated', modified=300)
+
+    generator([])
+
+    assert output.stat().st_mtime_ns == 200_000_000_000
+
+
+def test_build_command_skips_unchanged_essay(build_site, monkeypatch):
+    root, essays = build_site
+    ssg.sync_essay_html(essays[0], essays=essays)
+    output = root / 'essays/probe.html'
+    os.utime(output, (200, 200))
+    write_input(root / 'templates/unrelated.html', 'unrelated', modified=300)
+    monkeypatch.setattr(sys, 'argv', ['manage.py', 'build'])
+
+    runpy.run_path(str(ROOT / 'manage.py'), run_name='__main__')
+
+    assert output.stat().st_mtime_ns == 200_000_000_000
