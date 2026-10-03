@@ -178,7 +178,7 @@ def _ordered_public_tags(all_tags):
 def _generate_public_essays(essays=None):
     """Write public listing metadata without exposing passwords or essay bodies."""
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
-    inputs = [os.path.join(DATA_DIR, 'essays.json')]
+    inputs = [os.path.join(DATA_DIR, 'essays.json'), os.path.join(DATA_DIR, 'tags_order.json')]
     if os.path.exists(os.path.join(DATA_DIR, 'essay_passwords.json')):
         inputs.append(os.path.join(DATA_DIR, 'essay_passwords.json'))
     if not _needs_regeneration(public_path, inputs):
