@@ -11,6 +11,9 @@
 <meta property="og:description" content="CS Student & Photographer · Building things that feel right.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">
+<meta property="og:url" content="https://chami537.github.io/">
+<meta property="og:site_name" content="Chami">
+<link rel="canonical" href="https://chami537.github.io/">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="images/avatar.jpg">
 <link rel="alternate" type="application/rss+xml" title="Chami's Essays" href="/rss.xml">
@@ -54,7 +57,7 @@
       <h1>Building<br>things that<br><mark>feel right</mark></h1>
       <div class="meta skeleton-loading" id="hero-meta"></div>
     </div>
-      <div class="portrait" aria-hidden="true"><img src="images/avatar.jpg" alt="头像" class="cover-img" id="portrait-img" decoding="async" fetchpriority="high"></div>
+      <div class="portrait" aria-hidden="true"><img src="images/avatar.jpg" alt="头像" class="cover-img" id="portrait-img" decoding="async" fetchpriority="high" width="260" height="260"></div>
   </section>
 
   <section id="about" class="about-section">
@@ -110,7 +113,7 @@
       <div class="music-row" data-src="music/あたらよ - 夏霞.mp3"><span class="idx">04</span><span class="title">夏霞</span><span class="artist">あたらよ</span></div>
       <div class="music-row" data-src="music/宇多田ヒカル - This One (Crying Like A Child).mp3"><span class="idx">05</span><span class="title">This One (Crying Like A Child)</span><span class="artist">宇多田ヒカル</span></div>
     </div>
-    <audio id="player" preload="auto"></audio>
+    <audio id="player" preload="none"></audio>
   </section>
 
   <section id="contact">
@@ -166,9 +169,10 @@
   <div class="friends skeleton-loading" id="friends-container">
     <div class="friends-label">FRIEND</div>
   </div>
-  © <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
+  © <span id="copyright-year"></span> Chami. All rights reserved.
 </footer>
 
+<script>document.getElementById("copyright-year").textContent = new Date().getFullYear();</script>
 <script defer src="assets/js/theme.js?v=1788883151"></script>
 <script defer src="assets/js/index-core.js?v=1788883151"></script>
 <script defer src="assets/js/index-essays.js?v=1788883151"></script>
