@@ -187,3 +187,204 @@ $$O(n)$$
 
 >用两个位置变量维护当前问题中最重要的两个位置，并通过某种规则移动它们，从而避免暴力枚举。
 
+
+
+
+
+# 15. 三数之和
+
+## 题目描述
+
+找出数组中所有满足：
+
+`nums[i] + nums[j] + nums[k] = 0`
+
+的不重复三元组。
+
+---
+
+## 最开始的想法
+
+固定一个数 `nums[i]` 后，问题就变成：
+
+`nums[left] + nums[right] = -nums[i]`
+
+本质上是「两数之和」。
+
+两数之和可以用哈希表，但这题还需要处理大量重复元素，所以：
+
+**排序 + 双指针更自然。**
+
+---
+
+## 思路
+
+先对整个数组排序。
+
+然后枚举 `i`，固定第一个数：
+
+```text
+nums[i]
+````
+
+在它右侧设置：
+
+```python
+left = i + 1
+right = len(nums) - 1
+```
+
+目标：
+
+```python
+nums[left] + nums[right] == -nums[i]
+```
+
+### 双指针移动
+
+因为数组已经排序：
+
+```text
+两数和 < 目标
+→ 和太小
+→ left += 1
+
+两数和 > 目标
+→ 和太大
+→ right -= 1
+
+两数和 == 目标
+→ 找到答案
+```
+
+---
+
+## 去重
+
+### 1. 固定数 `i` 去重
+
+如果当前数字和上一个数字相同：
+
+```python
+if i > 0 and nums[i] == nums[i - 1]:
+    continue
+```
+
+原因：
+
+同一个数已经作为第一个数搜索过一次，再搜索只会产生重复答案。
+
+---
+
+### 2. left / right 去重
+
+找到一个答案以后，要跳过相同的数字。
+
+```python
+while left < right and nums[left] == nums[left + 1]:
+    left += 1
+
+while left < right and nums[right] == nums[right - 1]:
+    right -= 1
+```
+
+然后再：
+
+```python
+left += 1
+right -= 1
+```
+
+`left < right` 要写在 `and` 前面，因为 Python 的 `and` 从左往右判断并且具有短路性质。
+
+---
+
+## 我的代码
+
+```python
+class Solution(object):
+    def threeSum(self, nums):
+        numssorted = sorted(nums)
+        outcome = []
+
+        for i in range(len(numssorted) - 2):
+
+            if i >= 1 and numssorted[i] == numssorted[i - 1]:
+                continue
+
+            left = i + 1
+            right = len(numssorted) - 1
+            remnant = -numssorted[i]
+
+            while left < right:
+
+                if numssorted[left] + numssorted[right] < remnant:
+                    left += 1
+
+                elif numssorted[left] + numssorted[right] > remnant:
+                    right -= 1
+
+                else:
+                    outcome.append([
+                        numssorted[i],
+                        numssorted[left],
+                        numssorted[right]
+                    ])
+
+                    while left < right and numssorted[left] == numssorted[left + 1]:
+                        left += 1
+
+                    while left < right and numssorted[right] == numssorted[right - 1]:
+                        right -= 1
+
+                    left += 1
+                    right -= 1
+
+        return outcome
+```
+
+---
+
+## 这题踩的坑
+
+### `return` 不能放在 for 循环内部
+
+否则只会搜索 `i = 0` 的情况，后面的数字不会继续枚举。
+
+### 要用 `if / elif / else`
+
+三个情况互斥。
+
+如果写三个独立的 `if`，第一个判断修改指针后，后面的判断会立刻使用新的指针，逻辑容易出错。
+
+### 去重时要注意边界
+
+```python
+while left < right and ...
+```
+
+先判断双指针是否合法，再访问数组。
+
+---
+
+## 复杂度
+
+排序：
+
+`O(n log n)`
+
+外层枚举 + 双指针：
+
+`O(n²)`
+
+总时间复杂度：
+
+`O(n²)`
+
+额外空间复杂度取决于排序实现，不考虑排序空间时可以看作 `O(1)`。
+
+---
+
+## 一句话总结
+
+**三数之和 = 排序 + 固定一个数 + 双指针做两数之和 + 三处去重。**
