@@ -565,9 +565,13 @@ def test_archive_navigation_shows_essay_toc_on_desktop(live_server, browser):
     try:
         page.set_viewport_size({'width': 1366, 'height': 768})
         page.goto(live_server + '/archive.html', wait_until='domcontentloaded')
-        essay_link = page.locator('.archive-row[href="essays/essay-9f4ce506.html"]')
+        # Pick the first essay dynamically instead of hardcoding a slug,
+        # so the test doesn't break when essays are added/removed/renamed.
+        essay_link = page.locator('.archive-row').first
+        essay_href = essay_link.get_attribute('href')
+        assert essay_href and essay_href.startswith('essays/') and essay_href.endswith('.html')
         essay_link.click()
-        page.wait_for_url('**/essays/essay-9f4ce506.html')
+        page.wait_for_url(f'**/{essay_href}')
         page.wait_for_function("document.querySelectorAll('#essay-toc-list a').length > 0")
 
         toc = page.locator('#essay-toc')
