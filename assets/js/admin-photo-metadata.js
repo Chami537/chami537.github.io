@@ -89,7 +89,7 @@ function loadEditorMap() {
 function initEditorMap(container) {
   _editorMap = L.map(container, {attributionControl: false}).setView([22.5431, 113.9579], 11);
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, subdomains: 'abc',
+    maxZoom: 19, subdomains: 'abc', detectRetina: true,
     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(_editorMap);
   _editorMap.on('click', function(event) {

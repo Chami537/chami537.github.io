@@ -53,6 +53,9 @@ def test_photo_maps_use_reliable_tiles_and_marker_assets():
     assert 'tile.openstreetmap.org' in admin_source
     assert 'tile.openstreetmap.org' in index_source
     assert 'tile.openstreetmap.org' in template_source
+    assert 'detectRetina' in admin_source
+    assert 'detectRetina' in index_source
+    assert 'detectRetina' in template_source
     assert 'cartocdn' not in admin_source
     assert 'cartocdn' not in index_source
     assert 'cartocdn' not in template_source

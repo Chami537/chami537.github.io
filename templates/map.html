@@ -130,7 +130,7 @@ var photos = {% endraw %}{{ photos_json }}{% raw %};
 
 var map = L.map('map', {attributionControl: false}).setView([{% endraw %}{{ center_lat }}{% raw %}, {% endraw %}{{ center_lng }}{% raw %}], 13);
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  maxZoom: 19, subdomains: 'abc',
+  maxZoom: 19, subdomains: 'abc', detectRetina: true,
   attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> contributors'
 }).addTo(map);
 
