@@ -13,15 +13,15 @@
   },
   {
     "id": 3,
-    "title": "DateMemory",
-    "description": "黑白极简倒计时/累计日 · 桌面小组件 · Material You",
-    "url": "https://github.com/Chami537/DateMemory",
-    "repo": "Chami537/DateMemory",
+    "title": "life-development-skill",
+    "description": "人生发展 Skill：基于高性价比人生指南，结合个人处境、证据与成本收益，为生活困惑和人生选择提供答疑。",
+    "url": "https://github.com/Chami537/life-development-skill",
+    "repo": "Chami537/life-development-skill",
     "tags": [
-      "Kotlin",
-      "Jetpack Compose"
+      "AI Skill",
+      "人生发展"
     ],
-    "stars": 0
+    "stars": 156
   },
   {
     "id": 6,
