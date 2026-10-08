@@ -84,9 +84,12 @@ function initPhotoMap() {
   var container = document.getElementById('photo-map-container');
   _photoMap = L.map(container, {attributionControl: false}).setView([22.5431, 113.9579], 11);
   _markerGroup = L.featureGroup().addTo(_photoMap);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, subdomains: 'abc', detectRetina: true,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19, detectRetina: true,
+    attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(_photoMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19, detectRetina: true
   }).addTo(_photoMap);
 
   // Add markers from photo data (shared with _syncMapMarkers)

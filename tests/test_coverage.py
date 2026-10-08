@@ -50,9 +50,12 @@ def test_photo_maps_use_reliable_tiles_and_marker_assets():
     story_source = Path('assets/js/admin-photo-stories.js').read_text(encoding='utf-8')
     index_source = Path('assets/js/index-photo-map.js').read_text(encoding='utf-8')
     template_source = Path('templates/map.html').read_text(encoding='utf-8')
-    assert 'tile.openstreetmap.org' in admin_source
-    assert 'tile.openstreetmap.org' in index_source
-    assert 'tile.openstreetmap.org' in template_source
+    assert 'arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base' in admin_source
+    assert 'arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base' in index_source
+    assert 'arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base' in template_source
+    assert 'World_Light_Gray_Reference' in admin_source
+    assert 'World_Light_Gray_Reference' in index_source
+    assert 'World_Light_Gray_Reference' in template_source
     assert 'detectRetina' in admin_source
     assert 'detectRetina' in index_source
     assert 'detectRetina' in template_source

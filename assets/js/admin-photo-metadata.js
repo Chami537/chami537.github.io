@@ -88,9 +88,12 @@ function loadEditorMap() {
 
 function initEditorMap(container) {
   _editorMap = L.map(container, {attributionControl: false}).setView([22.5431, 113.9579], 11);
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19, subdomains: 'abc', detectRetina: true,
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19, detectRetina: true,
+    attribution: 'Tiles &copy; Esri &mdash; Esri, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(_editorMap);
+  L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Reference/MapServer/tile/{z}/{y}/{x}', {
+    maxZoom: 19, detectRetina: true
   }).addTo(_editorMap);
   _editorMap.on('click', function(event) {
     var latitude = event.latlng.lat.toFixed(6);
