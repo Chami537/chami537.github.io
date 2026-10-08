@@ -129,9 +129,9 @@ html.dark .leaflet-popup {
 var photos = {% endraw %}{{ photos_json }}{% raw %};
 
 var map = L.map('map', {attributionControl: false}).setView([{% endraw %}{{ center_lat }}{% raw %}, {% endraw %}{{ center_lng }}{% raw %}], 13);
-L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-  maxZoom: 19, subdomains: 'abcd',
-  attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> &copy; CARTO'
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 19, subdomains: 'abc',
+  attribution: '&copy; <a href="https://openstreetmap.org/copyright">OSM</a> contributors'
 }).addTo(map);
 
 // Add photo markers

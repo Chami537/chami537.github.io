@@ -84,9 +84,9 @@ function initPhotoMap() {
   var container = document.getElementById('photo-map-container');
   _photoMap = L.map(container, {attributionControl: false}).setView([22.5431, 113.9579], 11);
   _markerGroup = L.featureGroup().addTo(_photoMap);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-    maxZoom: 19, subdomains: 'abcd',
-    attribution: '&copy; OSM &copy; CARTO'
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19, subdomains: 'abc',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   }).addTo(_photoMap);
 
   // Add markers from photo data (shared with _syncMapMarkers)

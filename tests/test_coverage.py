@@ -50,9 +50,12 @@ def test_photo_maps_use_reliable_tiles_and_marker_assets():
     story_source = Path('assets/js/admin-photo-stories.js').read_text(encoding='utf-8')
     index_source = Path('assets/js/index-photo-map.js').read_text(encoding='utf-8')
     template_source = Path('templates/map.html').read_text(encoding='utf-8')
-    assert 'basemaps.cartocdn.com/light_all' in admin_source
-    assert 'basemaps.cartocdn.com/light_all' in index_source
-    assert 'basemaps.cartocdn.com/light_all' in template_source
+    assert 'tile.openstreetmap.org' in admin_source
+    assert 'tile.openstreetmap.org' in index_source
+    assert 'tile.openstreetmap.org' in template_source
+    assert 'cartocdn' not in admin_source
+    assert 'cartocdn' not in index_source
+    assert 'cartocdn' not in template_source
     assert "className: 'custom-marker'" in story_source
     assert "className: 'custom-marker'" in index_source
 
