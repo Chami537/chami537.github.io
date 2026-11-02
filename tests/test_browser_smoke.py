@@ -764,7 +764,9 @@ def test_stories_empty_failure_and_legacy_redirect(live_server, browser):
         page.goto(live_server + '/index.html', wait_until='domcontentloaded')
         assert page.locator('#stories').is_hidden()
         assert page.locator('#stories-nav').is_hidden()
-        page.unroute('**/data/stories.json*')
+        # Isolate the redirect from requests still loading on the previous page.
+        page.close()
+        page = browser.new_page()
         page.route('**/data/stories.json*', lambda route: route.fulfill(json=[]))
         page.goto(live_server + '/shelf.html', wait_until='domcontentloaded')
         page.wait_for_url('**/index.html#stories', wait_until='domcontentloaded')
