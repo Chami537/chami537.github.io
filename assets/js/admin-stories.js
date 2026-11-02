@@ -6,7 +6,7 @@ var _storyCoverPreviewURL = null;
 
 function storyField(name) { return document.getElementById('story-' + name); }
 function storyText(tag, text) { var el = document.createElement(tag); el.textContent = text; return el; }
-function storyPublicEssay(e) { return !e.hidden && !e.password_set && !e.password_protected && !e.password; }
+function storyPublicEssay(e) { return e.visible !== false && !e.hidden && !e.password_set && !e.password_protected && !e.password; }
 
 async function loadStories() {
   try {

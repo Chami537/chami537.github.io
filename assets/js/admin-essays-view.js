@@ -144,7 +144,7 @@ function renderEssayList(data) {
         <div class="essay-header-row">
           ${pinBtn(e)}
           <div>
-            <div class="card-title">${esc(e.title)}</div>
+            <div class="card-title">${esc(e.title)}${e.visible === false ? ' · 已隐藏' : ''}</div>
             <div class="card-meta">${esc(e.date)} · ${e.readTime} min · slug: ${esc(e.slug)}</div>
             <div class="card-meta epigraph">${esc(e.epigraph||'')}</div>
           </div>

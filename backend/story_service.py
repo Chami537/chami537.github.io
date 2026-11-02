@@ -17,7 +17,7 @@ class StoryError(ValueError):
 def public_essay_slugs(essays, has_password=has_essay_password):
     return {
         e['slug'] for e in essays if isinstance(e, dict) and e.get('slug')
-        and not e.get('hidden') and not e.get('password_protected')
+        and e.get('visible', True) is not False and not e.get('hidden') and not e.get('password_protected')
         and not e.get('password') and not has_password(e['slug'])
     }
 

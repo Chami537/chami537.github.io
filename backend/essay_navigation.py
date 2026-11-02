@@ -3,6 +3,8 @@
 import html as html_mod
 import re
 
+from backend.essay_service import is_essay_visible
+
 
 def parse_tags(tag_str, essay=None):
     tags = set(t.strip() for t in re.split(r'[,，]', tag_str) if t.strip()) if tag_str else set()
@@ -28,9 +30,9 @@ def build_nav(essays, current_slug):
     current = next((e for e in essays if e['slug'] == current_slug), None)
     current_tags = parse_tags(current.get('tag', ''), current) if current else set()
     if current_tags:
-        siblings = [e for e in essays if e['slug'] != current_slug and parse_tags(e.get('tag', ''), e) & current_tags]
+        siblings = [e for e in essays if e['slug'] != current_slug and is_essay_visible(e) and parse_tags(e.get('tag', ''), e) & current_tags]
     else:
-        siblings = [e for e in essays if e['slug'] != current_slug]
+        siblings = [e for e in essays if e['slug'] != current_slug and is_essay_visible(e)]
     idx = next((i for i, e in enumerate(essays) if e['slug'] == current_slug), -1)
     prev_sib, next_sib = find_adjacent_siblings(essays, idx, siblings)
 

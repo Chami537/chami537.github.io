@@ -7,6 +7,7 @@ from flask import jsonify, request
 from backend.crud import require_json
 from backend.data import has_essay_password, set_essay_password as store_password
 from backend.routes import essay_context
+from backend.essay_service import validate_visibility
 
 
 @essay_context.bp.route('/api/tags/order', methods=['GET'])
@@ -51,6 +52,9 @@ def create_essay():
 
 
 def _validate_new_essay(item, essays):
+    error = validate_visibility(item)
+    if error:
+        return error, 400
     slug = item.get('slug', '')
     if not slug or not re.match(r'^[a-z0-9-]+$', slug):
         return "slug 只能包含小写字母、数字和连字符", 400
@@ -60,6 +64,7 @@ def _validate_new_essay(item, essays):
 
 
 def _prepare_new_essay(item, slug):
+    item.setdefault('visible', True)
     password = item.pop('password', '')
     source_name = item.pop('sourceName', '')
     if password:

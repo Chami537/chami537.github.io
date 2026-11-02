@@ -1,10 +1,12 @@
 """Shared Essay data shaping for RSS and sitemap feeds."""
 
 from datetime import datetime
+from backend.essay_service import is_essay_visible
 
 
 def strip_enrich(essays, date_key, date_fmt, limit=None):
     """Remove passwords and format publication dates for a feed."""
+    essays = [essay for essay in essays if is_essay_visible(essay)]
     enriched = []
     for essay in essays[:limit] if limit else essays:
         item = {k: v for k, v in essay.items() if k != 'password'}

@@ -13,6 +13,7 @@ from backend.data import (
     delete_essay_password,
     rename_essay_password,
 )
+from backend.essay_service import validate_visibility
 from backend.essay_navigation import parse_tags
 from backend.essay_file_ops import purge_staged, rename_sources, restore_sources, stage_paths
 from backend.routes import essay_context
@@ -24,8 +25,9 @@ def update_essay_meta(slug):
     if not target:
         return jsonify({"error": "Not found"}), 404
 
+    visibility_changed = 'visible' in request.json and request.json['visible'] != target.get('visible', True)
     new_slug = request.json.get('slug', slug)
-    error = _validate_meta_slug(slug, new_slug, essays)
+    error = validate_visibility(request.json) or _validate_meta_slug(slug, new_slug, essays)
     if error:
         return jsonify({"error": error}), 409 if error == 'slug 已存在' else 400
 
@@ -45,7 +47,7 @@ def update_essay_meta(slug):
     except Exception:
         _rollback_essay_rename(slug, new_slug, moved_sources, password_renamed)
         raise
-    _sync_related_essays(target, slug, essays)
+    _sync_related_essays(target, essays, visibility_changed)
     essay_context.ESSAY_WORKFLOW.regenerate_feeds()
     return jsonify(target)
 def _validate_meta_slug(old_slug, new_slug, essays):
@@ -64,11 +66,11 @@ def _rollback_essay_rename(old_slug, new_slug, moved_sources, password_renamed):
     restore_sources(moved_sources)
     if password_renamed:
         rename_essay_password(new_slug, old_slug)
-def _sync_related_essays(updated, old_slug, essays):
+def _sync_related_essays(updated, essays, visibility_changed=False):
     essay_context.ESSAY_WORKFLOW.sync(updated, essays=essays)
     tags = parse_tags(updated.get('tag', ''), updated)
     for essay in essays:
-        if essay['slug'] != old_slug and (not tags or tags & parse_tags(essay.get('tag', ''), essay)):
+        if essay['slug'] != updated['slug'] and (visibility_changed or not tags or tags & parse_tags(essay.get('tag', ''), essay)):
             essay_context.ESSAY_WORKFLOW.sync(essay, essays=essays)
 
 

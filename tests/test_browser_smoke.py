@@ -214,6 +214,7 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
         assert page.locator('.essay-ai-apply').count() == 0
 
         page.locator('[data-ai-task="review"]').click()
+        page.locator('#essay-ai-result').wait_for(state='visible')
         assert '存在重复' in page.locator('#essay-ai-result').inner_text()
         assert page.locator('.essay-ai-apply').count() == 0
 
@@ -769,5 +770,35 @@ def test_stories_empty_failure_and_legacy_redirect(live_server, browser):
         page.wait_for_url('**/index.html#stories', wait_until='domcontentloaded')
         assert page.locator('#stories').is_hidden()
         assert page.locator('#stories-nav').is_hidden()
+    finally:
+        page.close()
+
+
+def test_admin_essay_visibility_form_roundtrip(live_server, browser):
+    page = browser.new_page()
+    essays = [{'slug': 'hidden-demo', 'title': '隐藏测试', 'tag': '随笔', 'visible': False}]
+    writes = []
+    page.route('**/api/essays', lambda route: route.fulfill(json=essays))
+
+    def save(route):
+        writes.append(route.request.post_data_json)
+        route.fulfill(json={**essays[0], **writes[-1]})
+
+    page.route('**/api/essays/hidden-demo', save)
+    try:
+        page.goto(live_server + '/', wait_until='domcontentloaded')
+        page.locator('.tab-btn[data-tab="essays"]').click()
+        page.locator('#essay-list button', has_text='元数据').first.click()
+        page.locator('#essay-form').wait_for(state='visible')
+        assert '已隐藏' in page.locator('#essay-list').inner_text()
+        assert page.locator('#essay-visible').input_value() == 'false'
+        page.locator('#essay-visible').select_option('true')
+        page.evaluate('saveEssay()')
+        assert writes[-1]['visible'] is True
+        page.evaluate('_fillEssayMetaForm({slug: "legacy", title: "Legacy"})')
+        assert page.locator('#essay-visible').input_value() == 'true'
+        page.locator('#essay-visible').select_option('false')
+        page.evaluate('showEssayForm()')
+        assert page.locator('#essay-visible').input_value() == 'true'
     finally:
         page.close()

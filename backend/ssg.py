@@ -20,7 +20,7 @@ from backend.data import get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_
 from backend.essay_navigation import parse_tags as _parse_tags, find_adjacent_siblings as _find_adjacent_siblings, build_nav as _build_nav
 from backend.essay_feed_data import strip_enrich
 from backend.essay_repository import EssayRepository
-from backend.essay_service import EssayService
+from backend.essay_service import EssayService, is_essay_visible
 from backend.essay_renderer import render_essay_html, write_essay_html
 from backend.file_utils import atomic_write_text
 from backend.repositories import PHOTO_REPOSITORY, repository_for
@@ -130,7 +130,7 @@ def _generate_sitemap(essays=None):
 
 
 def _prepare_archive_data(essays):
-    cleaned = [{k: v for k, v in e.items() if k != 'password'} for e in essays]
+    cleaned = [{k: v for k, v in e.items() if k != 'password'} for e in essays if is_essay_visible(e)]
     essays_sorted = sorted(cleaned, key=lambda e: e.get('date', ''), reverse=True)
     return {
         'total': len(cleaned),

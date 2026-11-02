@@ -51,8 +51,9 @@ function showEssayForm() {
     fields: ['essay-title', 'essay-date', 'essay-readtime', 'essay-epigraph', 'essay-excerpt', 'essay-tech-topic', 'essay-extra-tags']
   });
   var now = new Date();
-  document.getElementById('essay-date').value = now.getFullYear() + '-' + pad2(now.getMonth() + 1) + '-' + pad2(now.getDate());
+  document.getElementById('essay-date').value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + String(now.getDate()).padStart(2, '0');
   document.getElementById('essay-readtime').value = '4';
+  document.getElementById('essay-visible').value = 'true';
   renderEssayTaxonomy(_defaultEssayTagForCurrentFilter());
 }
 
@@ -71,6 +72,7 @@ async function editEssayMeta(slug) {
 function _fillEssayMetaForm(essay) {
   var form = document.getElementById('essay-form');
   document.getElementById('essay-edit-slug').value = essay.slug;
+  document.getElementById('essay-visible').value = essay.visible === false ? 'false' : 'true';
   document.getElementById('essay-title').value = essay.title;
   document.getElementById('essay-tag').value = essay.tag || '';
   document.getElementById('essay-date').value = essay.date || '';
@@ -88,6 +90,7 @@ async function saveEssay() {
     var editSlug = document.getElementById('essay-edit-slug').value;
     var item = {
       slug: editSlug || genSlug(),
+      visible: document.getElementById('essay-visible').value === 'true',
       title: document.getElementById('essay-title').value,
       tag: syncEssayTagFromTaxonomy(),
       date: document.getElementById('essay-date').value,

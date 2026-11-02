@@ -1,6 +1,17 @@
 """Essay-specific projections shared by routes and static generation."""
 
 
+def is_essay_visible(essay):
+    """Legacy essays remain listed unless explicitly hidden."""
+    return essay.get('visible', True) is not False
+
+
+def validate_visibility(updates):
+    if 'visible' in updates and not isinstance(updates['visible'], bool):
+        return 'visible 必须为布尔值'
+    return None
+
+
 class EssayService:
     """Apply essay domain rules without coupling callers to JSON storage."""
 
@@ -18,6 +29,8 @@ class EssayService:
         visible = []
         all_tags = set()
         for essay in essays:
+            if not is_essay_visible(essay):
+                continue
             password_protected = bool(get_password(essay.get('slug', '')))
             for tag in essay.get('tag', '').replace(',', '，').split('，'):
                 tag = tag.strip()
