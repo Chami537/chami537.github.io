@@ -1,0 +1,14 @@
+.stories-admin-card { display:flex; gap:20px; }
+.stories-admin-cover { width:70px; height:105px; flex-shrink:0; background:var(--bg); overflow:hidden; display:grid; place-items:center; font-size:12px; overflow-wrap:anywhere; }
+.stories-admin-cover img { width:100%; height:100%; object-fit:contain; }
+.stories-admin-content { min-width:0; flex:1; overflow-wrap:anywhere; }
+.stories-admin-content h3 { margin:0; }
+.stories-admin-summary { display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:2; overflow:hidden; }
+.stories-admin-content .card-actions { flex-wrap:wrap; }
+.stories-warning { color:var(--danger); font-size:12px; }
+#story-form { scroll-margin-top:75px; }
+#story-cover-preview { width:100px; height:150px; object-fit:contain; margin-top:8px; }
+#story-form input[type=checkbox] { width:auto; }
+#story-form .stories-checks { display:flex; gap:20px; flex-wrap:wrap; }
+#story-form small { color:var(--muted); }
+@media(max-width:600px) { .stories-admin-card { gap:12px; } }

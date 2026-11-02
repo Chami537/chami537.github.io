@@ -11,6 +11,7 @@
   --c4: #00c853; /* green */
   --c5: #9c27b0; /* purple */
   --c6: #ff6d00; /* orange */
+  --c7: #4b0082; /* indigo */
   --line: #e0dcd5;
   --muted: #999;
 }
@@ -258,6 +259,7 @@ section[id]:last-of-type { border-bottom: none; }
 .section-tag.yellow { color: var(--c3); border-color: var(--c3); }
 .section-tag.purple { color: var(--c5); border-color: var(--c5); }
 .section-tag.orange { color: var(--c6); border-color: var(--c6); }
+.section-tag.indigo { color: var(--c7); border-color: var(--c7); }
 .section-note {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 14px;

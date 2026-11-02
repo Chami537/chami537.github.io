@@ -210,6 +210,7 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
             'assets/js/admin-photo-stories.js',
         )),
     ]
+    configs.append(('shelf.html', ('assets/css/index-stories.css',), ('assets/js/index-stories.js', 'assets/js/shelf.js')))
     for html_fn, css_fns, js_fns in configs:
         for css_fn in css_fns:
             (tmp_path / css_fn).parent.mkdir(parents=True, exist_ok=True)

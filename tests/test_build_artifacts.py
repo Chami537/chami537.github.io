@@ -26,3 +26,14 @@ def test_archive_exists_after_build():
 
 def test_map_exists_after_build():
     _assert_artifact('map.html', '<title>Map — Chami</title>')
+
+
+def test_stories_live_on_homepage_and_legacy_page_redirects():
+    import json
+    _assert_artifact('shelf.html', '<title>留下来的故事 — Chami</title>')
+    _assert_artifact('shelf.html', 'content="0;url=index.html#stories"')
+    assert 'https://chami537.github.io/shelf.html' not in (ROOT / 'sitemap.xml').read_text(encoding='utf-8')
+    _assert_artifact('index.html', 'id="stories-list"')
+    assert isinstance(json.loads((ROOT / 'data/stories.json').read_text(encoding='utf-8')), list)
+    for name in ('assets/js/index-stories.js', 'assets/js/shelf.js', 'assets/css/index-stories.css'):
+        assert (ROOT / name).is_file()

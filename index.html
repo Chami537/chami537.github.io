@@ -20,12 +20,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="assets/css/index-foundation.css?v=1788883151">
-<link rel="stylesheet" href="assets/css/index-work.css?v=1788883151">
-<link rel="stylesheet" href="assets/css/index-photos.css?v=1788883151">
-<link rel="stylesheet" href="assets/css/index-content.css?v=1788883151">
-<link rel="stylesheet" href="assets/css/index-essays.css?v=1788883151">
-<link rel="stylesheet" href="assets/css/index-polish.css?v=1788883151">
+<link rel="stylesheet" href="assets/css/index-foundation.css?v=1793541823">
+<link rel="stylesheet" href="assets/css/index-work.css?v=1793541823">
+<link rel="stylesheet" href="assets/css/index-photos.css?v=1793541823">
+<link rel="stylesheet" href="assets/css/index-content.css?v=1793541823">
+<link rel="stylesheet" href="assets/css/index-essays.css?v=1793541823">
+<link rel="stylesheet" href="assets/css/index-stories.css?v=1793541823">
+<link rel="stylesheet" href="assets/css/index-polish.css?v=1793541823">
 <script>
   var _saved = localStorage.getItem('theme');
   if (_saved === 'dark' || ((_saved === 'system' || !_saved) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -45,6 +46,7 @@
       <a href="#stack">Stack</a>
       <a href="#essays">Essays</a>
       <a href="#photos">Photos</a>
+      <a href="#stories" id="stories-nav" hidden>Stories</a>
       <a href="#music">Music</a>
       <a href="#contact">Contact</a>
     </div>
@@ -90,7 +92,7 @@
 
   <section id="photos">
     <div class="section-header">
-      <div class="section-tag blue">PHOTOGRAPHY</div>
+      <div class="section-tag green">PHOTOGRAPHY</div>
       <div class="view-toggle">
         <span id="btn-grid" class="active" onclick="switchView('grid')">Grid</span>
         <span style="color:#ccc;margin:0 4px;">/</span>
@@ -105,8 +107,15 @@
     <div id="photo-map-container"></div>
   </section>
 
+  <section id="stories" hidden>
+    <div class="section-tag blue">STORIES</div>
+    <div class="shelf-heading"><h2>留下来的故事</h2></div>
+    <p class="shelf-intro">看过的故事很多，这些留了下来。</p>
+    <div class="shelf-grid" id="stories-list"></div>
+  </section>
+
   <section id="music">
-    <div class="section-tag green">LISTENING</div>
+    <div class="section-tag indigo">LISTENING</div>
     <div class="music-list skeleton-loading" id="music-list">
       <div class="music-row" data-src="music/AYANE - ごめんね.mp3"><span class="idx">01</span><span class="title">ごめんね</span><span class="artist">AYANE</span></div>
       <div class="music-row" data-src="music/The Beatles - Let It Be (Remastered).mp3"><span class="idx">02</span><span class="title">Let It Be (Remastered)</span><span class="artist">The Beatles</span></div>
@@ -174,15 +183,16 @@
 </footer>
 
 <script>document.getElementById("copyright-year").textContent = new Date().getFullYear();</script>
-<script defer src="assets/js/theme.js?v=1788883151"></script>
-<script defer src="assets/js/index-core.js?v=1788883151"></script>
-<script defer src="assets/js/index-essays.js?v=1788883151"></script>
-<script defer src="assets/js/index-photo-gallery.js?v=1788883151"></script>
-<script defer src="assets/js/index-photo-map.js?v=1788883151"></script>
-<script defer src="assets/js/index-content.js?v=1788883151"></script>
-<script defer src="assets/js/index-support.js?v=1788883151"></script>
-<script defer src="assets/js/index-lightbox.js?v=1788883151"></script>
-<script defer src="assets/js/index.js?v=1788883151"></script>
+<script defer src="assets/js/theme.js?v=1793541823"></script>
+<script defer src="assets/js/index-core.js?v=1793541823"></script>
+<script defer src="assets/js/index-essays.js?v=1793541823"></script>
+<script defer src="assets/js/index-photo-gallery.js?v=1793541823"></script>
+<script defer src="assets/js/index-photo-map.js?v=1793541823"></script>
+<script defer src="assets/js/index-content.js?v=1793541823"></script>
+<script defer src="assets/js/index-support.js?v=1793541823"></script>
+<script defer src="assets/js/index-lightbox.js?v=1793541823"></script>
+<script defer src="assets/js/index-stories.js?v=1793541823"></script>
+<script defer src="assets/js/index.js?v=1793541823"></script>
 
 </body>
 </html>

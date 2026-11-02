@@ -13,12 +13,12 @@ def _make_minimal_site(root):
         'about.json': '{}', 'contact.json': '[]', 'essays.json': '[]',
         'friends.json': '[]', 'music.json': '[]', 'photos.json': '[]',
         'photo_stories.json': '[]', 'stack.json': '[]', 'tracks.json': '[]',
-        'work.json': '[]',
+        'work.json': '[]', 'stories.json': '[]',
     }
     for name, content in datasets.items():
         _write_json(root / 'data' / name, content)
     for relative in (
-        'admin.html', 'index.html', 'templates/essay.html',
+        'admin.html', 'index.html', 'shelf.html', 'templates/essay.html',
         'assets/js/admin-api.js', 'assets/js/admin-ui.js',
         'assets/js/admin-tabs.js', 'assets/js/admin-health.js',
         'assets/css/admin-foundation.css', 'assets/css/admin-health.css',

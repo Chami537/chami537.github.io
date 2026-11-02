@@ -8,43 +8,30 @@ function getSectionTop(s) {
   return s.getBoundingClientRect().top + scrollY;
 }
 
-function progressColor(t, h) {
-  var colors = ['#ff4d4d', '#ff6d00', '#ffb800', '#0066ff', '#00c853', '#9c27b0'];
-  if (h <= 0 || secs.length < 2) return colors[0];
-  var stops = Array.from(secs).map(function(s) { return (getSectionTop(s) - 200) / h; });
-  if (t < stops[0]) return colors[0];
-  for (var i = 0; i < stops.length - 1; i++) {
-    if (t >= stops[i] && t < stops[i+1]) {
-      var seg = (t - stops[i]) / (stops[i+1] - stops[i]);
-      return lerpColor(colors[i], colors[Math.min(i+1, colors.length-1)], seg);
-    }
-  }
-  return colors[colors.length - 1];
-}
-
-function lerpColor(a, b, t) {
-  var ah = parseInt(a.slice(1), 16), bh = parseInt(b.slice(1), 16);
-  var ar = (ah >> 16) & 0xff, ag = (ah >> 8) & 0xff, ab = ah & 0xff;
-  var br = (bh >> 16) & 0xff, bg = (bh >> 8) & 0xff, bb = bh & 0xff;
-  return 'rgb(' + Math.round(ar + (br - ar) * t) + ',' + Math.round(ag + (bg - ag) * t) + ',' + Math.round(ab + (bb - ab) * t) + ')';
-}
-
 function updateProgress() {
   var h = document.documentElement.scrollHeight - innerHeight; if (h > 0) {
     var t = scrollY / h;
     bar.style.width = (t * 100) + '%';
-    bar.style.background = progressColor(t, h);
   } else {
     bar.style.width = '0';
   }
 
   var cur = '';
-  for (var i = 0; i < secs.length; i++) {
-    if (scrollY >= getSectionTop(secs[i]) - 200) cur = secs[i].id;
+  var visibleSections = Array.from(secs).filter(function(s) { return !s.hidden; });
+  var currentSection = visibleSections[0];
+  for (var i = 0; i < visibleSections.length; i++) {
+    if (scrollY >= getSectionTop(visibleSections[i]) - 200) {
+      currentSection = visibleSections[i];
+      cur = currentSection.id;
+    }
   }
   if (scrollY + innerHeight >= document.documentElement.scrollHeight - 2) {
-    cur = secs[secs.length - 1].id;
+    currentSection = visibleSections[visibleSections.length - 1];
+    cur = currentSection ? currentSection.id : '';
   }
+  // Read the actual label color so the progress bar and current section agree.
+  var tag = currentSection && currentSection.querySelector('.section-tag');
+  if (tag) bar.style.background = getComputedStyle(tag).color;
   for (var i = 0; i < nlinks.length; i++) {
     nlinks[i].classList.toggle('active', nlinks[i].getAttribute('href') === '#' + cur);
   }

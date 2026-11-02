@@ -36,7 +36,7 @@ _PUBLIC_DATA_FILES = frozenset({
     'about.json', 'contact.json', 'essays_public.json', 'friends.json',
     'music.json', 'photos.json', 'photo_stories.json', 'stack.json',
     'tracks.json', 'work.json', 'giscus.css', 'giscus-dark.css',
-    'support.json',
+    'support.json', 'stories.json',
 })
 _STATIC_MAX_AGE = 31536000
 
@@ -123,8 +123,8 @@ def serve_tracks(filename):
     return send_from_directory(os.path.join(BASE_DIR, 'tracks'), filename, max_age=_STATIC_MAX_AGE)
 
 
-# Routes for root-level generated files.
-_ROOTS = ['rss.xml', 'sitemap.xml', 'archive.html', 'map.html']
+# Routes for root-level public pages and generated feeds.
+_ROOTS = ['rss.xml', 'sitemap.xml', 'archive.html', 'map.html', 'shelf.html']
 for _f in _ROOTS:
     _ep = f'serve_{_f.replace(".", "_")}'
     app.add_url_rule(f'/{_f}', _ep, lambda _f=_f: send_from_directory(BASE_DIR, _f, max_age=300))

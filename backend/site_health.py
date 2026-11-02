@@ -11,6 +11,7 @@ from backend.health_checks.report import (
     unavailable as _unavailable,
 )
 from backend.health_checks.security import check_security
+from backend.health_checks.stories import check_stories
 
 
 _DATA_TYPES = {
@@ -24,10 +25,12 @@ _DATA_TYPES = {
     'stack.json': list,
     'tracks.json': list,
     'work.json': list,
+    'stories.json': list,
 }
 _CORE_FILES = (
     'admin.html',
     'index.html',
+    'shelf.html',
     'templates/essay.html',
     'assets/js/admin-api.js',
     'assets/js/admin-ui.js',
@@ -259,6 +262,7 @@ def run_site_health(base_dir, has_password):
         _check_media(root, data.get('music.json'), data.get('tracks.json')),
         _check_orphans(root, data.get('photos.json'), data.get('music.json'), data.get('tracks.json')),
         _check_links(data),
+        check_stories(root, data.get('stories.json'), data.get('essays.json'), has_password),
         _check_build_files(root),
         check_security(root, data.get('essays.json'), has_password, _SLUG_RE),
     ]

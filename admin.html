@@ -5,12 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' cdn.staticfile.net cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src-elem 'self' 'unsafe-inline' cdn.staticfile.net cdn.jsdelivr.net https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' cdn.staticfile.net cdn.jsdelivr.net https://cdnjs.cloudflare.com; font-src 'self' cdn.staticfile.net; img-src 'self' data: blob: https:; connect-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com">
 <title>Chami — Site Admin</title>
-<link rel="stylesheet" href="assets/css/admin-foundation.css?v=1788793186">
-<link rel="stylesheet" href="assets/css/admin-photo.css?v=1788793186">
-<link rel="stylesheet" href="assets/css/admin-git.css?v=1788793186">
-<link rel="stylesheet" href="assets/css/admin-essay.css?v=1788793186">
-<link rel="stylesheet" href="assets/css/admin-health.css?v=1788793186">
-<link rel="stylesheet" href="assets/css/admin-ai.css?v=1788793186">
+<link rel="stylesheet" href="assets/css/admin-foundation.css?v=1793597948">
+<link rel="stylesheet" href="assets/css/admin-photo.css?v=1793597948">
+<link rel="stylesheet" href="assets/css/admin-git.css?v=1793597948">
+<link rel="stylesheet" href="assets/css/admin-essay.css?v=1793597948">
+<link rel="stylesheet" href="assets/css/admin-health.css?v=1793597948">
+<link rel="stylesheet" href="assets/css/admin-stories.css?v=1793597948">
+<link rel="stylesheet" href="assets/css/admin-ai.css?v=1793597948">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.11.1/styles/github.min.css">
 <script>
   var _saved = localStorage.getItem('theme');
@@ -46,6 +47,7 @@
   <button class="tab-btn" data-tab="photos" onclick="switchTab('photos')">Photos</button>
   <button class="tab-btn" data-tab="contact" onclick="switchTab('contact')">Contact</button>
   <button class="tab-btn" data-tab="friends" onclick="switchTab('friends')">Friends</button>
+  <button class="tab-btn" data-tab="stories" onclick="switchTab('stories')">Stories 故事</button>
   <button class="tab-btn" data-tab="music" onclick="switchTab('music')">Music</button>
   <button class="tab-btn" data-tab="tracks" onclick="switchTab('tracks')">Tracks</button>
   <button class="tab-btn" data-tab="stack" onclick="switchTab('stack')">Stack</button>
@@ -433,6 +435,28 @@
     </div>
   </div>
 
+  <!-- ═══ STORIES ═══ -->
+  <div id="tab-stories" class="tab-panel">
+    <div class="section-header"><h2>留下来的故事</h2><button class="btn btn-primary" onclick="showStoryForm()">添加作品</button></div>
+    <p>所有收录作品按排序混合展示在主页，推荐语完整显示。<a href="index.html#stories" target="_blank" rel="noopener">预览故事栏目 →</a></p>
+    <p>保存后可在本地预览，按现有 Git 发布流程发布后公开。</p>
+    <div id="stories-admin-list" aria-live="polite"></div>
+    <form id="story-form" class="card" style="display:none;" onsubmit="saveStory(event)" oninput="markDirty()">
+      <h3 id="story-form-title">添加作品</h3>
+      <input id="story-id" type="hidden"><input id="story-cover" type="hidden">
+      <div class="form-group"><label for="story-title">作品名称 *</label><input id="story-title" required maxlength="120"></div>
+      <div class="form-group"><label for="story-type">类型 *</label><select id="story-type"><option value="movie">电影</option><option value="series">电视剧</option><option value="novel">小说</option></select></div>
+      <div class="form-group"><label for="story-creator">导演 / 作者（选填）</label><input id="story-creator" maxlength="120"></div>
+      <div class="form-group"><label for="story-file">封面（选填）</label><input id="story-file" type="file" onchange="previewSelectedStoryCover()" accept="image/jpeg,image/png,image/webp,image/gif"><img id="story-cover-preview" alt="当前封面" hidden><br><button type="button" class="btn btn-sm" onclick="storyField('cover').value='';storyField('file').value='';previewStoryCover();markDirty()">移除封面</button><br><small>支持 JPEG、PNG、WebP、GIF，最多 25MB。未使用的封面文件将保留，可在健康检查中查看。</small></div>
+      <div class="form-group"><label for="story-recommendation">为什么留下这个故事？ *</label><textarea id="story-recommendation" required maxlength="1000" rows="5" placeholder="建议 50–150 字，写下你的推荐理由或它对你的影响。"></textarea></div>
+      <div class="form-group stories-checks"><label><input id="story-favorite" type="checkbox"> 最喜欢</label></div>
+      <div class="form-group"><label for="story-rating">我的评分（选填，1–5 分）</label><input id="story-rating" type="number" min="1" max="5" step="0.5"></div>
+      <div class="form-group"><label for="story-finished_on">看完日期（选填）</label><input id="story-finished_on" type="date"></div>
+      <div class="form-group"><label for="story-essay_slug">关联随笔（选填，仅公开且未加密的文章）</label><select id="story-essay_slug"><option value="">不关联随笔</option></select></div>
+      <div class="form-actions"><button id="story-save" type="submit" class="btn btn-primary">保存作品</button><button type="button" class="btn" onclick="hidePanel('story-form')">取消</button></div>
+    </form>
+  </div>
+
   <!-- ═══ MUSIC ═══ -->
   <div id="tab-music" class="tab-panel">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -586,44 +610,45 @@
 
 <!-- Heavy editor dependencies load only when an editor needs them:
      https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js -->
-<script defer src="assets/js/theme.js?v=1788793186"></script>
-<script defer src="assets/js/admin-core.js?v=1788793186"></script>
-<script defer src="assets/js/admin-api.js?v=1788793186"></script>
-<script defer src="assets/js/admin-ui.js?v=1788793186"></script>
-<script defer src="assets/js/admin-ai-workflow.js?v=1788793186"></script>
-<script defer src="assets/js/admin-ai-tools.js?v=1788793186"></script>
-<script defer src="assets/js/admin-dashboard.js?v=1788793186"></script>
-<script defer src="assets/js/code-rendering.js?v=1788793186"></script>
-<script defer src="assets/js/admin-editor-rendering.js?v=1788793186"></script>
-<script defer src="assets/js/admin-git.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-work.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-social.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-music.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-stack.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-tag-state.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-taxonomy.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-tag-order.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-tag-actions.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-security.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-about.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-tracks.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-readme.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-meta.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-content.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-local-sync.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-formatting.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essay-media.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-ai.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-essays-view.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-ai-tools.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-photo-list.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-photo-tags.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-photo-metadata.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-photo-files.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-photo-stories.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-upload.js?v=1788793186"></script>
-<script type="text/plain" data-lazy-src="assets/js/admin-health.js?v=1788793186"></script>
-<script defer src="assets/js/admin-tabs.js?v=1788793186"></script>
+<script defer src="assets/js/theme.js?v=1793597948"></script>
+<script defer src="assets/js/admin-core.js?v=1793597948"></script>
+<script defer src="assets/js/admin-api.js?v=1793597948"></script>
+<script defer src="assets/js/admin-ui.js?v=1793597948"></script>
+<script defer src="assets/js/admin-ai-workflow.js?v=1793597948"></script>
+<script defer src="assets/js/admin-ai-tools.js?v=1793597948"></script>
+<script defer src="assets/js/admin-dashboard.js?v=1793597948"></script>
+<script defer src="assets/js/code-rendering.js?v=1793597948"></script>
+<script defer src="assets/js/admin-editor-rendering.js?v=1793597948"></script>
+<script defer src="assets/js/admin-git.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-work.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-social.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-stories.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-music.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-stack.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-tag-state.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-taxonomy.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-tag-order.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-tag-actions.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-security.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-about.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-tracks.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-readme.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-meta.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-content.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-local-sync.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-formatting.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essay-media.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-ai.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-essays-view.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-ai-tools.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-photo-list.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-photo-tags.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-photo-metadata.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-photo-files.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-photo-stories.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-upload.js?v=1793597948"></script>
+<script type="text/plain" data-lazy-src="assets/js/admin-health.js?v=1793597948"></script>
+<script defer src="assets/js/admin-tabs.js?v=1793597948"></script>
 <script>document.addEventListener('DOMContentLoaded', function() { refreshGitStatus(); loadDashboard(); });</script>
 
 <!-- Password Dialog -->

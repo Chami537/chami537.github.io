@@ -12,6 +12,7 @@ var _adminTabScripts = {
   contact: ['admin-social.js'],
   friends: ['admin-social.js'],
   music: ['admin-music.js'],
+  stories: ['admin-stories.js'],
   stack: ['admin-stack.js'],
   tracks: ['admin-tracks.js'],
   readme: ['admin-readme.js'],
@@ -88,6 +89,7 @@ async function _loadTab(name) {
   if (name === 'friends') loadFriends();
   if (name === 'tracks') loadTracks();
   if (name === 'music') loadMusic();
+  if (name === 'stories') loadStories();
   if (name === 'stack') loadStack();
   if (name === 'git') refreshGitStatus();
   if (name === 'readme') loadReadme();

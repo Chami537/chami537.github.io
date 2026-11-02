@@ -138,7 +138,7 @@ def test_build_command_skips_unchanged_essay(build_site, monkeypatch):
     assert output.stat().st_mtime_ns == 200_000_000_000
 
 
-@pytest.mark.parametrize('page', ['index.html', 'admin.html'])
+@pytest.mark.parametrize('page', ['index.html', 'admin.html', 'shelf.html'])
 def test_cache_bust_preserves_unchanged_entry_page(tmp_path, page):
     write_input(tmp_path / 'assets/js/example.js', '// script')
     output = tmp_path / page

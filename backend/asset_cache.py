@@ -17,7 +17,7 @@ _ASSET_REFERENCE_RE = re.compile(
 
 def cache_bust_assets(base_dir):
     """Version every local CSS/JS asset actually referenced by each entry page."""
-    for html_filename in ('index.html', 'admin.html'):
+    for html_filename in ('index.html', 'admin.html', 'shelf.html'):
         html_path = os.path.join(base_dir, html_filename)
         if not os.path.exists(html_path):
             continue

@@ -1,0 +1,28 @@
+[
+  {
+    "title": "花束般的恋爱",
+    "creator": "坂元裕二",
+    "recommendation": "两个人因为相似的爱好而相遇，仿佛找到了世界上的另一个自己\n\n可那些曾经让彼此靠近的东西，最终没能抵挡生活悄无声息的改变\n\n这部电影没有刻意赋予爱情一个圆满的结局 其实 生活中的大部分感情本是如此\n\n相爱是真实的，渐行渐远也是真实的\n\n没有谁一定是错的，只是两个人最终走向了不同的方向\n\n花束终究会枯萎 但它也曾经绚烂的盛开过",
+    "cover": "images/stories/7259364295c544939ae72cabd9210b4a.jpg",
+    "finished_on": "2026-11-01",
+    "essay_slug": "",
+    "type": "movie",
+    "favorite": true,
+    "featured": true,
+    "rating": 5,
+    "id": 1
+  },
+  {
+    "title": "献给阿尔吉侬的花束",
+    "creator": "",
+    "recommendation": "你为何 给予了我心呢\n\n你为何 绘出了我的双目呢\n\n不见边际的云彩漂浮于空 将清风吞噬\n\n我这双眼却仍若见梦",
+    "cover": "images/stories/2864998772e24b7a9430d4b7c9587d98.jpg",
+    "finished_on": "2026-10-23",
+    "essay_slug": "",
+    "type": "novel",
+    "favorite": false,
+    "featured": false,
+    "rating": 5,
+    "id": 2
+  }
+]

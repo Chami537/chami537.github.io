@@ -218,6 +218,7 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
         assert page.locator('.essay-ai-apply').count() == 0
 
         page.locator('[data-ai-task="title"]').click()
+        page.locator('.essay-ai-title-choice').first.wait_for(state='visible')
         assert page.locator('.essay-ai-title-choice').count() == 3
         assert page.locator('#essay-ai-result img').count() == 0
         page.locator('.essay-ai-title-choice').nth(1).click()
@@ -246,10 +247,11 @@ def test_admin_ai_suggestions_require_explicit_safe_apply(live_server, browser):
 
 
 def test_public_homepage_shell_loads_essay_surface(live_server, browser):
+    from playwright.sync_api import expect
     page = browser.new_page()
     try:
         page.goto(live_server + '/index.html', wait_until='domcontentloaded')
-        assert page.locator('#work-container').get_attribute('aria-busy') == 'false'
+        expect(page.locator('#work-container')).to_have_attribute('aria-busy', 'false')
         assert page.locator('#essays-list').count() == 1
         assert page.locator('#work-container .num').all_text_contents() == ['01', '02', '03']
         assert page.locator('script[src*="index-essays.js"]').count() == 1
@@ -344,6 +346,7 @@ def test_admin_dashboard_photo_story_and_music_tabs_render(live_server, browser)
 
 
 def test_admin_ai_tools_preview_before_applying_to_forms(live_server, browser):
+    from playwright.sync_api import expect
     page = browser.new_page()
     writes = []
 
@@ -386,7 +389,7 @@ def test_admin_ai_tools_preview_before_applying_to_forms(live_server, browser):
         page.locator('#about-content').fill('原始简介')
         page.locator('button', has_text='AI 优化简介').click()
         page.locator('#admin-ai-copy-dialog').wait_for(state='visible')
-        assert page.locator('.admin-ai-copy-option').count() == 2
+        expect(page.locator('.admin-ai-copy-option')).to_have_count(2)
         page.locator('.admin-ai-copy-option .btn').first.click()
         assert page.locator('#about-content').input_value() == 'about候选文案1'
         assert writes == []
@@ -396,7 +399,7 @@ def test_admin_ai_tools_preview_before_applying_to_forms(live_server, browser):
         page.locator('#work-title').fill('项目')
         page.locator('#work-desc').fill('原始描述')
         page.locator('button', has_text='AI 优化描述').click()
-        assert page.locator('.admin-ai-copy-option').count() == 3
+        expect(page.locator('.admin-ai-copy-option')).to_have_count(3)
         page.locator('.admin-ai-copy-option .btn').nth(1).click()
         assert page.locator('#work-desc').input_value() == 'project候选文案2'
         assert writes == []
@@ -412,7 +415,7 @@ def test_admin_ai_tools_preview_before_applying_to_forms(live_server, browser):
           renderStoryEditor();
         """)
         page.locator('#story-editor-list button', has_text='AI 润色').click()
-        assert page.locator('.admin-ai-copy-option').count() == 3
+        expect(page.locator('.admin-ai-copy-option')).to_have_count(3)
         page.locator('.admin-ai-copy-option .btn').nth(2).click()
         assert page.evaluate("_storyData[0].name") == '原名'
         assert page.evaluate("_storyData[0].caption") == 'photo_story候选文案3'
@@ -579,5 +582,192 @@ def test_archive_navigation_shows_essay_toc_on_desktop(live_server, browser):
         assert page.locator('#essay-toc-list a').count() == page.locator(
             '.essay-body h1, .essay-body h2, .essay-body h3'
         ).count()
+    finally:
+        page.close()
+
+
+def test_stories_admin_crud_sort_and_failed_save_preserves_form(live_server, browser, data_backup, monkeypatch):
+    from backend.repositories import repository_for
+    from playwright.sync_api import expect
+    repository_for('stories.json').save([])
+    # The real write path must trust the ephemeral test server origin.
+    monkeypatch.setitem(app.config, 'TRUSTED_ORIGINS', (*app.config['TRUSTED_ORIGINS'], live_server))
+    page = browser.new_page()
+    page.route('**/api/essays', lambda route: route.fulfill(json=[
+        {'slug':'secret','title':'加密随笔','password_set':True},
+        {'slug':'hidden','title':'隐藏随笔','hidden':True},
+    ]))
+    try:
+        page.goto(live_server + '/', wait_until='domcontentloaded')
+        page.locator('[data-tab="stories"]').click()
+        page.locator('#stories-admin-list').get_by_text('还没有收录作品，添加第一部喜欢的故事吧。').wait_for()
+        for title, kind in [('电影甲','movie'), ('电视剧乙','series'), ('小说丙','novel')]:
+            page.get_by_role('button', name='添加作品', exact=True).click()
+            assert page.locator('#story-essay_slug option').count() == 1
+            page.locator('#story-title').fill(title)
+            page.locator('#story-type').select_option(kind)
+            page.locator('#story-recommendation').fill('留在心里的故事 <script>bad()</script>')
+            assert page.locator('#story-featured').count() == 0
+            page.locator('#story-save').click()
+            page.locator('#story-form').wait_for(state='hidden')
+            page.locator('#stories-admin-list h3', has_text=title).wait_for()
+        page.get_by_role('button', name='上移 小说丙', exact=True).click()
+        expect(page.locator('#stories-admin-list h3').nth(1)).to_have_text('小说丙')
+        page.get_by_role('button', name='编辑 电影甲', exact=True).click()
+        page.locator('#story-title').fill('电影甲（修改）')
+        page.locator('#story-rating').fill('4.5')
+        # Server validation must preserve the form on a failed request.
+        page.route('**/api/stories/*', lambda route: route.fulfill(status=400, json={'error':'保存失败测试'}) if route.request.method == 'PUT' else route.continue_())
+        page.locator('#story-save').click()
+        page.get_by_text('保存失败测试', exact=True).wait_for()
+        assert page.locator('#story-title').input_value() == '电影甲（修改）'
+        assert page.locator('#story-form').is_visible()
+        page.unroute('**/api/stories/*')
+        page.locator('#story-save').click()
+        page.locator('#story-form').wait_for(state='hidden')
+        page.locator('#stories-admin-list h3', has_text='电影甲（修改）').wait_for()
+        page.reload(wait_until='domcontentloaded')
+        page.locator('[data-tab="stories"]').click()
+        page.locator('#stories-admin-list h3', has_text='电影甲（修改）').wait_for()
+        assert page.locator('#stories-admin-list h3').all_text_contents() == ['电影甲（修改）','小说丙','电视剧乙']
+        page.evaluate('window.confirmDialog = async function() { return true; }')
+        page.get_by_role('button', name='删除 电视剧乙', exact=True).click()
+        expect(page.locator('#stories-admin-list h3')).to_have_count(2)
+        assert len(repository_for('stories.json').list()) == 2
+    finally:
+        page.evaluate('if (typeof markClean === "function") markClean()')
+        page.close()
+
+
+def test_stories_gallery_mixed_order_expansion_themes_and_mobile(live_server, browser):
+    from playwright.sync_api import expect
+
+    sample = [
+        {'id': 1, 'title': '电影 <script>bad()</script>', 'type': 'movie',
+         'recommendation': '第一行\n第二行\n\n第三行\n\n第四行\n第五行',
+         'featured': True, 'favorite': True, 'rating': 4.5,
+         'cover': 'images/stories/missing.png', 'essay_slug': 'open'},
+        {'id': 2, 'title': '电视剧', 'type': 'series', 'recommendation': '这是一部电视剧。',
+         'featured': False, 'essay_slug': 'private'},
+        {'id': 3, 'title': '小说', 'type': 'novel', 'recommendation': '这是一部小说。'},
+    ] + [{'id': i, 'title': '作品' + str(i), 'type': 'movie', 'recommendation': '长' * 180}
+         for i in range(4, 9)]
+    page = browser.new_page(viewport={'width': 390, 'height': 844}, color_scheme='light')
+    errors = []
+    page.on('pageerror', lambda e: errors.append(str(e)))
+    page.route('**/data/stories.json*', lambda route: route.fulfill(json=sample))
+    page.route('**/data/essays_public.json*', lambda route: route.fulfill(json={'essays': [
+        {'slug': 'open', 'title': '公开文章'}, {'slug': 'private', 'password_protected': True},
+    ]}))
+    try:
+        page.goto(live_server + '/index.html', wait_until='domcontentloaded')
+        page.locator('#stories').wait_for(state='visible')
+        assert page.locator('#stories-list .shelf-card').count() == 8
+        assert page.locator('#stories-list .shelf-title').all_text_contents() == [
+            s['title'] for s in sample
+        ]
+        assert page.locator('#stories-list script').count() == 0
+        assert page.locator('#stories-nav').is_visible()
+        assert page.locator('#stories .shelf-all, #stories .shelf-filters, #stories a[href*=shelf]').count() == 0
+        assert page.locator('#stories-list').evaluate("el => getComputedStyle(el).gridTemplateColumns.split(' ').length") == 2
+        cover = page.locator('#story-1 .shelf-cover').bounding_box()
+        title = page.locator('#story-1 .shelf-title').bounding_box()
+        assert 120 <= cover['width'] <= 180
+        assert title['y'] >= cover['y'] + cover['height']
+        assert 'Noto Serif SC' in page.locator('#story-1 .shelf-excerpt').evaluate('el => getComputedStyle(el).fontFamily')
+        panel = page.locator('#stories-list-detail')
+        assert panel.is_hidden()
+        button = page.locator('#story-button-1')
+        assert button.get_attribute('aria-controls') == 'stories-list-detail'
+        button.focus()
+        page.keyboard.press('Enter')
+        assert button.get_attribute('aria-expanded') == 'true'
+        panel.wait_for(state='visible')
+        expect(panel).to_have_class('shelf-expanded')
+        assert panel.is_visible()
+        assert panel.locator('.shelf-recommendation p').all_text_contents() == sample[0]['recommendation'].split('\n\n')
+        assert '我的评分 4.5 / 5' in panel.inner_text()
+        assert panel.locator('.shelf-essay').get_attribute('href') == 'essays/open.html'
+        assert panel.bounding_box()['y'] < page.locator('#story-3').bounding_box()['y']
+        cover = page.locator('#story-1 .shelf-cover').bounding_box()
+        assert panel.bounding_box()['y'] >= cover['y'] + cover['height']
+        assert panel.bounding_box()['width'] > cover['width'] * 2
+        page.locator('#story-button-2').click()
+        expect(panel).to_have_class('shelf-expanded')
+        assert button.get_attribute('aria-expanded') == 'false'
+        assert panel.locator('h3').inner_text() == '电视剧'
+        assert panel.locator('.shelf-essay').count() == 0
+        panel.locator('.shelf-close').click()
+        panel.wait_for(state='hidden')
+        assert panel.is_hidden()
+        assert page.locator('#story-button-2').evaluate('el => document.activeElement === el')
+        page.keyboard.press('Space')
+        panel.wait_for(state='visible')
+        expect(panel).to_have_class('shelf-expanded')
+        assert panel.is_visible()
+        page.keyboard.press('Enter')
+        panel.wait_for(state='hidden')
+        assert panel.is_hidden()
+        assert '/index.html' in page.url and '/shelf.html' not in page.url
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.evaluate("window.scrollTo({top: 0, behavior: 'instant'})")
+        page.evaluate("localStorage.setItem('theme','light'); _applyTheme('light','light')")
+        page.locator('#theme-btn').click()
+        assert page.locator('html').evaluate("el => el.classList.contains('dark')") is False
+        page.evaluate("localStorage.setItem('theme','system')")
+        page.locator('#theme-btn').click()
+        assert page.locator('html').evaluate("el => el.classList.contains('dark')") is True
+        page.set_viewport_size({'width': 1280, 'height': 900})
+        assert page.locator('#stories-list').evaluate("el => getComputedStyle(el).gridTemplateColumns.split(' ').length") == 3
+        assert 180 <= page.locator('#stories .shelf-cover').first.bounding_box()['width'] <= 220
+        page.locator('#story-button-4').click()
+        expect(panel).to_have_class('shelf-expanded')
+        assert panel.locator('.shelf-recommendation').inner_text() == sample[3]['recommendation']
+        assert panel.bounding_box()['width'] <= 620
+        assert panel.bounding_box()['y'] < page.locator('#story-7').bounding_box()['y']
+        assert panel.bounding_box()['y'] > page.locator('#story-6').bounding_box()['y']
+        page.set_viewport_size({'width': 390, 'height': 844})
+        expect(panel).to_have_css('order', '7')
+        assert panel.bounding_box()['y'] < page.locator('#story-5').bounding_box()['y']
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        page.set_viewport_size({'width': 320, 'height': 700})
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+        # Interrupt both opening and closing before the browser paints another frame.
+        page.evaluate("""() => {
+            document.getElementById('story-button-4').click();
+            document.getElementById('story-button-1').click();
+            document.getElementById('story-button-1').click();
+            document.getElementById('story-button-2').click();
+        }""")
+        expect(panel).to_have_class('shelf-expanded')
+        assert panel.is_visible()
+        assert panel.locator('h3').inner_text() == '电视剧'
+        assert page.locator('#stories .shelf-card-button[aria-expanded=true]').count() == 1
+        assert not panel.evaluate('el => el.inert')
+        assert panel.evaluate('el => el.style.height') == ''
+        page.emulate_media(reduced_motion='reduce')
+        panel.locator('.shelf-close').click()
+        assert panel.is_hidden()
+        page.locator('#story-button-1').click()
+        assert panel.is_visible()
+        assert panel.evaluate('el => el.getAnimations().length') == 0
+        assert not errors
+    finally:
+        page.close()
+
+
+def test_stories_empty_failure_and_legacy_redirect(live_server, browser):
+    page = browser.new_page()
+    page.route('**/data/stories.json*', lambda route: route.fulfill(status=500, body='failed'))
+    try:
+        page.goto(live_server + '/index.html', wait_until='domcontentloaded')
+        assert page.locator('#stories').is_hidden()
+        assert page.locator('#stories-nav').is_hidden()
+        page.unroute('**/data/stories.json*')
+        page.route('**/data/stories.json*', lambda route: route.fulfill(json=[]))
+        page.goto(live_server + '/shelf.html', wait_until='domcontentloaded')
+        page.wait_for_url('**/index.html#stories', wait_until='domcontentloaded')
+        assert page.locator('#stories').is_hidden()
+        assert page.locator('#stories-nav').is_hidden()
     finally:
         page.close()

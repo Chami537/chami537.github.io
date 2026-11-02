@@ -120,7 +120,7 @@ def _generate_rss(essays=None):
 def _generate_sitemap(essays=None):
     """Generate sitemap.xml (Jinja2 template)."""
     output_path = os.path.join(BASE_DIR, 'sitemap.xml')
-    if not _needs_regeneration(output_path, [os.path.join(DATA_DIR, 'essays.json'), os.path.join(BASE_DIR, 'templates', 'sitemap.xml')]):
+    if not _needs_regeneration(output_path, [os.path.join(DATA_DIR, 'essays.json'), os.path.join(BASE_DIR, 'shelf.html'), os.path.join(BASE_DIR, 'templates', 'sitemap.xml')]):
         return
     essays = ESSAY_REPOSITORY.list() if essays is None else essays
     enriched = strip_enrich(essays, 'lastmod', '%Y-%m-%d')
