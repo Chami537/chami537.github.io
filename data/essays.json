@@ -27,7 +27,8 @@
     "epigraph": "A Happy Day",
     "excerpt": "没什么好写的ww",
     "readTime": 1,
-    "pinned": false
+    "pinned": false,
+    "visible": false
   },
   {
     "slug": "essay-c8f2c3c1",
