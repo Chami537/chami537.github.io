@@ -149,3 +149,16 @@ def test_cache_bust_preserves_unchanged_entry_page(tmp_path, page):
 
     assert output.read_text(encoding='utf-8') == html
     assert output.stat().st_mtime_ns == 200_000_000_000
+
+
+def test_public_listing_refreshes_when_metadata_has_equal_timestamp(build_site):
+    root, essays = build_site
+    ssg._generate_public_essays(essays)
+    output = root / 'data/essays_public.json'
+    os.utime(output, (200, 200))
+    essays[0]['pinned'] = True
+    write_input(root / 'data/essays.json', json.dumps(essays), modified=200)
+
+    ssg._generate_public_essays(essays)
+
+    assert json.loads(output.read_text(encoding='utf-8'))['essays'][0]['pinned'] is True

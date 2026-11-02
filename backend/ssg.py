@@ -82,8 +82,9 @@ def _extract_first_image(md_text):
 def _needs_regeneration(output_path, input_paths):
     if not os.path.exists(output_path):
         return True
-    output_mtime = os.path.getmtime(output_path)
-    return any(os.path.exists(path) and os.path.getmtime(path) > output_mtime for path in input_paths)
+    output_mtime = os.stat(output_path).st_mtime_ns
+    # Equal filesystem timestamps cannot establish that an input is older.
+    return any(os.path.exists(path) and os.stat(path).st_mtime_ns >= output_mtime for path in input_paths)
 
 
 def template_dependencies(template_name):
