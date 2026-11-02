@@ -6,8 +6,9 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Keep the runner compatible with the pinned Playwright version.
   browser-smoke:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     env:
       BROWSER_SMOKE_REQUIRED: '1'
@@ -27,7 +28,7 @@ jobs:
 
   build:
     needs: browser-smoke
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       pages: write

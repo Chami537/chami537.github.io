@@ -9,6 +9,8 @@ ROOT = Path(__file__).parents[1]
 def test_browser_smoke_job_installs_and_requires_chromium():
     workflow = (ROOT / '.github' / 'workflows' / 'build-deploy.yml').read_text(encoding='utf-8')
 
+    browser_job = workflow.split('  browser-smoke:', 1)[1].split('\n  build:', 1)[0]
+    assert 'runs-on: ubuntu-24.04' in browser_job
     assert 'browser-smoke:' in workflow
     assert 'needs: browser-smoke' in workflow
     assert 'pip install playwright==1.52.0' in workflow
@@ -23,6 +25,8 @@ def test_build_job_validates_generated_artifacts_after_build():
     build = 'python manage.py build'
     artifact_tests = 'python -m pytest tests/test_build_artifacts.py -v'
 
+    build_job = workflow.split('\n  build:', 1)[1]
+    assert 'runs-on: ubuntu-24.04' in build_job
     assert unit_tests in workflow
     assert artifact_tests in workflow
     assert workflow.index(unit_tests) < workflow.rindex(build) < workflow.index(artifact_tests)
