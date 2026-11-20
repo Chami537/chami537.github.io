@@ -1,4 +1,6 @@
+import os
 import subprocess
+import sys
 
 from flask import Blueprint, current_app, request, jsonify
 
@@ -8,7 +10,14 @@ from backend.crud import require_json
 
 
 def _run_git(args):
-    return subprocess.run(['git'] + args, cwd=BASE_DIR, capture_output=True, text=True, encoding='utf-8')
+    # Hooks inherit Git's environment, including the Python used by the admin server.
+    env = os.environ.copy()
+    python_bin = os.path.dirname(sys.executable)
+    env['PATH'] = python_bin + os.pathsep + env.get('PATH', os.defpath)
+    return subprocess.run(
+        ['git'] + args, cwd=BASE_DIR, capture_output=True,
+        text=True, encoding='utf-8', env=env,
+    )
 
 
 def _git_error(action, result):
