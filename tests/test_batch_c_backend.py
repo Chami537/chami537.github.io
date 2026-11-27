@@ -242,4 +242,5 @@ def test_heading_ids_restore_placeholders_and_escapes():
     assert list(ET.fromstring('<div>' + legacy + '</div>'))[0].get('id') == heading_id('&copy 2024')
     linked = render_markdown('## Vec<T> \u7528\u6cd5\n\n[[Target#Vec<T> \u7528\u6cd5|go]]',
                               [{'title': 'Target', 'slug': 'target'}])
-    assert f'href="target.html#{heading_id("Vec<T> \u7528\u6cd5")}"' in linked
+    expected_fragment = heading_id('Vec<T> \u7528\u6cd5')
+    assert 'href="target.html#' + expected_fragment + '"' in linked
