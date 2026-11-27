@@ -124,4 +124,5 @@ def test_photo_sync_keeps_orphan_with_existing_thumbnail(tmp_path, monkeypatch):
 
     process_images.process_all_images()
 
-    assert store.read('photos.json') == [old_entry]
+    assert store.read('photos.json') == [{**old_entry, 'width': 8, 'height': 6,
+        'variants': {'sm': {'width': 8, 'height': 6}}}]

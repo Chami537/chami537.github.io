@@ -15,7 +15,23 @@
     "size": "lg",
     "tags": [
       "InMyFeelings"
-    ]
+    ],
+    "width": 1920,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1920
+      },
+      "md": {
+        "width": 800,
+        "height": 800
+      },
+      "sm": {
+        "width": 400,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "15a70814318ed74d5ec2448532f7fab5.jpg",
@@ -33,7 +49,23 @@
     "size": "md",
     "tags": [
       "Sea"
-    ]
+    ],
+    "width": 1920,
+    "height": 1440,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1440
+      },
+      "md": {
+        "width": 800,
+        "height": 600
+      },
+      "sm": {
+        "width": 400,
+        "height": 300
+      }
+    }
   },
   {
     "filename": "68b93d07a342daef4f8483cdb249c4f7.jpg",
@@ -51,7 +83,23 @@
     "size": "sm",
     "tags": [
       "InMyFeelings"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "d799f0dd4097ac45c2680798af20b457.jpg",
@@ -69,7 +117,23 @@
     "size": "sm",
     "tags": [
       "Sea"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "11f6710f.jpg",
@@ -87,7 +151,23 @@
     "date": "Jul 8, 2025",
     "tags": [
       "City"
-    ]
+    ],
+    "width": 1920,
+    "height": 1080,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1080
+      },
+      "md": {
+        "width": 800,
+        "height": 450
+      },
+      "sm": {
+        "width": 400,
+        "height": 225
+      }
+    }
   },
   {
     "filename": "4b54eb6f.jpg",
@@ -105,7 +185,23 @@
     "date": "Feb 10, 2024",
     "tags": [
       "Nature"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "0bd452bc.jpg",
@@ -123,7 +219,23 @@
     "date": "Jul 7, 2025",
     "tags": [
       "City"
-    ]
+    ],
+    "width": 1080,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1080,
+        "height": 1920
+      },
+      "md": {
+        "width": 450,
+        "height": 800
+      },
+      "sm": {
+        "width": 225,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "6e864336.jpg",
@@ -141,7 +253,23 @@
     "date": "Jul 10, 2025",
     "tags": [
       "Nature"
-    ]
+    ],
+    "width": 1080,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1080,
+        "height": 1920
+      },
+      "md": {
+        "width": 450,
+        "height": 800
+      },
+      "sm": {
+        "width": 225,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "0abd098d.jpg",
@@ -159,7 +287,23 @@
     "date": "Jul 13, 2025",
     "tags": [
       "Nature"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "3a8a4acc.jpg",
@@ -177,7 +321,23 @@
     "date": "May 3, 2026",
     "tags": [
       "InMyFeelings"
-    ]
+    ],
+    "width": 1920,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1920
+      },
+      "md": {
+        "width": 800,
+        "height": 800
+      },
+      "sm": {
+        "width": 400,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "6643f269.jpg",
@@ -195,7 +355,23 @@
     "date": "Aug 26, 2025",
     "tags": [
       "City"
-    ]
+    ],
+    "width": 1080,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1080,
+        "height": 1920
+      },
+      "md": {
+        "width": 450,
+        "height": 800
+      },
+      "sm": {
+        "width": 225,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "82f73d67.jpg",
@@ -213,7 +389,23 @@
     "date": "Oct 1, 2025",
     "tags": [
       "City"
-    ]
+    ],
+    "width": 1080,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1080,
+        "height": 1920
+      },
+      "md": {
+        "width": 450,
+        "height": 800
+      },
+      "sm": {
+        "width": 225,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "ced657a4.jpg",
@@ -231,7 +423,23 @@
     "date": "Nov 16, 2025",
     "tags": [
       "Sea"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "15b50392.jpg",
@@ -249,7 +457,23 @@
     "date": "Nov 29, 2025",
     "tags": [
       "City"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "a8358e54.jpg",
@@ -267,7 +491,23 @@
     "date": "Mar 27, 2026",
     "tags": [
       "InMyFeelings"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "736e3c65.jpg",
@@ -285,7 +525,23 @@
     "date": "May 5, 2026",
     "tags": [
       "InMyFeelings"
-    ]
+    ],
+    "width": 1920,
+    "height": 1440,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1440
+      },
+      "md": {
+        "width": 800,
+        "height": 600
+      },
+      "sm": {
+        "width": 400,
+        "height": 300
+      }
+    }
   },
   {
     "filename": "aa5e7984.jpg",
@@ -303,7 +559,23 @@
     "date": "Dec 25, 2025",
     "tags": [
       "Sea"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "fd28121d.jpg",
@@ -321,7 +593,23 @@
     "date": "Jan 20, 2026",
     "tags": [
       "City"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "49fb2cf3.jpg",
@@ -339,7 +627,23 @@
     "date": "Nov 2, 2025",
     "tags": [
       "Sea"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "68cc0cc3.jpg",
@@ -357,7 +661,23 @@
     "date": "Jun 28, 2026",
     "tags": [
       "InMyFeelings"
-    ]
+    ],
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "836578f1.jpg",
@@ -375,7 +695,23 @@
     "date": "Oct 7, 2025",
     "tags": [
       "Sea"
-    ]
+    ],
+    "width": 1920,
+    "height": 1080,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1080
+      },
+      "md": {
+        "width": 800,
+        "height": 450
+      },
+      "sm": {
+        "width": 400,
+        "height": 225
+      }
+    }
   },
   {
     "filename": "d2f4c482.jpg",
@@ -393,7 +729,23 @@
     "date": "May 5, 2026",
     "tags": [
       "InMyFeelings"
-    ]
+    ],
+    "width": 1920,
+    "height": 1440,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1440
+      },
+      "md": {
+        "width": 800,
+        "height": 600
+      },
+      "sm": {
+        "width": 400,
+        "height": 300
+      }
+    }
   },
   {
     "filename": "48d7b8ca.jpg",
@@ -411,7 +763,23 @@
     "date": "Jul 4, 2025",
     "tags": [
       "InMyFeelings"
-    ]
+    ],
+    "width": 1920,
+    "height": 1080,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1080
+      },
+      "md": {
+        "width": 800,
+        "height": 450
+      },
+      "sm": {
+        "width": 400,
+        "height": 225
+      }
+    }
   },
   {
     "filename": "fb6ec8a7.jpg",
@@ -427,7 +795,23 @@
         "lng": 113.965181
       }
     },
-    "date": "Jul 11, 2026"
+    "date": "Jul 11, 2026",
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "bdefc00a.jpg",
@@ -443,7 +827,23 @@
         "lng": 114.019518
       }
     },
-    "date": "Jun 26, 2026"
+    "date": "Jun 26, 2026",
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "03c4c220.jpg",
@@ -458,7 +858,23 @@
         "lng": 139.702292
       }
     },
-    "date": "Jul 22, 2026"
+    "date": "Jul 22, 2026",
+    "width": 1920,
+    "height": 2560,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 2560
+      },
+      "md": {
+        "width": 800,
+        "height": 1066
+      },
+      "sm": {
+        "width": 400,
+        "height": 533
+      }
+    }
   },
   {
     "filename": "39c15660.jpg",
@@ -473,7 +889,23 @@
         "lng": 140.384011
       }
     },
-    "date": "Jul 21, 2026"
+    "date": "Jul 21, 2026",
+    "width": 1920,
+    "height": 1640,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1640
+      },
+      "md": {
+        "width": 800,
+        "height": 683
+      },
+      "sm": {
+        "width": 400,
+        "height": 341
+      }
+    }
   },
   {
     "filename": "4ddc9b21.jpg",
@@ -488,7 +920,23 @@
         "lng": 139.479886
       }
     },
-    "date": "Jul 23, 2026"
+    "date": "Jul 23, 2026",
+    "width": 1920,
+    "height": 2560,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 2560
+      },
+      "md": {
+        "width": 800,
+        "height": 1066
+      },
+      "sm": {
+        "width": 400,
+        "height": 533
+      }
+    }
   },
   {
     "filename": "513590e6.jpg",
@@ -503,7 +951,23 @@
         "lng": 139.723247
       }
     },
-    "date": "Jul 22, 2026"
+    "date": "Jul 22, 2026",
+    "width": 1920,
+    "height": 2560,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 2560
+      },
+      "md": {
+        "width": 800,
+        "height": 1066
+      },
+      "sm": {
+        "width": 400,
+        "height": 533
+      }
+    }
   },
   {
     "filename": "5ecc4f49.jpg",
@@ -518,7 +982,23 @@
         "lng": 121.222972
       }
     },
-    "date": "Jul 21, 2026"
+    "date": "Jul 21, 2026",
+    "width": 1920,
+    "height": 2560,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 2560
+      },
+      "md": {
+        "width": 800,
+        "height": 1066
+      },
+      "sm": {
+        "width": 400,
+        "height": 533
+      }
+    }
   },
   {
     "filename": "a760ae7d.jpg",
@@ -533,7 +1013,23 @@
         "lng": 139.746903
       }
     },
-    "date": "Jul 21, 2026"
+    "date": "Jul 21, 2026",
+    "width": 1920,
+    "height": 2560,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 2560
+      },
+      "md": {
+        "width": 800,
+        "height": 1066
+      },
+      "sm": {
+        "width": 400,
+        "height": 533
+      }
+    }
   },
   {
     "filename": "c39d54d3.jpg",
@@ -548,7 +1044,23 @@
         "lng": 139.723392
       }
     },
-    "date": "Jul 22, 2026"
+    "date": "Jul 22, 2026",
+    "width": 1920,
+    "height": 2560,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 2560
+      },
+      "md": {
+        "width": 800,
+        "height": 1066
+      },
+      "sm": {
+        "width": 400,
+        "height": 533
+      }
+    }
   },
   {
     "filename": "ff276147.jpg",
@@ -563,7 +1075,23 @@
         "lng": 139.701975
       }
     },
-    "date": "Jul 22, 2026"
+    "date": "Jul 22, 2026",
+    "width": 1920,
+    "height": 2560,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 2560
+      },
+      "md": {
+        "width": 800,
+        "height": 1066
+      },
+      "sm": {
+        "width": 400,
+        "height": 533
+      }
+    }
   },
   {
     "filename": "52abe7ea.jpg",
@@ -579,7 +1107,23 @@
         "lng": 139.478553
       }
     },
-    "date": "Jul 23, 2026"
+    "date": "Jul 23, 2026",
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "083ce606.jpg",
@@ -595,7 +1139,23 @@
         "lng": 138.769597
       }
     },
-    "date": "Jul 24, 2026"
+    "date": "Jul 24, 2026",
+    "width": 1920,
+    "height": 1440,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1440
+      },
+      "md": {
+        "width": 800,
+        "height": 600
+      },
+      "sm": {
+        "width": 400,
+        "height": 300
+      }
+    }
   },
   {
     "filename": "020660bd.jpg",
@@ -611,7 +1171,23 @@
         "lng": 138.802308
       }
     },
-    "date": "Jul 24, 2026"
+    "date": "Jul 24, 2026",
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "438b24ee.jpg",
@@ -627,7 +1203,23 @@
         "lng": 139.793656
       }
     },
-    "date": "Jul 25, 2026"
+    "date": "Jul 25, 2026",
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "29eec5c6.jpg",
@@ -643,7 +1235,23 @@
         "lng": 139.811303
       }
     },
-    "date": "Jul 25, 2026"
+    "date": "Jul 25, 2026",
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "d81de1f4.jpg",
@@ -659,7 +1267,23 @@
         "lng": 138.111792
       }
     },
-    "date": "Jul 26, 2026"
+    "date": "Jul 26, 2026",
+    "width": 1920,
+    "height": 1440,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1440
+      },
+      "md": {
+        "width": 800,
+        "height": 600
+      },
+      "sm": {
+        "width": 400,
+        "height": 300
+      }
+    }
   },
   {
     "filename": "3277286d.jpg",
@@ -675,7 +1299,23 @@
         "lng": 136.880369
       }
     },
-    "date": "Jul 27, 2026"
+    "date": "Jul 27, 2026",
+    "width": 1080,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1080,
+        "height": 1920
+      },
+      "md": {
+        "width": 450,
+        "height": 800
+      },
+      "sm": {
+        "width": 225,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "4708d27b.jpg",
@@ -691,7 +1331,23 @@
         "lng": 135.785472
       }
     },
-    "date": "Jul 28, 2026"
+    "date": "Jul 28, 2026",
+    "width": 1920,
+    "height": 1440,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1440
+      },
+      "md": {
+        "width": 800,
+        "height": 600
+      },
+      "sm": {
+        "width": 400,
+        "height": 300
+      }
+    }
   },
   {
     "filename": "1207c7e1.jpg",
@@ -707,7 +1363,23 @@
         "lng": 135.839869
       }
     },
-    "date": "Jul 29, 2026"
+    "date": "Jul 29, 2026",
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "eaf00129.jpg",
@@ -723,7 +1395,23 @@
         "lng": 135.839689
       }
     },
-    "date": "Jul 29, 2026"
+    "date": "Jul 29, 2026",
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "d73031f8.jpg",
@@ -739,7 +1427,23 @@
         "lng": 135.277947
       }
     },
-    "date": "Jul 30, 2026"
+    "date": "Jul 30, 2026",
+    "width": 1440,
+    "height": 1920,
+    "variants": {
+      "lg": {
+        "width": 1440,
+        "height": 1920
+      },
+      "md": {
+        "width": 600,
+        "height": 800
+      },
+      "sm": {
+        "width": 300,
+        "height": 400
+      }
+    }
   },
   {
     "filename": "eccc3e81.jpg",
@@ -755,6 +1459,22 @@
         "lng": 135.248628
       }
     },
-    "date": "Jul 30, 2026"
+    "date": "Jul 30, 2026",
+    "width": 1920,
+    "height": 1440,
+    "variants": {
+      "lg": {
+        "width": 1920,
+        "height": 1440
+      },
+      "md": {
+        "width": 800,
+        "height": 600
+      },
+      "sm": {
+        "width": 400,
+        "height": 300
+      }
+    }
   }
 ]

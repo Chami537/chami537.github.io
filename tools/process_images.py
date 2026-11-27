@@ -12,11 +12,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), '..'
 from backend.repositories import PHOTO_REPOSITORY
 from backend.ssg import _parse_date
 from backend.exif_utils import extract_exif as _extract_exif, without_camera_model as _without_camera_model
+from backend.image_utils import PHOTO_SIZES, photo_dimensions, write_photo_variants
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RAW_DIR = os.path.join(BASE_DIR, 'raw_photos')
 IMG_DIR = os.path.join(BASE_DIR, 'images')
-SIZES = {'sm': 400, 'md': 800, 'lg': 1920}
+SIZES = dict(PHOTO_SIZES)
 
 
 def _ordered_filenames(existing, raw_files):
@@ -57,23 +58,7 @@ def _prepare_directories():
 
 
 def _write_thumbnails(img, filename):
-    targets = [
-        (size_name, max_width, os.path.join(IMG_DIR, size_name, filename))
-        for size_name, max_width in SIZES.items()
-        if not os.path.exists(os.path.join(IMG_DIR, size_name, filename))
-    ]
-    if not targets:
-        return
-
-    rgb_img = img.convert('RGB') if img.mode != 'RGB' else img
-    for _size_name, max_width, out_path in targets:
-        ratio = max_width / float(img.size[0])
-        if ratio < 1:
-            new_h = int(float(img.size[1]) * ratio)
-            resized = rgb_img.resize((max_width, new_h), Image.Resampling.LANCZOS)
-        else:
-            resized = rgb_img.copy()
-        resized.save(out_path, 'JPEG', quality=85)
+    write_photo_variants(img, IMG_DIR, filename, SIZES.items(), only_missing=True)
 
 
 def _process_photo(filename, old_entry):
@@ -81,7 +66,9 @@ def _process_photo(filename, old_entry):
     with Image.open(raw_path) as img:
         exif_info = _without_camera_model(_extract_exif(img))
         _write_thumbnails(img, filename)
-    return _build_photo_entry(filename, old_entry, exif_info)
+    entry = _build_photo_entry(filename, old_entry, exif_info)
+    entry.update(photo_dimensions(IMG_DIR, filename))
+    return entry
 
 
 def _preserve_orphans(existing, photos_data):
@@ -89,6 +76,7 @@ def _preserve_orphans(existing, photos_data):
     for leftover in existing.values():
         filename = leftover.get('filename', '')
         if os.path.exists(os.path.join(IMG_DIR, 'sm', filename)):
+            leftover.update(photo_dimensions(IMG_DIR, filename))
             photos_data.append(leftover)
             continue
         print(f"  [清理] {filename} — 原图已删除且无缩略图，移除")
@@ -133,5 +121,22 @@ def process_all_images():
     print(f"完成！总计 {len(photos_data)} 张照片，新增 {new_count}，补全 EXIF {updated_count}。" + (f" 清理孤儿条目 {orphaned}。" if orphaned else ""))
 
 
+def refresh_dimensions():
+    """Backfill metadata from published files even when raw_photos is absent."""
+    with PHOTO_REPOSITORY.lock:
+        photos = PHOTO_REPOSITORY.list()
+        measured = 0
+        for photo in photos:
+            dimensions = photo_dimensions(IMG_DIR, photo['filename'])
+            if dimensions:
+                photo.update(dimensions)
+                measured += 1
+        PHOTO_REPOSITORY.save(photos)
+    print(f'照片尺寸已更新: {measured}/{len(photos)}')
+
+
 if __name__ == "__main__":
-    process_all_images()
+    if '--refresh-dimensions' in sys.argv:
+        refresh_dimensions()
+    else:
+        process_all_images()

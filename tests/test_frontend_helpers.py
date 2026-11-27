@@ -225,3 +225,286 @@ const fromFrontmatter = context._markdownMeta('---\\ntitle: 指定标题\\n---\\
 assert.strictEqual(fromFrontmatter.title, '指定标题');
 """
     _run_node(script)
+
+
+def test_shared_essays_fetch_and_timeout_in_index_core():
+    core_path = (ROOT / 'assets' / 'js' / 'index-core.js').as_posix()
+    script = f"""
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+
+const fetchCalls = [];
+let abortCount = 0;
+class FakeAbortController {{
+  constructor() {{
+    const listeners = [];
+    this.signal = {{
+      aborted: false,
+      addEventListener(type, fn) {{ if (type === 'abort') listeners.push(fn); }},
+      _fire() {{ listeners.forEach(fn => fn()); }}
+    }};
+  }}
+  abort() {{ this.signal.aborted = true; abortCount += 1; this.signal._fire(); }}
+}}
+
+const context = {{
+  document: {{
+    currentScript: {{ src: 'https://example.test/assets/js/index-core.js?v=abc123' }},
+    querySelector() {{ return {{ style: {{}}, classList: {{ add() {{}}, remove() {{}}, toggle() {{}} }} }}; }},
+    querySelectorAll() {{ return []; }},
+  }},
+  window: {{}},
+  addEventListener() {{}},
+  scrollY: 0,
+  innerHeight: 800,
+  console,
+  encodeURIComponent,
+  AbortController: FakeAbortController,
+  setTimeout,
+  clearTimeout,
+  fetch(url, opts) {{
+    fetchCalls.push({{ url, opts }});
+    if (url.includes('slow.json')) {{
+      // A truly hanging request: it can only ever settle via abort, like a
+      // stalled network fetch. Without a working abort in the code under
+      // test the promise never settles and the watchdog below fails the run.
+      return new Promise((_, reject) => {{
+        if (opts && opts.signal) {{
+          opts.signal.addEventListener('abort', () => reject(new Error('Aborted')));
+        }}
+      }});
+    }}
+    return Promise.resolve({{
+      ok: true,
+      json: async () => ({{ essays: [{{ slug: 'hello' }}], _tags: ['随笔'] }})
+    }});
+  }}
+}};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('{core_path}', 'utf8'), context);
+
+(async () => {{
+  const watchdog = setTimeout(() => {{
+    console.error('WATCHDOG: async assertions did not complete');
+    process.exit(3);
+  }}, 3000);
+  assert.strictEqual(context.TS, 'abc123');
+  assert.strictEqual(context.dataUrl('data/essays_public.json'), 'data/essays_public.json?v=abc123');
+
+  const p1 = context.fetchEssaysPublic();
+  const p2 = context.fetchEssaysPublic();
+  assert.strictEqual(p1, p2);
+  const [d1, d2] = await Promise.all([p1, p2]);
+  assert.deepStrictEqual(d1, d2);
+  assert.strictEqual(fetchCalls.length, 1);
+
+  await assert.rejects(() => context.fetchJsonWithTimeout('data/slow.json', 10), /Aborted/);
+  assert.strictEqual(abortCount, 1);
+  clearTimeout(watchdog);
+}})().catch(err => {{ console.error(err); process.exit(1); }});
+"""
+    _run_node(script)
+
+
+def test_independent_section_rendering_does_not_block_on_failure():
+    core_path = (ROOT / 'assets' / 'js' / 'index-core.js').as_posix()
+    index_path = (ROOT / 'assets' / 'js' / 'index.js').as_posix()
+    script = f"""
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+
+function makeEl(id, extra) {{
+  const classes = new Set(['skeleton-loading']);
+  return Object.assign({{
+    id,
+    innerHTML: '',
+    style: {{}},
+    attrs: {{}},
+    classList: {{
+      remove(c) {{ classes.delete(c); }},
+      add(c) {{ classes.add(c); }},
+      contains(c) {{ return classes.has(c); }},
+      toggle(c, f) {{ if (f) classes.add(c); else classes.delete(c); }}
+    }},
+    setAttribute(k, v) {{ this.attrs[k] = v; }},
+    getAttribute(k) {{ return this.attrs[k]; }},
+    querySelectorAll() {{ return []; }},
+  }}, extra || {{}});
+}}
+
+const elements = {{
+  'about-text': makeEl('about-text', {{ innerHTML: 'fallback' }}),
+  'portrait-img': makeEl('portrait-img'),
+  'hero-meta': makeEl('hero-meta'),
+  'work-container': makeEl('work-container'),
+  'stack-cloud': makeEl('stack-cloud'),
+  'essays-list': makeEl('essays-list'),
+  'photo-masonry': makeEl('photo-masonry'),
+  'photo-load-more': makeEl('photo-load-more'),
+  'gps-count': makeEl('gps-count'),
+  'contact-list': makeEl('contact-list', {{ innerHTML: 'static-contact' }}),
+  'friends-container': makeEl('friends-container'),
+  'music-list': makeEl('music-list', {{ innerHTML: 'static-music' }}),
+  'photo-map-container': makeEl('photo-map-container'),
+}};
+
+let domReadyCb = null;
+let essaysBuilt = false;
+let musicInitCalled = false;
+
+const context = {{
+  document: {{
+    currentScript: null,
+    getElementById(id) {{ return elements[id] || null; }},
+    querySelector() {{ return makeEl('q'); }},
+    querySelectorAll() {{ return []; }},
+    addEventListener(ev, cb) {{ if (ev === 'DOMContentLoaded') domReadyCb = cb; }},
+  }},
+  window: {{ addEventListener() {{}} }},
+  addEventListener() {{}},
+  scrollY: 0,
+  innerHeight: 800,
+  console,
+  encodeURIComponent,
+  decodeURIComponent,
+  setTimeout,
+  clearTimeout,
+  renderWork(d) {{ return 'WORK:' + d.length; }},
+  renderStack(d) {{ return 'STACK:' + d.length; }},
+  renderPhotos(d) {{ return 'PHOTOS:' + d.length; }},
+  renderContact(d) {{ return 'CONTACT:' + d.length; }},
+  renderFriends(d) {{ return 'FRIENDS:' + d.length; }},
+  renderMusic(d) {{ return 'MUSIC:' + d.length; }},
+  buildEssayFilter() {{ essaysBuilt = true; }},
+  renderEssayList() {{ elements['essays-list'].innerHTML = 'ESSAYS:ok'; }},
+  buildPhotoTagFilter() {{}},
+  renderPhotoStories() {{}},
+  initLB() {{}},
+  initMusicPlayer() {{ musicInitCalled = true; }},
+  fetch(url) {{
+    if (url.includes('work.json')) {{
+      return Promise.reject(new Error('work down'));
+    }}
+    if (url.includes('essays_public.json')) {{
+      return Promise.resolve({{ ok: true, json: async () => ({{ essays: [{{ slug: 'a' }}], _tags: [] }}) }});
+    }}
+    if (url.includes('about.json')) {{
+      return Promise.resolve({{ ok: true, json: async () => ({{ content: 'Hi', tags: ['CS'] }}) }});
+    }}
+    return Promise.resolve({{ ok: false, status: 500 }});
+  }}
+}};
+vm.createContext(context);
+vm.runInContext(fs.readFileSync('{core_path}', 'utf8'), context);
+context.initMusicPlayer = () => {{ musicInitCalled = true; }};
+vm.runInContext(fs.readFileSync('{index_path}', 'utf8'), context);
+
+(async () => {{
+  domReadyCb();
+  await new Promise(r => setTimeout(r, 30));
+  assert.strictEqual(essaysBuilt, true);
+  assert.strictEqual(elements['essays-list'].innerHTML, 'ESSAYS:ok');
+  assert(!elements['essays-list'].classList.contains('skeleton-loading'));
+
+  assert(elements['work-container'].innerHTML.includes('项目暂时无法加载'));
+  assert(!elements['work-container'].classList.contains('skeleton-loading'));
+  assert.strictEqual(elements['work-container'].attrs['aria-busy'], 'false');
+
+  assert.strictEqual(elements['contact-list'].innerHTML, 'static-contact');
+  assert(!elements['contact-list'].classList.contains('skeleton-loading'));
+  assert.strictEqual(musicInitCalled, true);
+}})().catch(err => {{ console.error(err); process.exit(1); }});
+"""
+    _run_node(script)
+
+
+def test_photo_alt_and_essay_lightbox_caption():
+    core_path = (ROOT / 'assets' / 'js' / 'index-core.js').as_posix()
+    lb_path = (ROOT / 'assets' / 'js' / 'essay-lightbox.js').as_posix()
+    photos_path = (ROOT / 'data' / 'photos.json').as_posix()
+    stories_path = (ROOT / 'data' / 'photo_stories.json').as_posix()
+    map_html = (ROOT / 'templates' / 'map.html').read_text(encoding='utf-8')
+    assert 'alt="' in map_html
+
+    script = f"""
+const assert = require('assert');
+const fs = require('fs');
+const vm = require('vm');
+
+const photos = JSON.parse(fs.readFileSync('{photos_path}', 'utf8'));
+const stories = JSON.parse(fs.readFileSync('{stories_path}', 'utf8'));
+const storyMap = {{}};
+stories.forEach(s => (s.photos || []).forEach(f => {{ storyMap[f] = s.name; }}));
+
+const coreCtx = {{
+  document: {{ querySelector() {{ return {{ style: {{}}, classList: {{ add() {{}}, remove() {{}}, toggle() {{}} }} }}; }}, querySelectorAll() {{ return []; }} }},
+  window: {{}}, addEventListener() {{}}, scrollY: 0, innerHeight: 800, console
+}};
+vm.createContext(coreCtx);
+vm.runInContext(fs.readFileSync('{core_path}', 'utf8'), coreCtx);
+
+const altWithStory = coreCtx.buildPhotoAlt(photos.find(p => p.filename === '11f6710f.jpg'), storyMap['11f6710f.jpg']);
+assert(altWithStory.includes('重庆 · 解放碑'));
+assert(altWithStory.includes('City'));
+assert(altWithStory.includes('Jul 8, 2025'));
+
+const altNoTags = coreCtx.buildPhotoAlt(photos.find(p => p.filename === '03c4c220.jpg'), '');
+assert(altNoTags.includes('Jul 22, 2026'));
+assert(altNoTags.includes('35.66°N'));
+
+// Essay lightbox caption behavior
+let clickHandler = null;
+const lbEl = {{
+  children: [],
+  classList: {{ add() {{}}, remove() {{}}, contains() {{ return false; }} }},
+  addEventListener() {{}},
+  insertBefore(node) {{ this.children.push(node); }},
+  appendChild(node) {{ this.children.push(node); }},
+}};
+const lbImg = {{ src: '', alt: '' }};
+const lbCounter = {{ textContent: '', parentNode: lbEl }};
+const lbCaption = {{ textContent: '', hidden: true, style: {{ display: 'none' }} }};
+const imgWithAlt = {{ tagName: 'IMG', src: 'a.jpg', getAttribute(k) {{ return k === 'alt' ? '窗边的光' : ''; }} }};
+const imgWithoutAlt = {{ tagName: 'IMG', src: 'b.jpg', getAttribute() {{ return ''; }} }};
+
+const lbCtx = {{
+  document: {{
+    readyState: 'complete',
+    body: {{ style: {{}} }},
+    getElementById(id) {{
+      if (id === 'lb') return lbEl;
+      if (id === 'lb-img') return lbImg;
+      if (id === 'lb-counter') return lbCounter;
+      if (id === 'lb-caption') return lbCaption;
+      return null;
+    }},
+    querySelector(sel) {{
+      if (sel === '.essay-body') return {{ addEventListener(ev, fn) {{ if (ev === 'click') clickHandler = fn; }} }};
+      return null;
+    }},
+    querySelectorAll(sel) {{
+      if (sel === '.essay-body img') return [imgWithAlt, imgWithoutAlt];
+      return [];
+    }},
+    addEventListener() {{}},
+  }},
+  console,
+}};
+vm.createContext(lbCtx);
+vm.runInContext(fs.readFileSync('{lb_path}', 'utf8'), lbCtx);
+
+clickHandler({{ target: imgWithAlt }});
+assert.strictEqual(lbCaption.textContent, '窗边的光');
+assert.strictEqual(lbCaption.hidden, false);
+assert.strictEqual(lbCaption.style.display, '');
+assert.strictEqual(lbCounter.textContent, '1 / 2');
+
+lbCtx.lbNav(1);
+assert.strictEqual(lbCaption.textContent, '');
+assert.strictEqual(lbCaption.hidden, true);
+assert.strictEqual(lbCaption.style.display, 'none');
+assert.strictEqual(lbCounter.textContent, '2 / 2');
+"""
+    _run_node(script)

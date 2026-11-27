@@ -4,13 +4,13 @@ import os
 import uuid
 
 from flask import jsonify, request
-from PIL import Image
 
 from backend.exif_utils import extract_exif, without_camera_model
 from backend.routes import photo_context
 from backend.ssg import _parse_date
 from backend.upload_utils import UploadValidationError, upload_error_response, validate_image_upload
 from backend.crud import json_body
+from backend.image_utils import photo_dimensions, write_photo_variants
 
 
 def _photo_upload_payload(img):
@@ -29,14 +29,7 @@ def _photo_file_paths(filename):
 
 
 def _save_photo_variants(img, filename, exif_bytes):
-    for size_name, max_width in photo_context.PHOTO_SIZES:
-        thumb = img.copy()
-        if thumb.mode == 'RGBA':
-            thumb = thumb.convert('RGB')
-        thumb.thumbnail((max_width, max_width), Image.LANCZOS)
-        out_dir = os.path.join(photo_context.IMAGES_DIR, size_name)
-        os.makedirs(out_dir, exist_ok=True)
-        thumb.save(os.path.join(out_dir, filename))
+    write_photo_variants(img, photo_context.IMAGES_DIR, filename, photo_context.PHOTO_SIZES)
 
     img.save(os.path.join(photo_context.IMAGES_DIR, filename), exif=exif_bytes)
     raw_dir = os.path.join(photo_context.BASE_DIR, 'raw_photos')
@@ -53,6 +46,7 @@ def _cleanup_photo_files(paths):
 
 def _photo_entry(filename, exif_data, size):
     entry = {'filename': filename, 'size': size, 'exif': exif_data}
+    entry.update(photo_dimensions(photo_context.IMAGES_DIR, filename))
     if exif_data.get('date'):
         entry['date'] = _parse_date(exif_data['date'])
     return entry

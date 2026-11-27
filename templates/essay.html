@@ -25,7 +25,7 @@
 <style>
 {% include 'includes/base.css' %}
 </style>
-<link rel="stylesheet" href="/assets/css/essay.css?v={{ build_ts }}">
+<link rel="stylesheet" href="{{ asset_url('/assets/css/essay.css') }}">
     <script>
       var _mq = window.matchMedia('(prefers-color-scheme: dark)');
       var _saved = localStorage.getItem('theme');
@@ -246,7 +246,7 @@ RAW_MD -->
   </details>
 
   <div class="comments-section" id="giscus-container"></div>
-<script src="/assets/js/essay-comments.js?v={{ build_ts }}"></script>
+<script src="{{ asset_url('/assets/js/essay-comments.js') }}"></script>
 
 </div>
 
@@ -254,28 +254,29 @@ RAW_MD -->
 
     {% include 'includes/footer.html' %}
 
-<script src="/assets/js/essay-lightbox.js?v={{ build_ts }}"></script>
-<script src="/assets/js/theme.js?v={{ build_ts }}"></script>
-<script src="/assets/js/essay-page.js?v={{ build_ts }}"></script>
-<script src="/assets/js/essay-toc.js?v={{ build_ts }}"></script>
-<script src="/assets/js/essay-nav.js?v={{ build_ts }}"></script>
+<script src="{{ asset_url('/assets/js/essay-lightbox.js') }}"></script>
+<script src="{{ asset_url('/assets/js/theme.js') }}"></script>
+<script src="{{ asset_url('/assets/js/essay-page.js') }}"></script>
+<script src="{{ asset_url('/assets/js/essay-toc.js') }}"></script>
+<script src="{{ asset_url('/assets/js/essay-nav.js') }}"></script>
 
 <!--
   Giscus 评论区 — 评论数据存储在 GitHub Discussions 中
   仓库: Chami537/chami537.github.io | 分类: General
 -->
-<script src="/assets/js/essay-giscus.js?v={{ build_ts }}"></script>
+<script src="{{ asset_url('/assets/js/essay-giscus.js') }}"></script>
 
 <div id="lb" class="lb-overlay" onclick="lbClose()">
   <button class="lb-close" onclick="lbClose()" aria-label="关闭">×</button>
   <button class="lb-prev" onclick="lbNav(-1);event.stopPropagation()" aria-label="上一张">‹</button>
   <button class="lb-next" onclick="lbNav(1);event.stopPropagation()" aria-label="下一张">›</button>
   <img id="lb-img" src="" alt="">
+  <div class="lb-caption" id="lb-caption" hidden></div>
   <div class="lb-counter" id="lb-counter"></div>
 </div>
 
-<script src="/assets/js/code-rendering.js?v={{ build_ts }}"></script>
-<script src="/assets/js/essay-code.js?v={{ build_ts }}"></script>
+<script src="{{ asset_url('/assets/js/code-rendering.js') }}"></script>
+<script src="{{ asset_url('/assets/js/essay-code.js') }}"></script>
 
 </body>
 </html>

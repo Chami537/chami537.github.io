@@ -6,12 +6,17 @@ from markupsafe import Markup
 from backend.file_utils import atomic_write_text
 
 
-def render_essay_html(essay, body_data, essays, template, parse_date):
+def render_essay_html(essay, body_data, essays, template, parse_date, base_dir=None):
     """Render one essay page from already-prepared body and navigation data."""
     slug = essay['slug']
     prev_nav, next_nav = _navigation(essays, slug)
     tag_raw = essay.get('tag', '')
+    from backend.asset_cache import asset_url
+    if base_dir is None:
+        from backend.data import BASE_DIR
+        base_dir = BASE_DIR
     return template.render(
+        asset_url=lambda url: asset_url(url, base_dir),
         title=html_mod.escape(essay.get('title', '')),
         excerpt=html_mod.escape(essay.get('excerpt', '')),
         epigraph=html_mod.escape(essay.get('epigraph', '')),

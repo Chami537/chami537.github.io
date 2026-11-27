@@ -176,7 +176,58 @@ function _gpsStr(lat, lng, decimals) {
   return Math.abs(lat).toFixed(decimals) + '\u00B0' + (lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(lng).toFixed(decimals) + '\u00B0' + (lng >= 0 ? 'E' : 'W');
 }
 
-const TS = Date.now(); // cache busting timestamp, fixed per page load
+var TS = (function() {
+  var s = (typeof document !== 'undefined' && (document.currentScript || (document.querySelector && document.querySelector('script[src*="index-core.js"]')))) || null;
+  var m = s && s.src ? s.src.match(/[?&]v=([^&]+)/) : null;
+  return m ? m[1] : '';
+})();
+if (typeof window !== 'undefined') window.TS = TS;
+
+var DEFAULT_FETCH_TIMEOUT_MS = 8000;
+var _essaysPublicPromise = null;
+
+function dataUrl(path) {
+  if (!TS) return path;
+  return path + (path.indexOf('?') >= 0 ? '&' : '?') + 'v=' + encodeURIComponent(TS);
+}
+
+function fetchJsonWithTimeout(url, timeoutMs) {
+  var ms = timeoutMs > 0 ? timeoutMs : DEFAULT_FETCH_TIMEOUT_MS;
+  var controller = typeof AbortController === 'function' ? new AbortController() : null;
+  var timer = controller ? setTimeout(function() { controller.abort(); }, ms) : null;
+  var opts = controller ? { signal: controller.signal } : {};
+  return fetch(url, opts).then(function(response) {
+    if (timer) clearTimeout(timer);
+    if (!response.ok) throw new Error('HTTP ' + response.status);
+    return response.json();
+  }, function(err) {
+    if (timer) clearTimeout(timer);
+    throw err;
+  });
+}
+
+function fetchEssaysPublic(timeoutMs) {
+  if (!_essaysPublicPromise) {
+    _essaysPublicPromise = fetchJsonWithTimeout(dataUrl('data/essays_public.json'), timeoutMs);
+  }
+  return _essaysPublicPromise;
+}
+
+function buildPhotoAlt(photo, storyName) {
+  if (!photo) return '摄影作品';
+  var ex = photo.exif || {};
+  var parts = [];
+  var story = storyName || photo.story || '';
+  if (story) parts.push(String(story));
+  if (photo.location) parts.push(String(photo.location));
+  if (Array.isArray(photo.tags) && photo.tags.length) parts.push(photo.tags.join(', '));
+  var date = photo.date || ex.date || '';
+  if (date) parts.push(String(date));
+  if (ex.gps && ex.gps.lat != null && ex.gps.lng != null) {
+    parts.push(_gpsStr(ex.gps.lat, ex.gps.lng, 2));
+  }
+  return parts.length ? parts.join(' · ') : '摄影作品';
+}
 
 
 function renderWork(data) {

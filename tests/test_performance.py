@@ -35,9 +35,13 @@ def test_static_cache_headers_are_long_lived_for_immutable_assets():
     app.config['TESTING'] = True
     client = app.test_client()
 
-    asset = client.get('/assets/js/index.js')
+    from backend.asset_cache import asset_fingerprint
+    version = asset_fingerprint(ROOT / 'assets/js/index.js')
+    asset = client.get('/assets/js/index.js?v=' + version)
+    assert client.get('/assets/js/index.js').headers['Cache-Control'] == 'no-cache, max-age=0'
+    assert client.get('/assets/js/index.js?v=old').headers['Cache-Control'] == 'no-cache, max-age=0'
     image = client.get('/images/sm/020660bd.jpg')
-    assert asset.headers['Cache-Control'] == 'public, max-age=31536000'
+    assert asset.headers['Cache-Control'] == 'public, max-age=31536000, immutable'
     assert image.headers['Cache-Control'] == 'public, max-age=31536000'
 
 

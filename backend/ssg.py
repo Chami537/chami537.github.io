@@ -108,6 +108,30 @@ def template_dependencies(template_name):
     return paths
 
 
+def essay_dependencies():
+    """Transitive templates, their local assets and rendering code affect essays."""
+    from backend.asset_cache import referenced_asset_paths
+    paths = template_dependencies('essay.html')
+    assets = set()
+    for path in paths:
+        with open(path, encoding='utf-8') as source:
+            assets.update(referenced_asset_paths(source.read(), BASE_DIR))
+    rendering = [os.path.join(BASE_DIR, 'backend', name) for name in (
+        'ssg.py', 'essay_renderer.py', 'markdown_utils.py', 'asset_cache.py', 'image_utils.py',
+    )]
+    return paths + sorted(assets) + [path for path in rendering if os.path.isfile(path)]
+
+
+def essay_needs_regeneration(output_path, inputs):
+    from backend.asset_cache import version_asset_references
+    if _needs_regeneration(output_path, inputs):
+        return True
+    # A checkout or sync can preserve/backdate mtime. Compare fingerprints too.
+    with open(output_path, encoding='utf-8') as handle:
+        html = handle.read()
+    return version_asset_references(html, BASE_DIR) != html
+
+
 def _generate_rss(essays=None):
     """Generate rss.xml from essays.json (Jinja2 template)."""
     output_path = os.path.join(BASE_DIR, 'rss.xml')
@@ -274,7 +298,7 @@ def _prepare_essay_body(slug, raw_md, last_edited, essays=None):
     if password:
         stored = _persist_essay_source(slug, raw_md)
         return {'password_protected': True, 'encrypted_body': stored, 'body_html': '', 'encrypted_is_md': True, 'og_image': DEFAULT_OG_IMAGE}
-    rendered_html = render_markdown(raw_md, essay_links=essays)
+    rendered_html = render_markdown(raw_md, essay_links=essays, base_dir=BASE_DIR)
     return {
         'password_protected': False,
         'encrypted_body': '',
@@ -302,7 +326,7 @@ def _sync_essay_html(essay, raw_md_memory=None, essays=None):
     raw_md = _read_essay_source(slug)
     essays = ESSAY_REPOSITORY.list() if essays is None else essays
     body_data = _prepare_essay_body(slug, raw_md, _parse_date(essay.get('date', ''), include_time=True), essays)
-    html = render_essay_html(essay, body_data, essays, _env.get_template('essay.html'), _parse_date)
+    html = render_essay_html(essay, body_data, essays, _env.get_template('essay.html'), _parse_date, BASE_DIR)
     write_essay_html(os.path.join(ESSAYS_DIR, f"{slug}.html"), html)
 
 
