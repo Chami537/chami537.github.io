@@ -58,6 +58,7 @@ def heading_ids(texts, existing_ids=None, reserved=()):
 
 
 _ESCAPED_CHAR_RE = re.compile(re.escape(STX) + r'(\d+)' + re.escape(ETX))
+_CHAR_REF_RE = re.compile(r'&(?:#[0-9]+|#x[0-9a-f]+|[0-9a-z]+);', re.I)
 
 
 def _heading_text(element, md):
@@ -81,7 +82,10 @@ def _heading_text(element, md):
 
     text = HTML_PLACEHOLDER_RE.sub(_restore, text)
     text = _ESCAPED_CHAR_RE.sub(lambda m: chr(int(m.group(1))), text)
-    return html_mod.unescape(text)
+    # Decode only semicolon-terminated references: browsers keep legacy
+    # semicolon-less names (e.g. "&copy 2024") as literal text, and so do
+    # wikilinks, which compute the ID from the raw title.
+    return _CHAR_REF_RE.sub(lambda m: html_mod.unescape(m.group(0)), text)
 
 
 class _EssayTreeprocessor(Treeprocessor):

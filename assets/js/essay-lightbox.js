@@ -24,7 +24,7 @@ function _getLbCaptionEl() {
 function _isFilenameAlt(alt) {
   if (!alt) return false;
   if (/\.(jpe?g|png|gif|webp|avif)$/i.test(alt)) return true;
-  return /^(img|dsc|pxl|mvimg|pasted[-_ ]?image|image|photo|screenshot)[-_ ]?\d/i.test(alt);
+  return /^(img|dsc|dscf|pxl|mvimg|pasted[-_ ]?image|image|photo|screenshot|wechatimg|mmexport|微信图片|屏幕截图)[-_ ]?[0-9][0-9_\- ]*$/i.test(alt);
 }
 function _updateLbDisplay(imgEl) {
   if (!imgEl) return;
