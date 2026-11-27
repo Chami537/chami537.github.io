@@ -8,6 +8,10 @@
     <loc>https://chami537.github.io/archive.html</loc>
     <priority>0.8</priority>
   </url>
+  <url>
+    <loc>https://chami537.github.io/map.html</loc>
+    <priority>0.8</priority>
+  </url>
 {% for e in essays %}
   <url>
     <loc>https://chami537.github.io/essays/{{ e.slug | e }}.html</loc>

@@ -291,19 +291,45 @@ def test_decrypt_wrong_password():
 
 # ── Public essays generation ──
 
-def test_generate_public_essays_lists_protected_essays_without_passwords(tmp_path, monkeypatch):
-    """Protected essays remain discoverable while their passwords stay private."""
+@pytest.mark.parametrize('source_format', ['markdown', 'html-fallback'])
+def test_generate_public_essays_lists_protected_essays_without_passwords(tmp_path, monkeypatch, source_format):
+    """No-secrets builds expose only public metadata and preserve lock flags."""
+    import backend.ssg as ssg
+    from backend.story_service import public_essay_slugs
+
+    encrypted = _encrypt_content('private-body-fixture', 'fixture-password')
     test_essays = [
-        {'slug': 'a', 'title': 'Visible', 'password': 'secret123'},
+        {'slug': 'a', 'title': 'Visible', 'password': 'secret123',
+         'body': 'private-body-fixture', 'content': 'private-content-fixture',
+         'api_key': 'private-key-fixture', 'credentials': {'token': 'private-token-fixture'},
+         'encrypted_body': encrypted, 'tag': '技术'},
         {'slug': 'b', 'title': 'Protected', 'password': 'top'},
-        {'slug': 'c', 'title': 'Also Visible'},
+        {'slug': 'c', 'title': 'Also Visible', 'excerpt': 'Public excerpt',
+         'date': '2026-11-27', 'pinned': True, 'readTime': 3},
     ]
     monkeypatch.setattr('backend.ssg.load_json', lambda f: test_essays)
-    monkeypatch.setattr('backend.ssg.get_essay_password', lambda slug: 'secret' if slug in ('a', 'b') else '')
+    monkeypatch.setattr('backend.data.PASSWORD_STORE', str(tmp_path / 'missing-password-store.json'))
+    def unexpected_password_lookup(_slug):
+        pytest.fail('Public metadata must not read the password store')
+    monkeypatch.setattr(ssg, 'get_essay_password', unexpected_password_lookup)
     public_path = tmp_path / 'essays_public.json'
-    monkeypatch.setattr('backend.ssg.DATA_DIR', str(tmp_path))
+    monkeypatch.setattr(ssg, 'DATA_DIR', str(tmp_path))
+    monkeypatch.setattr(ssg, 'BASE_DIR', str(tmp_path))
+    monkeypatch.setattr(ssg, 'MD_DIR', str(tmp_path / 'md'))
+    monkeypatch.setattr(ssg, 'ESSAYS_DIR', str(tmp_path / 'essays'))
+    monkeypatch.setattr(ssg, '_ordered_public_tags', sorted)
+    for slug in ('a', 'b'):
+        if source_format == 'markdown':
+            source = tmp_path / 'md' / f'{slug}.md'
+            content = encrypted
+        else:
+            source = tmp_path / 'essays' / f'{slug}.html'
+            content = f'<!-- RAW_MD\n{encrypted}\nRAW_MD -->'
+        source.parent.mkdir(exist_ok=True)
+        source.write_text(content, encoding='utf-8')
 
     _generate_public_essays()
+    ssg._generate_archive(test_essays)
 
     with open(public_path, 'r', encoding='utf-8') as f:
         data = json.load(f)
@@ -313,9 +339,26 @@ def test_generate_public_essays_lists_protected_essays_without_passwords(tmp_pat
     slugs = [e['slug'] for e in visible]
     assert slugs == ['a', 'b', 'c']
     assert [e['password_protected'] for e in visible] == [True, True, False]
-    # Password must be stripped
-    for e in visible:
-        assert 'password' not in e
+    assert visible[0] == {
+        'slug': 'a', 'title': 'Visible', 'tag': '技术',
+        'date_display': '', 'password_protected': True,
+    }
+    assert visible[2] == {
+        'slug': 'c', 'title': 'Also Visible', 'excerpt': 'Public excerpt',
+        'date': '2026-11-27', 'pinned': True, 'readTime': 3,
+        'date_display': '2026-11-27', 'password_protected': False,
+    }
+    assert data['_tags'] == ['技术']
+    archive = ssg._prepare_archive_data(test_essays)
+    assert json.loads(archive['essays_json']) == [visible[2], visible[0], visible[1]]
+    for output in (public_path, tmp_path / 'archive.html'):
+        text = output.read_text(encoding='utf-8')
+        for private_value in (
+            'private-body-fixture', 'private-content-fixture', 'private-key-fixture',
+            'private-token-fixture', 'secret123', encrypted,
+        ):
+            assert private_value not in text
+    assert public_essay_slugs(visible, has_password=lambda _: False) == {'c'}
 
 
 def test_render_markdown_blocks_javascript_links():
@@ -392,6 +435,7 @@ def test_sync_essay_html_without_password(tmp_path, monkeypatch):
 
     html = (essays_dir / 'test.html').read_text()
     assert 'id="essay-gate"' not in html
+    assert '<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">' in html
     assert 'essay-body' in html
     assert 'Hello World' in html
     assert '<del>deleted</del>' in html
@@ -575,6 +619,7 @@ def test_sync_essay_html_with_password(tmp_path, monkeypatch):
 
     html = (essays_dir / 'test.html').read_text()
     assert 'id="essay-gate"' in html
+    assert '<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">' in html
     assert '_encryptedBody' in html
     assert '此内容已隐藏' in html
     assert 'waitForEssayDependencies' in html
@@ -725,6 +770,16 @@ def test_sync_essay_html_encrypted_no_password_ci(tmp_path, monkeypatch):
     assert 'id="essay-gate"' in html         # gate must appear
     assert '_encryptedIsMd' in html          # flag for client-side MD rendering
     assert 'CI test' not in html             # plaintext must not appear
+    assert '<meta property="og:image" content="https://chami537.github.io/images/avatar.jpg">' in html
+
+
+@pytest.mark.parametrize('raw_md', ['', '   ', 'Text without images'])
+def test_image_less_essay_body_uses_default_social_image(monkeypatch, raw_md):
+    from backend.ssg import _prepare_essay_body
+
+    monkeypatch.setattr('backend.ssg.get_essay_password', lambda _: '')
+    body = _prepare_essay_body('image-less', raw_md, '')
+    assert body['og_image'] == 'https://chami537.github.io/images/avatar.jpg'
 
 
 # ── get_image_ext ──
@@ -749,9 +804,12 @@ def test_get_image_ext_invalid():
 
 def test_strip_enrich_strips_password():
     from backend.essay_feed_data import strip_enrich
-    essays = [{'slug': 'a', 'title': 'A', 'date': '2026-01-01', 'password': 'secret'}]
+    essays = [{
+        'slug': 'a', 'title': 'A', 'date': '2026-01-01', 'password': 'secret',
+        'body': 'private body', 'content': 'private content', 'token': 'private token',
+    }]
     result = strip_enrich(essays, 'pub_date', '%Y-%m-%d')
-    assert 'password' not in result[0]
+    assert result == [{'slug': 'a', 'title': 'A', 'date': '2026-01-01', 'pub_date': '2026-01-01'}]
 
 def test_strip_enrich_rss_format():
     from backend.essay_feed_data import strip_enrich
@@ -781,6 +839,25 @@ def test_strip_enrich_limit():
     ]
     result = strip_enrich(essays, 'pub_date', '%Y-%m-%d', 2)
     assert len(result) == 2
+
+
+def test_rss_keeps_newest_twenty_before_truncating(tmp_path, monkeypatch):
+    import backend.ssg as ssg
+    from backend.essay_feed_data import strip_enrich
+    from xml.etree import ElementTree
+
+    days = list(range(1, 22, 2)) + list(range(2, 22, 2))
+    essays = [{'slug': f'day-{day}', 'date': f'2026-11-{day:02d}'} for day in days]
+    expected = [f'day-{day}' for day in range(21, 1, -1)]
+    result = strip_enrich(essays, 'pub_date', '%Y-%m-%d', limit=20)
+    assert [essay['slug'] for essay in result] == expected
+    assert [essay['date'] for essay in result] == sorted((essay['date'] for essay in result), reverse=True)
+    assert [essay['slug'] for essay in essays] == [f'day-{day}' for day in days]
+
+    monkeypatch.setattr(ssg, 'BASE_DIR', str(tmp_path))
+    ssg._generate_rss(essays)
+    links = [item.findtext('link') for item in ElementTree.parse(tmp_path / 'rss.xml').findall('channel/item')]
+    assert links == [f'https://chami537.github.io/essays/{slug}.html' for slug in expected]
 
 
 # ── Encryption full-chain (HMAC v2 / Fernet) ──

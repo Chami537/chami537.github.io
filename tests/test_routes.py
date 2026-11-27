@@ -993,7 +993,7 @@ def test_obsidian_image_embed_is_copied_and_rewritten(monkeypatch, tmp_path):
 
     rendered = essay_catalog._prepare_new_essay(essay, essay['slug'])
     assert rendered == '# 正文首个标题\n\n![photo](/images/essays/双指针法/photo.jpg)'
-    assert essay['body'] == rendered
+    assert 'body' not in essay
     assert 'sourceName' not in essay
     assert (public / 'essays' / '双指针法' / 'photo.jpg').is_file()
     rendered_again = essay_local_sync._materialize_obsidian_images('![[photo.jpg]]', str(note), essay)

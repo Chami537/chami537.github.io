@@ -1,6 +1,14 @@
 // Essay Giscus client loader.
 
-var gs = document.createElement('script');
+(function() {
+  var container = document.getElementById('giscus-container');
+  if (!container) return;
+
+  var loaded = false;
+  function loadGiscus() {
+    if (loaded) return;
+    loaded = true;
+    var gs = document.createElement('script');
     gs.src = 'https://giscus.app/client.js';
     gs.setAttribute('data-repo', 'Chami537/chami537.github.io');
     gs.setAttribute('data-repo-id', 'R_kgDOS6Xqvg');
@@ -17,5 +25,24 @@ var gs = document.createElement('script');
     gs.setAttribute('data-lang', 'zh-CN');
     gs.crossOrigin = 'anonymous';
     gs.async = true;
-    document.getElementById('giscus-container').appendChild(gs);
+    container.appendChild(gs);
+  }
+
+  if ('IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function(entries) {
+      for (var i = 0; i < entries.length; i++) {
+        if (entries[i].isIntersecting) {
+          observer.disconnect();
+          loadGiscus();
+          break;
+        }
+      }
+    }, { rootMargin: '200px 0px' });
+    observer.observe(container);
+  } else if ('requestIdleCallback' in window) {
+    requestIdleCallback(loadGiscus, { timeout: 2000 });
+  } else {
+    setTimeout(loadGiscus, 1500);
+  }
+})();
 

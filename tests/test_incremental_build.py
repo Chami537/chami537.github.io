@@ -162,3 +162,28 @@ def test_public_listing_refreshes_when_metadata_has_equal_timestamp(build_site):
     ssg._generate_public_essays(essays)
 
     assert json.loads(output.read_text(encoding='utf-8'))['essays'][0]['pinned'] is True
+
+
+@pytest.mark.parametrize('source_format', ['markdown', 'html-fallback'])
+def test_public_protection_flag_refreshes_when_only_source_changes(build_site, source_format):
+    from backend.essay_crypto import encrypt_content
+
+    root, essays = build_site
+    if source_format == 'html-fallback':
+        (root / 'md/probe.md').unlink()
+        source = root / 'essays/probe.html'
+        write_input(source, '<!-- RAW_MD\nPublic text\nRAW_MD -->')
+    else:
+        source = root / 'md/probe.md'
+    ssg._generate_public_essays(essays)
+    output = root / 'data/essays_public.json'
+    assert json.loads(output.read_text())['essays'][0]['password_protected'] is False
+    os.utime(output, (200, 200))
+
+    encrypted = encrypt_content('private fixture', 'fixture password')
+    content = encrypted if source_format == 'markdown' else f'<!-- RAW_MD\n{encrypted}\nRAW_MD -->'
+    write_input(source, content, modified=300)
+    ssg._generate_public_essays(essays)
+
+    assert json.loads(output.read_text())['essays'][0]['password_protected'] is True
+    assert encrypted not in output.read_text()
