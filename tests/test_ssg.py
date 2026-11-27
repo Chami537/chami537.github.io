@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 import pytest
 from PIL import Image
-from backend.asset_cache import cache_bust_assets
+from backend.asset_cache import asset_fingerprint, cache_bust_assets
 from backend.exif_utils import extract_exif as _extract_exif, extract_gps as _extract_gps
 from backend.ssg import (
     _calc_read_time, _parse_date,
@@ -154,8 +154,6 @@ def test_extract_exif_reads_nested_ifds():
 
 def test_cache_bust_assets(tmp_path, monkeypatch):
     """Verify cache bust replaces ?v=old → ?v=new in CSS/JS links."""
-    import time
-
     # Create temp copies of all HTML, CSS, JS files
     configs = [
         ('index.html', (
@@ -222,23 +220,19 @@ def test_cache_bust_assets(tmp_path, monkeypatch):
         js_tags = '\n'.join(f'<script src="{js_fn}?v=999"></script>' for js_fn in js_fns)
         (tmp_path / html_fn).write_text(f'{css_tags}\n{js_tags}')
 
-    now = int(time.time())
-    monkeypatch.setattr('os.path.getmtime', lambda p: now)
-    monkeypatch.setattr('os.path.exists', lambda p: True)
-
     cache_bust_assets(str(tmp_path))
 
     for html_fn, css_fns, js_fns in configs:
         result = (tmp_path / html_fn).read_text()
         for css_fn in css_fns:
-            assert f'{css_fn}?v={now}' in result
+            assert f'{css_fn}?v={asset_fingerprint(tmp_path / css_fn)}' in result
         for js_fn in js_fns:
-            assert f'{js_fn}?v={now}' in result
+            assert f'{js_fn}?v={asset_fingerprint(tmp_path / js_fn)}' in result
             assert '?v=999' not in result
 
 
 def test_cache_bust_assets_discovers_all_local_html_references(tmp_path):
-    from backend.asset_cache import cache_bust_assets
+    from backend.asset_cache import asset_fingerprint, cache_bust_assets
 
     assets = (
         ('assets/js/admin-core.js', 100),
@@ -262,7 +256,7 @@ def test_cache_bust_assets_discovers_all_local_html_references(tmp_path):
 
     result = (tmp_path / 'admin.html').read_text(encoding='utf-8')
     for relative_path, _modified in assets:
-        assert f'{relative_path}?v=300' in result
+        assert f'{relative_path}?v={asset_fingerprint(tmp_path / relative_path)}' in result
     assert 'https://cdn.example.test/library.js?v=1' in result
 
 
@@ -373,7 +367,7 @@ def test_render_markdown_resolves_public_wikilinks():
         essay_links=[{'slug': 'target', 'title': '目标文章'}],
     )
     assert '<a class="essay-wikilink" href="target.html">目标文章</a>' in html
-    assert '<a class="essay-wikilink" href="target.html#引言">这篇文章</a>' in html
+    assert '<a class="essay-wikilink" href="target.html#heading-引言">这篇文章</a>' in html
 
 
 def test_render_markdown_keeps_unknown_wikilinks():
@@ -444,7 +438,7 @@ def test_sync_essay_html_without_password(tmp_path, monkeypatch):
     assert 'class="language-c"' in html
     assert '#include &lt;stdio.h&gt;' in html
     assert '#include &amp;lt;stdio.h&amp;gt;' not in html
-    assert '<script src="/assets/js/essay-code.js?v=' in html
+    assert '<script src="/assets/js/essay-code.js"></script>' in html  # Fixture has no assets.
     essay_code = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'essay-code.js').read_text(encoding='utf-8')
     shared_code = (Path(__file__).resolve().parents[1] / 'assets' / 'js' / 'code-rendering.js').read_text(encoding='utf-8')
     assert 'highlightCodeBlocks' in essay_code
@@ -513,7 +507,7 @@ def test_sync_essay_html_giscus_loads_in_preview_and_full_width(tmp_path, monkey
     assert "location.hostname !== 'localhost'" not in html
     assert "location.hostname !== '127.0.0.1'" not in html
     assert '<div class="comments-section" id="giscus-container"></div>' in html
-    assert '<link rel="stylesheet" href="/assets/css/essay.css?v=' in html
+    assert '<link rel="stylesheet" href="/assets/css/essay.css">' in html  # Fixture has no assets.
     essay_css = (Path(__file__).resolve().parents[1] / 'assets' / 'css' / 'essay.css').read_text(encoding='utf-8')
     assert '.comments-section .giscus-frame' in essay_css
     assert 'width: 100% !important' in essay_css
@@ -532,11 +526,11 @@ def test_theme_sync_covers_system_tabs_and_giscus_initial_state():
     assert "window.addEventListener('storage'" in theme_js
     assert "event.key !== 'theme'" in theme_js
     assert "matchMedia('(prefers-color-scheme: dark)')" in theme_js
-    assert 'src="/assets/js/essay-giscus.js?v={{ build_ts }}"' in essay_template
+    assert "asset_url('/assets/js/essay-giscus.js')" in essay_template
     assert "window.addEventListener('themechange', syncGiscusTheme)" in giscus_js
-    assert 'src="/assets/js/essay-comments.js?v={{ build_ts }}"' in essay_template
+    assert "asset_url('/assets/js/essay-comments.js')" in essay_template
     assert "gs.setAttribute('data-theme', document.documentElement.classList.contains('dark')" in comments_js
-    assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in essay_template
+    assert "asset_url('/assets/js/theme.js')" in essay_template
     assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in archive_template
     assert 'src="/assets/js/theme.js?v={{ build_ts }}"' in map_template
 

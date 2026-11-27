@@ -146,7 +146,14 @@ photos.forEach(function(p) {
   var gps = p.exif.gps;
   var ex = p.exif;
   var camera = (ex.model || ex.camera || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-  var popupHtml = '<img src="images/sm/' + p.filename.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '">';
+  var altParts = [];
+  if (p.location) altParts.push(p.location);
+  if (Array.isArray(p.tags) && p.tags.length) altParts.push(p.tags.join(', '));
+  var pDate = p.date || ex.date || '';
+  if (pDate) altParts.push(pDate);
+  altParts.push(Math.abs(gps.lat).toFixed(2) + '°' + (gps.lat >= 0 ? 'N' : 'S') + ', ' + Math.abs(gps.lng).toFixed(2) + '°' + (gps.lng >= 0 ? 'E' : 'W'));
+  var altText = altParts.join(' · ').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  var popupHtml = '<img src="images/sm/' + p.filename.replace(/&/g,'&amp;').replace(/"/g,'&quot;') + '" alt="' + altText + '">';
   if (camera) popupHtml += '<b>' + camera + '</b>';
   var parts = [];
   if (ex.focal) parts.push(ex.focal.replace(/&/g,'&amp;').replace(/</g,'&lt;'));

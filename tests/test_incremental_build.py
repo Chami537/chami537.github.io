@@ -11,7 +11,7 @@ from jinja2 import Environment, FileSystemLoader
 
 import backend.data as data
 import backend.ssg as ssg
-from backend.asset_cache import cache_bust_assets
+from backend.asset_cache import asset_fingerprint, cache_bust_assets
 from backend.essay_repository import EssayRepository
 from backend.photo_repository import PhotoRepository
 from backend.storage import JsonStore
@@ -106,7 +106,7 @@ def test_build_command_rebuilds_essay_after_include_changes(build_site, monkeypa
     runpy.run_path(str(ROOT / 'manage.py'), run_name='__main__')
 
     assert content in output.read_text(encoding='utf-8')
-    assert '<h1>Body</h1>' in output.read_text(encoding='utf-8')
+    assert '<h1 id="heading-body">Body</h1>' in output.read_text(encoding='utf-8')
 
 
 @pytest.mark.parametrize('page,generator', [
@@ -142,7 +142,8 @@ def test_build_command_skips_unchanged_essay(build_site, monkeypatch):
 def test_cache_bust_preserves_unchanged_entry_page(tmp_path, page):
     write_input(tmp_path / 'assets/js/example.js', '// script')
     output = tmp_path / page
-    html = '<script src="assets/js/example.js?v=100"></script>'
+    fingerprint = asset_fingerprint(tmp_path / 'assets/js/example.js')
+    html = f'<script src="assets/js/example.js?v={fingerprint}"></script>'
     write_input(output, html, modified=200)
 
     cache_bust_assets(str(tmp_path))

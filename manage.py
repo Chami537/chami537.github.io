@@ -11,7 +11,7 @@ if __name__ == '__main__':
     if len(sys.argv) > 1:
         if sys.argv[1] == 'build':
             from backend.asset_cache import cache_bust_assets
-            from backend.ssg import generate_feeds, sync_essay_html, template_dependencies
+            from backend.ssg import generate_feeds, sync_essay_html, essay_dependencies, essay_needs_regeneration
             from backend.site_health import run_site_health
             force = '--force' in sys.argv
             health = run_site_health(BASE_DIR, has_essay_password)
@@ -29,8 +29,7 @@ if __name__ == '__main__':
             if not os.path.exists(essay_template):
                 print("ERROR: templates/essay.html not found")
                 sys.exit(1)
-            template_mtime = max(os.path.getmtime(path) for path in template_dependencies('essay.html'))
-            essays_mtime = os.path.getmtime(essays_json)
+            shared_inputs = [essays_json, *essay_dependencies()]
 
             rebuilt = 0
             skipped = 0
@@ -40,9 +39,7 @@ if __name__ == '__main__':
                 md_path = os.path.join(MD_DIR, f'{slug}.md')
 
                 if not force and os.path.exists(html_path):
-                    html_mtime = os.path.getmtime(html_path)
-                    md_mtime = os.path.getmtime(md_path) if os.path.exists(md_path) else 0
-                    if html_mtime >= md_mtime and html_mtime >= essays_mtime and html_mtime >= template_mtime:
+                    if not essay_needs_regeneration(html_path, [md_path, *shared_inputs]):
                         skipped += 1
                         continue
 

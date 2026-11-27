@@ -14,13 +14,33 @@ function _photoItemHtml(photo, index) {
   var dateHtml = meta.date ? '<span class="photo-date">' + htmlEncode(meta.date) + '</span>' : '';
   var infoHtml = (meta.exifText || meta.gpsHtml) ? '<div class="photo-info">' + meta.exifText + meta.gpsHtml + '</div>' : '';
   var tagStr = (photo.tags || []).join(',');
+  var srcset = _photoSrcset(filename, photo.variants);
+  var fallback = (photo.variants && photo.variants.sm) || photo;
+  var dimensions = fallback.width > 0 && fallback.height > 0
+    ? ' width="' + Number(fallback.width) + '" height="' + Number(fallback.height) + '"' : '';
   return '<div class="photo-item" data-tags="' + htmlEncode(tagStr) + '">' +
-    '<img src="images/sm/' + filename + '" srcset="' + _photoSrcset(filename) + '" sizes="(max-width: 768px) 50vw, 33vw" alt="Photo" loading="' + (index === 0 ? 'eager' : 'lazy') + '" decoding="async"' + (index === 0 ? ' fetchpriority="high"' : '') + ' data-exif="' + htmlEncode(meta.exifText + (meta.gpsText ? ' · ' + meta.gpsText : '') + (meta.date ? ' · ' + meta.date : '')) + '">' +
+    '<img src="images/sm/' + filename + '"' + dimensions + (srcset ? ' srcset="' + srcset + '" sizes="' + _photoSizes() + '"' : '') + ' alt="Photo" loading="' + (index === 0 ? 'eager' : 'lazy') + '" decoding="async"' + (index === 0 ? ' fetchpriority="high"' : '') + ' data-exif="' + htmlEncode(meta.exifText + (meta.gpsText ? ' · ' + meta.gpsText : '') + (meta.date ? ' · ' + meta.date : '')) + '">' +
     dateHtml + infoHtml + '</div>';
 }
 
-function _photoSrcset(filename) {
-  return 'images/sm/' + filename + ' 400w, images/md/' + filename + ' 800w, images/lg/' + filename + ' 1920w';
+function _photoSrcset(filename, variants) {
+  var seen = new Set();
+  return ['sm', 'md', 'lg'].map(function(size) {
+    var width = variants && variants[size] && variants[size].width;
+    if (!Number.isInteger(width) || width <= 0 || seen.has(width)) return '';
+    seen.add(width);
+    return 'images/' + size + '/' + filename + ' ' + width + 'w';
+  }).filter(Boolean).join(', ');
+}
+
+function _photoSizes() {
+  // Match index.js's initial column count and index-polish.css's mobile override.
+  var total = (window._photoData || []).length;
+  var columns = total ? (total <= 2 ? 2 : total <= 4 ? 3 : total <= 12 ? 4 : 5) : 5;
+  var spacing = 96 + (columns - 1) * 3;
+  return '(max-width: 768px) calc((100vw - 44px) / 2), ' +
+    '(max-width: 1200px) calc((100vw - ' + spacing + 'px) / ' + columns + '), ' +
+    ((1200 - spacing) / columns) + 'px';
 }
 
 function _photoMeta(photo, exif) {

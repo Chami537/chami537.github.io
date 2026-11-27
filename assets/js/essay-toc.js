@@ -1,12 +1,29 @@
 // Build an interactive table of contents from Markdown h1/h2/h3 headings.
 
+// Keep these pure helpers in sync with heading_id(s) in markdown_utils.py.
+function essayHeadingId(text) {
+  var slug = String(text || '').trim().toLowerCase()
+    .replace(/[^a-z0-9_\u3400-\u9fff\s-]/g, '')
+    .replace(/[\s_-]+/g, '-').replace(/^-+|-+$/g, '');
+  return 'heading-' + (slug || 'section');
+}
+
+function essayHeadingIds(texts, existingIds, reserved) {
+  existingIds = existingIds || texts.map(function() { return ''; });
+  var provided = new Set(existingIds.filter(Boolean));
+  var used = new Set(reserved || []);
+  return texts.map(function(text, index) {
+    var existing = existingIds[index];
+    var base = existing || essayHeadingId(text);
+    var id = base;
+    var suffix = 2;
+    while (used.has(id) || (!existing && provided.has(id))) id = base + '-' + suffix++;
+    used.add(id);
+    return id;
+  });
+}
+
 (function() {
-  function headingId(text, index) {
-    var slug = String(text || '').trim().toLowerCase()
-      .replace(/[^\w\u3400-\u9fff\s-]/g, '')
-      .trim().replace(/[\s_-]+/g, '-');
-    return slug ? 'heading-' + slug : 'heading-' + (index + 1);
-  }
 
   function setGroupState(button, list, expanded, animate) {
     if (!animate) {
@@ -73,9 +90,22 @@
     var list = document.getElementById('essay-toc-list');
     if (!root || !toc || !list) return;
 
-    var headings = Array.from(root.querySelectorAll('h1, h2, h3'));
+    var allHeadings = Array.from(root.querySelectorAll('h1, h2, h3, h4, h5, h6'));
+    var reserved = Array.from(document.querySelectorAll('[id]')).filter(function(element) {
+      return allHeadings.indexOf(element) < 0;
+    }).map(function(element) { return element.id; });
+    var ids = essayHeadingIds(allHeadings.map(function(heading) { return heading.textContent; }),
+      allHeadings.map(function(heading) { return heading.id; }), reserved);
+    allHeadings.forEach(function(heading, index) { heading.id = ids[index]; });
+    // Decrypted Markdown appears after the browser's initial fragment lookup.
+    if (window.location.hash) {
+      var fragment;
+      try { fragment = decodeURIComponent(window.location.hash.slice(1)); } catch (_error) { fragment = ''; }
+      var target = allHeadings.find(function(heading) { return heading.id === fragment; });
+      if (target) requestAnimationFrame(function() { target.scrollIntoView({block: 'start'}); });
+    }
+    var headings = allHeadings.filter(function(heading) { return Number(heading.tagName.slice(1)) <= 3; });
     list.replaceChildren();
-    var usedIds = new Set();
     var stack = [];
     var groupLists = [];
     var linksByHeading = new Map();
@@ -98,16 +128,8 @@
       return sublist;
     }
 
-    headings.forEach(function(heading, index) {
-      var baseId = heading.id || headingId(heading.textContent, index);
-      var id = baseId;
-      var suffix = 2;
-      while (usedIds.has(id) || (document.getElementById(id) && document.getElementById(id) !== heading)) {
-        id = baseId + '-' + suffix++;
-      }
-      heading.id = id;
+    headings.forEach(function(heading) {
       heading.classList.add('essay-toc-heading');
-      usedIds.add(id);
 
       var level = Number(heading.tagName.slice(1));
       while (stack.length && stack[stack.length - 1].level >= level) stack.pop();

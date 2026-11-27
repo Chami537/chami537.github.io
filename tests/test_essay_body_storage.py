@@ -167,7 +167,7 @@ def test_build_removes_legacy_protected_body_from_every_uploaded_file(essay_site
     public = json.loads((root / 'data/essays_public.json').read_text())['essays']
     assert [essay['password_protected'] for essay in public] == [True, False]
     assert 'id="essay-gate"' in (root / 'essays/private-fixture.html').read_text()
-    assert '<h1>Public body</h1>' in (root / 'essays/public-fixture.html').read_text()
+    assert '<h1 id="heading-public-body">Public body</h1>' in (root / 'essays/public-fixture.html').read_text()
     for name in ('data/essays.json', 'data/essays_public.json', 'essays/private-fixture.html',
                  'essays/public-fixture.html', 'archive.html', 'rss.xml', 'sitemap.xml'):
         assert (root / name).is_file(), name
@@ -213,7 +213,7 @@ def test_public_list_render_editor_and_feeds_preserve_behavior(client, essay_sit
 
     assert outputs() == before
     assert repository.list() == [{key: value for key, value in essay.items() if key not in ('body', 'content')}]
-    assert '<h1>Public heading</h1>' in before['essays/public-fixture.html']
+    assert '<h1 id="heading-public-heading">Public heading</h1>' in before['essays/public-fixture.html']
     assert '<strong>formatting</strong>' in before['essays/public-fixture.html']
     assert client.get('/api/essays/public-fixture/content').json['content'] == source
     listed = client.get('/api/essays').json

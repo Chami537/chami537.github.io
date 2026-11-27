@@ -88,7 +88,19 @@ def admin_panel():
 # ── Static file serving (for index.html preview) ──
 @app.route('/assets/<path:filename>')
 def serve_assets(filename):
-    return send_from_directory(os.path.join(BASE_DIR, 'assets'), filename, max_age=_STATIC_MAX_AGE)
+    from backend.asset_cache import asset_fingerprint, asset_path
+    path = asset_path(BASE_DIR, '/assets/' + filename)
+    fingerprinted = (
+        path is not None and path.is_file()
+        and request.args.get('v') == asset_fingerprint(path)
+    )
+    response = send_from_directory(
+        os.path.join(BASE_DIR, 'assets'), filename,
+        max_age=_STATIC_MAX_AGE if fingerprinted else 0,
+    )
+    if fingerprinted:
+        response.cache_control.immutable = True
+    return response
 
 
 @app.route('/data/<path:filename>')

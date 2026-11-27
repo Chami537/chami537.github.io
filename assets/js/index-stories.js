@@ -158,9 +158,13 @@ window.StoriesShelf = (function() {
     container._storiesObserver.observe(container);
   }
   async function load() {
-    var response = await fetch('data/stories.json?v=' + Date.now());
-    if (!response.ok) throw new Error('书架暂时无法加载');
-    var items = await response.json();
+    var url = typeof dataUrl === 'function' ? dataUrl('data/stories.json') : 'data/stories.json';
+    var items = typeof fetchJsonWithTimeout === 'function'
+      ? await fetchJsonWithTimeout(url)
+      : await fetch(url).then(function(response) {
+          if (!response.ok) throw new Error('书架暂时无法加载');
+          return response.json();
+        });
     if (!Array.isArray(items)) throw new Error('书架数据格式异常');
     return items.filter(function(item) { return item && Number.isSafeInteger(item.id) && item.id > 0; });
   }
@@ -171,9 +175,12 @@ window.StoriesShelf = (function() {
       var items = await load();
       var essays = [];
       if (items.some(function(item) { return item.essay_slug; })) {
-        essays = await fetch('data/essays_public.json?v=' + Date.now()).then(function(r) {
-          return r.ok ? r.json() : null;
-        }).then(function(data) { return data ? (Array.isArray(data) ? data : data.essays || []) : []; }).catch(function() { return []; });
+        var essaysPromise = typeof fetchEssaysPublic === 'function'
+          ? fetchEssaysPublic()
+          : fetch('data/essays_public.json').then(function(r) { return r.ok ? r.json() : null; });
+        essays = await essaysPromise.then(function(data) {
+          return data ? (Array.isArray(data) ? data : data.essays || []) : [];
+        }).catch(function() { return []; });
       }
       render(document.getElementById('stories-list'), items, essays);
       section.hidden = items.length === 0;
