@@ -105,7 +105,7 @@ section[id]:last-of-type { border-bottom: none; }
 #photos { padding: 100px 0; }
 .photo-stories { display: flex; gap: 22px; overflow-x: auto; padding: 2px 0 28px; margin: -10px 0 14px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
 .photo-stories::-webkit-scrollbar { height: 4px; }
-.photo-stories::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+.photo-stories::-webkit-scrollbar-thumb { background: var(--line); border-radius: 2px; }
 .story-card {
   flex: 0 0 224px;
   cursor: pointer;

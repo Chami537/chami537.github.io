@@ -20,7 +20,7 @@ from backend.data import get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_
 from backend.essay_navigation import parse_tags as _parse_tags, find_adjacent_siblings as _find_adjacent_siblings, build_nav as _build_nav
 from backend.essay_feed_data import strip_enrich
 from backend.essay_repository import EssayRepository
-from backend.essay_service import EssayService, is_essay_visible
+from backend.essay_service import EssayService
 from backend.essay_renderer import render_essay_html, write_essay_html
 from backend.file_utils import atomic_write_text
 from backend.repositories import PHOTO_REPOSITORY, repository_for
@@ -29,6 +29,7 @@ from jinja2 import Environment, FileSystemLoader, meta
 _env = Environment(loader=FileSystemLoader(os.path.join(BASE_DIR, 'templates')))
 ESSAY_REPOSITORY = EssayRepository(STORE)
 ESSAY_SERVICE = EssayService(ESSAY_REPOSITORY)
+DEFAULT_OG_IMAGE = 'https://chami537.github.io/images/avatar.jpg'
 
 
 def load_json(name):
@@ -69,14 +70,14 @@ def _parse_date(date_str, include_time=False):
 def _extract_first_image(md_text):
     """Extract first image URL from Markdown for Open Graph og:image."""
     if not md_text:
-        return 'https://chami537.github.io/images/avatar.jpg'
+        return DEFAULT_OG_IMAGE
     m = re.search(r'!\[.*?\]\((.*?)\)', md_text)
     if m:
         url = m.group(1)
         if url.startswith('http'):
             return url
         return 'https://chami537.github.io/' + url.lstrip('/')
-    return 'https://chami537.github.io/images/avatar.jpg'
+    return DEFAULT_OG_IMAGE
 
 
 def _needs_regeneration(output_path, input_paths):
@@ -130,7 +131,7 @@ def _generate_sitemap(essays=None):
 
 
 def _prepare_archive_data(essays):
-    cleaned = [{k: v for k, v in e.items() if k != 'password'} for e in essays if is_essay_visible(e)]
+    cleaned, _ = _public_essay_data(essays)
     essays_sorted = sorted(cleaned, key=lambda e: e.get('date', ''), reverse=True)
     return {
         'total': len(cleaned),
@@ -141,10 +142,11 @@ def _prepare_archive_data(essays):
 def _generate_archive(essays=None):
     """Generate archive.html — timeline grouped by year (Jinja2 template)."""
     output_path = os.path.join(BASE_DIR, 'archive.html')
-    inputs = [os.path.join(DATA_DIR, 'essays.json'), *template_dependencies('archive.html')]
+    essays = ESSAY_REPOSITORY.list() if essays is None else essays
+    inputs = [os.path.join(DATA_DIR, 'essays.json'), *template_dependencies('archive.html'), *_essay_source_paths(essays)]
     if not _needs_regeneration(output_path, inputs):
         return
-    context = _prepare_archive_data(ESSAY_REPOSITORY.list() if essays is None else essays)
+    context = _prepare_archive_data(essays)
     html = _env.get_template('archive.html').render(
         **context,
         build_ts=int(datetime.now().timestamp()))
@@ -184,7 +186,16 @@ def _generate_map(photos=None):
 
 
 def _public_essay_data(essays):
-    return ESSAY_SERVICE.public_listing(essays, _parse_date, get_essay_password)
+    return ESSAY_SERVICE.public_listing(essays, _parse_date, _read_essay_source)
+
+
+def _essay_source_paths(essays):
+    """Protection metadata changes when Markdown or its HTML fallback changes."""
+    return [
+        os.path.join(directory, f'{essay["slug"]}.{suffix}')
+        for essay in essays
+        for directory, suffix in ((MD_DIR, 'md'), (ESSAYS_DIR, 'html'))
+    ]
 
 
 def _ordered_public_tags(all_tags):
@@ -200,12 +211,10 @@ def _ordered_public_tags(all_tags):
 def _generate_public_essays(essays=None):
     """Write public listing metadata without exposing passwords or essay bodies."""
     public_path = os.path.join(DATA_DIR, 'essays_public.json')
-    inputs = [os.path.join(DATA_DIR, 'essays.json'), os.path.join(DATA_DIR, 'tags_order.json')]
-    if os.path.exists(os.path.join(DATA_DIR, 'essay_passwords.json')):
-        inputs.append(os.path.join(DATA_DIR, 'essay_passwords.json'))
+    essays = load_json('essays.json') if essays is None else essays
+    inputs = [os.path.join(DATA_DIR, 'essays.json'), os.path.join(DATA_DIR, 'tags_order.json'), *_essay_source_paths(essays)]
     if not _needs_regeneration(public_path, inputs):
         return
-    essays = load_json('essays.json') if essays is None else essays
     visible, all_tags = _public_essay_data(essays)
     public_data = {'_tags': _ordered_public_tags(all_tags), 'essays': visible}
     atomic_write_text(
@@ -249,13 +258,13 @@ def _read_essay_source(slug):
 
 def _prepare_essay_body(slug, raw_md, last_edited, essays=None):
     if raw_md and _is_encrypted_v3(raw_md):
-        return {'password_protected': True, 'encrypted_body': raw_md, 'body_html': '', 'encrypted_is_md': True, 'og_image': '', 'raw_md': raw_md}
+        return {'password_protected': True, 'encrypted_body': raw_md, 'body_html': '', 'encrypted_is_md': True, 'og_image': DEFAULT_OG_IMAGE, 'raw_md': raw_md}
     if not raw_md or not raw_md.strip():
-        return {'password_protected': False, 'encrypted_body': '', 'body_html': '', 'encrypted_is_md': False, 'og_image': '', 'raw_md': raw_md or ''}
+        return {'password_protected': False, 'encrypted_body': '', 'body_html': '', 'encrypted_is_md': False, 'og_image': DEFAULT_OG_IMAGE, 'raw_md': raw_md or ''}
     password = get_essay_password(slug)
     if password:
         stored = _persist_essay_source(slug, raw_md)
-        return {'password_protected': True, 'encrypted_body': stored, 'body_html': '', 'encrypted_is_md': True, 'og_image': ''}
+        return {'password_protected': True, 'encrypted_body': stored, 'body_html': '', 'encrypted_is_md': True, 'og_image': DEFAULT_OG_IMAGE}
     rendered_html = render_markdown(raw_md, essay_links=essays)
     return {
         'password_protected': False,

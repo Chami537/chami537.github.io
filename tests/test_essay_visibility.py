@@ -92,6 +92,30 @@ def test_visibility_create_update_restore_and_preserve(client, isolated_essays):
     assert repository.list()[1]['visible'] is False
 
 
+@pytest.mark.parametrize('password', ['', 'fixture-password'])
+def test_created_body_is_only_passed_to_source_generation(client, isolated_essays, monkeypatch, password):
+    from backend.routes import essay_catalog, essay_context
+
+    repository, _ = isolated_essays
+    calls = []
+    monkeypatch.setattr(essay_catalog, 'store_password', lambda *_: None)
+    monkeypatch.setattr(
+        essay_context.ESSAY_WORKFLOW, 'sync',
+        lambda essay, **kwargs: calls.append((dict(essay), kwargs)),
+    )
+    response = client.post('/api/essays', json={
+        'slug': 'imported', 'title': 'Imported',
+        'body': 'private imported body', 'password': password,
+    })
+
+    assert response.status_code == 201
+    assert 'body' not in response.json
+    assert 'password' not in response.json
+    assert 'body' not in repository.list()[0]
+    assert calls[0][1]['raw_md_memory'] == 'private imported body'
+    assert 'body' not in calls[0][0]
+
+
 @pytest.mark.parametrize('invalid', ['false', 'invisible', 0, 1, None, []])
 def test_visibility_rejects_non_boolean_input(client, isolated_essays, invalid):
     repository, _ = isolated_essays

@@ -2,6 +2,7 @@ import json
 
 import backend.data as data_module
 from backend.essay_service import EssayService
+from backend.essay_crypto import encrypt_content
 from backend.routes.essays import _apply_meta_updates, _validate_meta_slug
 
 
@@ -15,9 +16,15 @@ class MemoryEssayRepository:
 
 def test_essay_service_public_listing_marks_protected_metadata_only():
     service = EssayService(MemoryEssayRepository([]))
-    essays = [{'slug': 'secret', 'title': 'Secret', 'tag': '技术', 'password': 'never-public'}]
+    essays = [{
+        'slug': 'secret', 'title': 'Secret', 'tag': '技术',
+        'password': 'never-public', 'body': 'private body',
+        'content': 'private content', 'api_key': 'private key',
+        'credentials': {'token': 'private token'},
+    }]
+    encrypted = encrypt_content('private body', 'pw')
 
-    public, tags = service.public_listing(essays, lambda value: 'formatted', lambda slug: 'pw')
+    public, tags = service.public_listing(essays, lambda value: 'formatted', lambda slug: encrypted)
 
     assert public == [{
         'slug': 'secret', 'title': 'Secret', 'tag': '技术',
