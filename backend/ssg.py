@@ -20,6 +20,7 @@ from backend.data import get_essay_password, BASE_DIR, DATA_DIR, ESSAYS_DIR, MD_
 from backend.essay_navigation import parse_tags as _parse_tags, find_adjacent_siblings as _find_adjacent_siblings, build_nav as _build_nav
 from backend.essay_feed_data import strip_enrich
 from backend.essay_repository import EssayRepository
+from backend.essay_metadata import without_essay_body
 from backend.essay_service import EssayService
 from backend.essay_renderer import render_essay_html, write_essay_html
 from backend.file_utils import atomic_write_text
@@ -225,6 +226,14 @@ def _generate_public_essays(essays=None):
 
 def _generate_feeds(essays=None, photos=None):
     """Regenerate all auto-generated files: RSS, sitemap, archive, map, public essays."""
+    # Builds can start from legacy committed metadata without any admin write.
+    # The deploy artifact includes essays.json itself, so clean it as well.
+    with ESSAY_REPOSITORY.locked():
+        stored = ESSAY_REPOSITORY.list()
+        metadata = [without_essay_body(essay) for essay in stored]
+        if metadata != stored:
+            ESSAY_REPOSITORY.save(metadata)
+    essays = metadata if essays is None else essays
     _generate_public_essays(essays)
     _generate_rss(essays)
     _generate_sitemap(essays)
