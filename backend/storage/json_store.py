@@ -5,6 +5,8 @@ import os
 import copy
 import time
 
+from backend.essay_metadata import without_essay_body
+
 
 class DataCorruptionError(ValueError):
     """Raised when an existing JSON data file cannot be decoded."""
@@ -46,6 +48,10 @@ class JsonStore:
 
     def write(self, filename, data):
         path = self._path(filename)
+        if os.path.basename(path) == 'essays.json' and isinstance(data, list):
+            # All repositories and compatibility writers pass through here.
+            # Sanitize before even the temporary publishable file is written.
+            data = [without_essay_body(item) if isinstance(item, dict) else item for item in data]
         temp_path = path + '.tmp'
         try:
             with open(temp_path, 'w', encoding='utf-8') as handle:

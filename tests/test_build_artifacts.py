@@ -38,3 +38,21 @@ def test_stories_live_on_homepage_and_legacy_page_redirects():
     for name in ('assets/js/index-stories.js', 'assets/css/index-stories.css'):
         assert (ROOT / name).is_file()
     assert not (ROOT / 'assets/js/shelf.js').exists()
+
+
+def test_built_essays_json_has_no_body_fields():
+    """F1 invariant at the artifact level: the deployed essays.json must not
+    carry plaintext body-like fields for any essay (protected or not)."""
+    import json
+
+    path = ROOT / "data/essays.json"
+    assert path.is_file(), "build did not create data/essays.json"
+    data = json.loads(path.read_text(encoding="utf-8"))
+    items = data if isinstance(data, list) else data.get("essays", [])
+    body_fields = {"body", "content", "markdown", "raw_md", "body_html", "html"}
+    offenders = [
+        (item.get("slug"), sorted(body_fields & set(item)))
+        for item in items
+        if isinstance(item, dict) and body_fields & set(item)
+    ]
+    assert not offenders, f"body-like fields present in built essays.json: {offenders}"

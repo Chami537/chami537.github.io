@@ -15,6 +15,7 @@ from backend.data import (
     set_essay_password as store_password,
 )
 from backend.essay_crypto import decrypt_content, encrypt_content
+from backend.essay_metadata import ESSAY_BODY_FIELDS
 from backend.file_utils import atomic_write_text
 from backend.routes import essay_context
 
@@ -48,9 +49,10 @@ def _decrypt_essay_file(md_file, password):
 
 
 def _strip_essay_passwords(essays):
-    """Remove transient password fields before persisting essay metadata."""
+    """Remove transient secrets and body copies before saving or rendering."""
     for essay in essays:
-        essay.pop('password', None)
+        for field in ESSAY_BODY_FIELDS | {'password'}:
+            essay.pop(field, None)
 
 
 @essay_context.bp.route('/api/essays/<slug>/password', methods=['POST'])
