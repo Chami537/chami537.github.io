@@ -210,7 +210,7 @@ html.dark .essay-toc-row > a.is-active { color: var(--c3); }
 .essay-body {
   font-family: 'Lora', 'LXGW WenKai Lite', 'Noto Sans SC', serif;
 }
-.essay-body strong, .essay-body b { font-weight: 700; color: #000; font-size: 1.06em; }
+.essay-body strong, .essay-body b { font-weight: 700; color: #000; }
 html.dark .essay-body strong, html.dark .essay-body b { color: #e8e6e3; }
 
 .essay-body .essay-updated {
@@ -506,9 +506,9 @@ html.dark .comments-section { color-scheme: dark; }
   font-size: 14px; width: 200px; min-width: 0; outline: none;
 }
 .gate-input-wrap input:focus { border-color: var(--c3); }
-.dark .gate-input-wrap input { background: #1a1a2e; color: #eee; }
+html.dark .gate-input-wrap input { background: var(--bg); color: var(--fg); }
 .gate-btn {
-  padding: 10px 20px; background: var(--c3); color: #fff;
+  padding: 10px 20px; background: var(--c3); color: #111;
   border: none; border-radius: 6px; cursor: pointer;
   font-family: 'Noto Serif SC', 'Songti SC', 'SimSun', serif;
   font-size: 14px; font-weight: 600; transition: opacity .2s;

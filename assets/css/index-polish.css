@@ -16,7 +16,7 @@
 
 footer {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+  padding: 60px 0; text-align: center; font-size: 11px; color: var(--muted);
   letter-spacing: 0.04em; border-top: 1px solid var(--line);
 }
 .friends { margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; }
@@ -50,7 +50,7 @@ footer {
 }
 
 /* Dark mode */
-html.dark { --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }
+html.dark { --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #999; }
 html.dark nav { background: rgba(26,26,28,0.88); }
 html.dark .portrait::after { border-color: #2e2e30; }
 html.dark .work-card:hover { background: #222; }

@@ -13,7 +13,7 @@
   --c6: #ff6d00; /* orange */
   --c7: #4b0082; /* indigo */
   --line: #e0dcd5;
-  --muted: #999;
+  --muted: #666;
 }
 
 body {
@@ -50,6 +50,7 @@ nav .links a::after {
 }
 nav .links a.active::after { transform: scaleX(1); }
 nav .theme-btn {
+  position: relative;
   width: 32px; height: 32px; border-radius: 50%;
   border: 1px solid var(--line); background: none;
   font-size: 16px; cursor: pointer; display: flex;
@@ -58,6 +59,7 @@ nav .theme-btn {
   padding: 0; line-height: 1; color: inherit;
   flex-shrink: 0;
 }
+nav .theme-btn::after { content: ''; position: absolute; inset: -6px; }
 nav .theme-btn:hover { background: var(--line); }
 html.dark .theme-btn { border-color: #666; color: #ffd43b; }
 
