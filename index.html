@@ -15,18 +15,19 @@
 <meta property="og:site_name" content="Chami">
 <link rel="canonical" href="https://chami537.github.io/">
 <meta name="twitter:card" content="summary_large_image">
-<link rel="icon" href="images/avatar.jpg">
+<link rel="icon" href="images/favicon-64.png" type="image/png" sizes="64x64">
+<link rel="icon" href="images/favicon-32.png" type="image/png" sizes="32x32">
 <link rel="alternate" type="application/rss+xml" title="Chami's Essays" href="/rss.xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,700&family=Noto+Serif+SC:wght@400;700&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
-<link rel="stylesheet" href="assets/css/index-foundation.css?v=1795757286">
-<link rel="stylesheet" href="assets/css/index-work.css?v=1795757286">
-<link rel="stylesheet" href="assets/css/index-photos.css?v=1795757286">
-<link rel="stylesheet" href="assets/css/index-content.css?v=1795757286">
-<link rel="stylesheet" href="assets/css/index-essays.css?v=1795757286">
-<link rel="stylesheet" href="assets/css/index-stories.css?v=1795757286">
-<link rel="stylesheet" href="assets/css/index-polish.css?v=1795757286">
+<link rel="stylesheet" href="assets/css/index-foundation.css?v=1795762533">
+<link rel="stylesheet" href="assets/css/index-work.css?v=1795762533">
+<link rel="stylesheet" href="assets/css/index-photos.css?v=1795762533">
+<link rel="stylesheet" href="assets/css/index-content.css?v=1795762533">
+<link rel="stylesheet" href="assets/css/index-essays.css?v=1795762533">
+<link rel="stylesheet" href="assets/css/index-stories.css?v=1795762533">
+<link rel="stylesheet" href="assets/css/index-polish.css?v=1795762533">
 <script>
   var _saved = localStorage.getItem('theme');
   if (_saved === 'dark' || ((_saved === 'system' || !_saved) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
@@ -61,7 +62,7 @@
       <h1>Building<br>things that<br><mark>feel right</mark></h1>
       <div class="meta skeleton-loading" id="hero-meta"></div>
     </div>
-      <div class="portrait" aria-hidden="true"><img src="images/avatar.jpg" alt="头像" class="cover-img" id="portrait-img" decoding="async" fetchpriority="high" width="260" height="260"></div>
+      <div class="portrait" aria-hidden="true"><img src="images/avatar-520.webp" alt="头像" class="cover-img" id="portrait-img" decoding="async" fetchpriority="high" width="260" height="260"></div>
   </section>
 
   <section id="about" class="about-section">
@@ -95,9 +96,9 @@
     <div class="section-header">
       <div class="section-tag green">PHOTOGRAPHY</div>
       <div class="view-toggle">
-        <span id="btn-grid" class="active" onclick="switchView('grid')">Grid</span>
-        <span style="color:#ccc;margin:0 4px;">/</span>
-        <span id="btn-map" class="inactive" onclick="switchView('map')">Map</span><span id="gps-count" style="font-size:10px;color:var(--muted);margin-left:4px;display:none"></span>
+        <button type="button" id="btn-grid" class="active" onclick="switchView('grid')">Grid</button>
+        <span style="color:#ccc;margin:0 4px;" aria-hidden="true">/</span>
+        <button type="button" id="btn-map" class="inactive" onclick="switchView('map')">Map</button><span id="gps-count" style="font-size:10px;color:var(--muted);margin-left:4px;display:none"></span>
       </div>
     </div>
     <div id="photo-stories" class="photo-stories" style="display:none;"></div>
@@ -180,20 +181,19 @@
   <div class="friends skeleton-loading" id="friends-container">
     <div class="friends-label">FRIEND</div>
   </div>
-  © <span id="copyright-year"></span> Chami. All rights reserved.
+  &copy; <script>document.write(new Date().getFullYear())</script> Chami. All rights reserved.
 </footer>
 
-<script>document.getElementById("copyright-year").textContent = new Date().getFullYear();</script>
-<script defer src="assets/js/theme.js?v=1795757286"></script>
-<script defer src="assets/js/index-core.js?v=1795757286"></script>
-<script defer src="assets/js/index-essays.js?v=1795757286"></script>
-<script defer src="assets/js/index-photo-gallery.js?v=1795757286"></script>
-<script defer src="assets/js/index-photo-map.js?v=1795757286"></script>
-<script defer src="assets/js/index-content.js?v=1795757286"></script>
-<script defer src="assets/js/index-support.js?v=1795757286"></script>
-<script defer src="assets/js/index-lightbox.js?v=1795757286"></script>
-<script defer src="assets/js/index-stories.js?v=1795757286"></script>
-<script defer src="assets/js/index.js?v=1795757286"></script>
+<script defer src="assets/js/theme.js?v=1795762533"></script>
+<script defer src="assets/js/index-core.js?v=1795762533"></script>
+<script defer src="assets/js/index-essays.js?v=1795762533"></script>
+<script defer src="assets/js/index-photo-gallery.js?v=1795762533"></script>
+<script defer src="assets/js/index-photo-map.js?v=1795762533"></script>
+<script defer src="assets/js/index-content.js?v=1795762533"></script>
+<script defer src="assets/js/index-support.js?v=1795762533"></script>
+<script defer src="assets/js/index-lightbox.js?v=1795762533"></script>
+<script defer src="assets/js/index-stories.js?v=1795762533"></script>
+<script defer src="assets/js/index.js?v=1795762533"></script>
 
 </body>
 </html>

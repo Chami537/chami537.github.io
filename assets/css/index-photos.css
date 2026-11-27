@@ -44,11 +44,19 @@ opacity: 0; transition: opacity .3s ease;
 }
 .section-header .section-tag { margin-bottom: 0; }
 .view-toggle {
+  display: inline-flex; align-items: center;
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
   font-size: 12px; font-weight: 600; letter-spacing: 0.04em;
-  cursor: pointer; user-select: none;
+  user-select: none;
+  margin-block: -14px;
 }
-.view-toggle span { transition: color .2s; }
+.view-toggle button {
+  background: none; border: 0; padding: 0 6px; margin: 0;
+  min-height: 44px;
+  display: inline-flex; align-items: center; justify-content: center;
+  font: inherit; letter-spacing: inherit;
+  cursor: pointer; transition: color .2s;
+}
 .view-toggle .active { color: var(--c2); }
 .view-toggle .inactive { color: #ccc; }
 html.dark .view-toggle .inactive { color: #555; }

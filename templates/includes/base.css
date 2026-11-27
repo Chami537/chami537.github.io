@@ -12,7 +12,7 @@
   --c5: #9c27b0;
   --c6: #ff6d00;
   --line: #e0dcd5;
-  --muted: #999;
+  --muted: #666;
   --danger: #d32f2f;
 }
 
@@ -23,7 +23,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-html.dark { --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #888; }
+html.dark { --bg: #1a1a1c; --fg: #e8e6e3; --line: #2e2e30; --muted: #999; }
 html.dark nav { background: rgba(26,26,28,0.88); }
 
 .progress { position: fixed; top: 0; left: 0; height: 2px; z-index: 999; width: 0; will-change: width; }
@@ -41,6 +41,7 @@ nav .inner {
 }
 nav .logo { font-family: 'Lora', 'Inter', 'Noto Serif SC', serif; font-size: 17px; font-weight: 800; letter-spacing: -0.01em; text-decoration: none; color: var(--fg); flex-shrink: 0; }
 nav .theme-btn {
+  position: relative;
   width: 32px; height: 32px; border-radius: 50%;
   border: 1px solid var(--line); background: none;
   font-size: 16px; cursor: pointer; display: flex;
@@ -49,6 +50,7 @@ nav .theme-btn {
   padding: 0; line-height: 1; color: inherit;
   flex-shrink: 0;
 }
+nav .theme-btn::after { content: ''; position: absolute; inset: -6px; }
 nav .theme-btn:hover { background: var(--line); }
 html.dark nav .theme-btn { border-color: #666; color: #ffd43b; }
 
@@ -62,7 +64,7 @@ html.dark nav .theme-btn { border-color: #666; color: #ffd43b; }
 
 footer {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  padding: 60px 0; text-align: center; font-size: 11px; color: #bbb;
+  padding: 60px 0; text-align: center; font-size: 11px; color: var(--muted);
   letter-spacing: .04em; border-top: 1px solid var(--line);
 }
 .friends { margin-bottom: 20px; display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; }
@@ -101,10 +103,12 @@ footer {
 .essay-filter { display: flex; flex-wrap: wrap; gap: 6px; }
 .ef-chip {
   font-family: 'Lora', 'Inter', 'Noto Serif SC', serif;
-  display: inline-block; padding: 3px 12px; border-radius: 20px;
-  font-size: 11px; font-weight: 600; cursor: pointer;
-  border: 1px solid var(--line); color: var(--muted);
-  transition: all .15s; user-select: none;
+  display: inline-flex; align-items: center; min-height: 36px;
+  padding: 0; border: 0; border-bottom: 2px solid transparent;
+  border-radius: 0; background: transparent; color: var(--muted);
+  font-size: 13px; font-weight: 600; cursor: pointer;
+  transition: color .16s ease, border-color .16s ease; user-select: none;
+  appearance: none;
 }
 
 ::view-transition-old(root) { animation: vt-fade-out .2s ease-out both; }

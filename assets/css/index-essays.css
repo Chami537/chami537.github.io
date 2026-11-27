@@ -106,7 +106,7 @@
   font-size: 12px;
   font-weight: 500;
   letter-spacing: 0;
-  color: color-mix(in srgb, var(--muted) 74%, var(--bg));
+  color: var(--muted);
 }
 .essay-subfilter .ef-options {
   display: flex;
